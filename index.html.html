@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oftalmopatagonia — Gestión de estudios</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; background: #f5f5f3; color: #1a1a1a; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  .header { padding: 1rem 1.5rem; background: white; border-bottom: 1px solid #e5e5e3; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 36px; height: 36px; border-radius: 10px; background: #e8f4fd; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .logo-text { font-size: 16px; font-weight: 600; }
+  .logo-sub { font-size: 12px; color: #888; }
+  .fecha-hoy { font-size: 13px; color: #888; }
+
+  .tabs { display: flex; border-bottom: 1px solid #e5e5e3; background: white; flex-shrink: 0; }
+  .tab { padding: 10px 20px; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; color: #888; transition: all 0.15s; background: none; border-top: none; border-left: none; border-right: none; }
+  .tab:hover { color: #1a1a1a; }
+  .tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; font-weight: 500; }
+
+  .view { display: none; flex: 1; overflow: hidden; }
+  .view.active { display: flex; }
+
+  .layout { display: grid; grid-template-columns: 360px 1fr; flex: 1; overflow: hidden; width: 100%; }
+  .panel-form { background: white; border-right: 1px solid #e5e5e3; padding: 1.25rem; overflow-y: auto; }
+  .panel-list { padding: 1.25rem; overflow-y: auto; display: flex; flex-direction: column; }
+
+  .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; color: #888; text-transform: uppercase; margin-bottom: 12px; }
+  .form-group { margin-bottom: 11px; }
+  .form-label { font-size: 13px; color: #555; margin-bottom: 4px; display: block; }
+
+  input[type=text], input[type=date], input[type=tel], input[type=search], select {
+    padding: 8px 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 8px;
+    background: white; color: #1a1a1a; transition: border-color 0.15s;
+  }
+  input[type=text], input[type=date], input[type=search] { width: 100%; }
+  input:focus, select:focus { outline: none; border-color: #378add; }
+
+  .tel-wrap { display: flex; gap: 6px; align-items: stretch; }
+  .tel-wrap select { flex-shrink: 0; width: 110px; cursor: pointer; padding: 8px 6px; }
+  .tel-prefix { flex-shrink: 0; padding: 8px 10px; font-size: 14px; font-weight: 500; background: #f0f0ee; border: 1px solid #ddd; border-radius: 8px; color: #555; white-space: nowrap; display: flex; align-items: center; }
+  .tel-wrap input[type=tel] { flex: 1; min-width: 0; width: auto; }
+
+  .estudios-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  .estudio-chip { display: flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; font-size: 13px; background: white; color: #666; transition: all 0.15s; user-select: none; }
+  .estudio-chip:hover { border-color: #bbb; color: #1a1a1a; }
+  .estudio-chip.active { background: #e8f4fd; border-color: #378add; color: #185fa5; font-weight: 500; }
+  .chip-dot { width: 7px; height: 7px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
+  .estudio-chip.active .chip-dot { background: #378add; }
+
+  .btn-agregar { width: 100%; padding: 10px; background: #1a1a1a; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 14px; transition: opacity 0.15s; }
+  .btn-agregar:hover { opacity: 0.85; }
+  .btn-agregar:active { transform: scale(0.98); }
+  .btn-agregar:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Lista header con controles */
+  .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .list-header-left { display: flex; align-items: center; gap: 10px; }
+  .count-badge { font-size: 12px; padding: 3px 10px; background: #f0f0ee; border: 1px solid #e0e0e0; border-radius: 99px; color: #666; }
+  .pending-badge { font-size: 12px; padding: 3px 10px; background: #fff8e6; border: 1px solid #fac75080; border-radius: 99px; color: #a07000; }
+
+  /* Tarjeta paciente */
+  .paciente-card { background: white; border: 1px solid #e5e5e3; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 10px; animation: slideIn 0.2s ease; transition: border-color 0.2s; }
+  .paciente-card.enviado { border-color: #25D36640; background: #f6fff9; }
+  .paciente-card.seleccionado { border-color: #378add; background: #f0f7ff; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; } }
+
+  /* Checkbox personalizado */
+  .card-checkbox { width: 18px; height: 18px; border: 1.5px solid #ddd; border-radius: 5px; flex-shrink: 0; margin-top: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; background: white; }
+  .card-checkbox.checked { background: #378add; border-color: #378add; }
+  .card-checkbox.checked::after { content: '✓'; color: white; font-size: 11px; font-weight: 700; }
+
+  .paciente-initials { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; background: #e8f4fd; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: #185fa5; }
+  .paciente-info { flex: 1; min-width: 0; }
+  .paciente-nombre { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 7px; }
+  .paciente-meta { font-size: 12px; color: #888; margin-top: 2px; }
+  .paciente-estudios { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+  .estudio-tag { font-size: 11px; padding: 2px 8px; background: #f0f0ee; border: 1px solid #e0e0e0; border-radius: 99px; color: #666; }
+
+  /* Badge enviado */
+  .badge-enviado { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: #d4f5e2; color: #1a7a45; letter-spacing: 0.04em; border: 1px solid #25D36640; white-space: nowrap; }
+  .badge-pendiente { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: #fff3cd; color: #856404; letter-spacing: 0.04em; border: 1px solid #fac75060; white-space: nowrap; }
+
+  .card-actions { display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; }
+  .btn-remove { background: none; border: none; cursor: pointer; color: #ccc; font-size: 18px; padding: 0; line-height: 1; }
+  .btn-remove:hover { color: #e24b4a; }
+
+  .empty-state { text-align: center; padding: 4rem 1rem; color: #aaa; font-size: 14px; }
+  .empty-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
+
+  /* Actions bar */
+  .actions-bar { border-top: 1px solid #e5e5e3; padding: 0.875rem 1.5rem; background: white; display: flex; align-items: center; gap: 10px; justify-content: space-between; flex-shrink: 0; }
+  .actions-left { display: flex; align-items: center; gap: 8px; }
+  .actions-right { display: flex; align-items: center; gap: 8px; }
+
+  .btn-select-all { padding: 7px 14px; font-size: 13px; border: 1px solid #ddd; border-radius: 8px; background: white; color: #555; cursor: pointer; }
+  .btn-select-all:hover { background: #f5f5f3; }
+  .btn-export { padding: 7px 14px; font-size: 13px; border: 1px solid #ddd; border-radius: 8px; background: white; color: #1a1a1a; cursor: pointer; }
+  .btn-export:hover { background: #f5f5f3; }
+
+  .btn-reenviar { padding: 8px 16px; font-size: 13px; font-weight: 500; background: #378add; color: white; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .btn-reenviar:hover { opacity: 0.9; }
+  .btn-reenviar:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .btn-enviar { padding: 8px 18px; font-size: 14px; font-weight: 500; background: #25D366; color: white; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 7px; }
+  .btn-enviar:hover { opacity: 0.9; }
+  .btn-enviar:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-enviar svg, .btn-reenviar svg { width: 15px; height: 15px; fill: white; flex-shrink: 0; }
+
+  /* Búsqueda */
+  .search-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; width: 100%; }
+  .search-bar { padding: 1.25rem 1.5rem; background: white; border-bottom: 1px solid #e5e5e3; display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+  .search-bar input[type=search] { flex: 1; }
+  .search-bar input[type=date] { width: 155px; }
+  .btn-buscar { padding: 8px 18px; font-size: 14px; font-weight: 500; background: #1a1a1a; color: white; border: none; border-radius: 8px; cursor: pointer; }
+  .btn-limpiar { padding: 8px 14px; font-size: 13px; border: 1px solid #ddd; border-radius: 8px; background: white; color: #666; cursor: pointer; }
+
+  .results-area { flex: 1; overflow-y: auto; padding: 1.25rem 1.5rem; }
+  .result-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e5e5e3; }
+  .result-table th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e5e3; background: #fafaf9; }
+  .result-table td { padding: 10px 14px; font-size: 14px; border-bottom: 1px solid #f0f0ee; vertical-align: middle; }
+  .result-table tr:last-child td { border-bottom: none; }
+  .result-table tr:hover td { background: #fafaf9; }
+  .estudios-cell { display: flex; flex-wrap: wrap; gap: 4px; }
+
+  .loading { text-align: center; padding: 3rem; color: #aaa; font-size: 14px; }
+  .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #e0e0e0; border-top-color: #378add; border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast { position: fixed; bottom: 75px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 10px 20px; border-radius: 8px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 100; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+  .divider { height: 1px; background: #e5e5e3; margin: 12px 0; }
+
+  .sync-status { font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 5px; }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: #25D366; }
+  .sync-dot.saving { background: #FAC775; }
+  .sync-dot.error { background: #e24b4a; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">👁</div>
+    <div>
+      <div class="logo-text">Oftalmopatagonia</div>
+      <div class="logo-sub">Gestión de estudios</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div class="sync-status" id="syncStatus">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncText">Conectado</span>
+    </div>
+    <div class="fecha-hoy" id="fechaHoy"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('carga')">📋 Carga del día</button>
+  <button class="tab" onclick="switchTab('buscar')">🔍 Buscar pacientes</button>
+</div>
+
+<!-- PESTAÑA CARGA -->
+<div class="view active" id="view-carga">
+  <div class="layout">
+    <div class="panel-form">
+      <div class="section-label">Nuevo paciente</div>
+
+      <div class="form-group">
+        <label class="form-label">Nombre y apellido</label>
+        <input type="text" id="nombreCompleto" placeholder="Ej: Juan Pérez">
+      </div>
+      <div class="form-group">
+        <label class="form-label">DNI</label>
+        <input type="text" id="dni" placeholder="12345678" maxlength="8">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Celular</label>
+        <div class="tel-wrap">
+          <select id="paisCodigo" onchange="actualizarPrefijo()">
+            <option value="549" selected>🇦🇷 +549</option>
+            <option value="598">🇺🇾 +598</option>
+            <option value="56">🇨🇱 +56</option>
+            <option value="595">🇵🇾 +595</option>
+            <option value="591">🇧🇴 +591</option>
+            <option value="55">🇧🇷 +55</option>
+            <option value="34">🇪🇸 +34</option>
+            <option value="1">🇺🇸 +1</option>
+          </select>
+          <div class="tel-prefix" id="telPrefijo">+549</div>
+          <input type="tel" id="telNumero" placeholder="2945 590047" maxlength="15">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fecha</label>
+        <input type="date" id="fecha">
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-group">
+        <label class="form-label" style="margin-bottom:8px;">Estudios realizados</label>
+        <div class="estudios-grid" id="estudiosGrid"></div>
+        <div style="margin-top:6px;">
+          <input type="text" id="otrosEstudio" placeholder="Otros (especificar)">
+        </div>
+      </div>
+
+      <button class="btn-agregar" id="btnAgregar" onclick="agregarPaciente()">+ Agregar paciente</button>
+    </div>
+
+    <div class="panel-list">
+      <div class="list-header">
+        <div class="list-header-left">
+          <div class="section-label" style="margin:0;">Lista del día</div>
+          <span class="count-badge" id="countBadge">0 pacientes</span>
+          <span class="pending-badge" id="pendingBadge" style="display:none;"></span>
+        </div>
+      </div>
+      <div id="listaPacientes" style="flex:1;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PESTAÑA BUSCAR -->
+<div class="view" id="view-buscar">
+  <div class="search-view">
+    <div class="search-bar">
+      <input type="search" id="searchQuery" placeholder="Nombre, apellido o DNI..." onkeydown="if(event.key==='Enter')buscar()">
+      <input type="date" id="searchFechaDesde" title="Fecha desde">
+      <input type="date" id="searchFechaHasta" title="Fecha hasta">
+      <button class="btn-limpiar" onclick="limpiarBusqueda()">Limpiar</button>
+      <button class="btn-buscar" onclick="buscar()">Buscar</button>
+    </div>
+    <div class="results-area" id="resultsArea">
+      <div class="empty-state"><div class="empty-icon">🔍</div>Usá los filtros para buscar pacientes.</div>
+    </div>
+  </div>
+</div>
+
+<!-- BARRA DE ACCIONES -->
+<div class="actions-bar" id="actionsBar">
+  <div class="actions-left">
+    <button class="btn-select-all" onclick="toggleSelectAll()">☐ Seleccionar todos</button>
+    <button class="btn-reenviar" id="btnReenviar" onclick="reenviarSeleccionados()" disabled>
+      <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Reenviar seleccionados
+    </button>
+  </div>
+  <div class="actions-right">
+    <button class="btn-export" onclick="exportarCSV()">📊 Exportar</button>
+    <button class="btn-enviar" id="btnEnviar" onclick="enviarPendientes()" disabled>
+      <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Enviar pendientes
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://jxhxitgyvssxhmfpzzlt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_GR173HjCr2rpSxiQbOLzEA_KXKfFMnA';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const ESTUDIOS = ['Campimetría','OCT','Paquimetría','Biometría','Retinografía','UBM'];
+let pacientesHoy = [];
+let estudiosSeleccionados = new Set();
+let seleccionados = new Set(); // IDs seleccionados para reenvío
+let todoSeleccionado = false;
+
+function init() {
+  const hoy = new Date();
+  document.getElementById('fechaHoy').textContent = hoy.toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long' });
+  document.getElementById('fecha').value = hoy.toISOString().split('T')[0];
+
+  const grid = document.getElementById('estudiosGrid');
+  ESTUDIOS.forEach(e => {
+    const chip = document.createElement('div');
+    chip.className = 'estudio-chip';
+    chip.innerHTML = `<span class="chip-dot"></span>${e}`;
+    chip.onclick = () => toggleEstudio(e, chip);
+    grid.appendChild(chip);
+  });
+
+  cargarPacientesHoy();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='carga')||(i===1&&tab==='buscar')));
+  document.getElementById('view-carga').classList.toggle('active', tab==='carga');
+  document.getElementById('view-buscar').classList.toggle('active', tab==='buscar');
+  document.getElementById('actionsBar').style.display = tab==='carga' ? 'flex' : 'none';
+  if (tab==='buscar') buscar();
+}
+
+function setSyncStatus(state) {
+  const dot = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  if (state==='saving') { dot.className='sync-dot saving'; text.textContent='Guardando...'; }
+  else if (state==='ok') { dot.className='sync-dot'; text.textContent='Guardado'; }
+  else if (state==='error') { dot.className='sync-dot error'; text.textContent='Error'; }
+}
+
+async function cargarPacientesHoy() {
+  const hoy = new Date().toISOString().split('T')[0];
+  const { data, error } = await sb.from('pacientes').select('*').eq('fecha', hoy).order('created_at', { ascending: true });
+  if (!error && data) { pacientesHoy = data; renderLista(); }
+}
+
+function actualizarPrefijo() {
+  document.getElementById('telPrefijo').textContent = '+' + document.getElementById('paisCodigo').value;
+}
+
+function toggleEstudio(e, chip) {
+  if (estudiosSeleccionados.has(e)) { estudiosSeleccionados.delete(e); chip.classList.remove('active'); }
+  else { estudiosSeleccionados.add(e); chip.classList.add('active'); }
+}
+
+async function agregarPaciente() {
+  const nombreCompleto = document.getElementById('nombreCompleto').value.trim();
+  const dni = document.getElementById('dni').value.trim();
+  const telNumero = document.getElementById('telNumero').value.trim().replace(/\D/g,'');
+  const pais = document.getElementById('paisCodigo').value;
+  const fecha = document.getElementById('fecha').value;
+  const otros = document.getElementById('otrosEstudio').value.trim();
+
+  if (!nombreCompleto||!dni||!telNumero) { showToast('⚠️ Completá nombre, DNI y celular'); return; }
+  if (!/^\d{7,8}$/.test(dni)) { showToast('⚠️ El DNI debe tener 7 u 8 dígitos'); return; }
+  if (telNumero.length < 8) { showToast('⚠️ Número de celular muy corto'); return; }
+
+  const estudios = [...estudiosSeleccionados];
+  if (otros) estudios.push(otros);
+  if (estudios.length===0) { showToast('⚠️ Seleccioná al menos un estudio'); return; }
+
+  const btn = document.getElementById('btnAgregar');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  setSyncStatus('saving');
+
+  const { data, error } = await sb.from('pacientes')
+    .insert([{ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, enviado: false }])
+    .select();
+
+  btn.disabled = false; btn.textContent = '+ Agregar paciente';
+
+  if (error) { setSyncStatus('error'); showToast('⚠️ Error: ' + error.message); return; }
+
+  setSyncStatus('ok');
+  pacientesHoy.push(data[0]);
+  renderLista();
+  resetForm();
+  showToast('✓ Paciente guardado');
+}
+
+function resetForm() {
+  ['nombreCompleto','dni','otrosEstudio'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('telNumero').value='';
+  document.getElementById('paisCodigo').value='549';
+  actualizarPrefijo();
+  estudiosSeleccionados.clear();
+  document.querySelectorAll('.estudio-chip').forEach(c=>c.classList.remove('active'));
+  document.getElementById('fecha').value=new Date().toISOString().split('T')[0];
+  document.getElementById('nombreCompleto').focus();
+}
+
+function toggleCheckbox(id) {
+  if (seleccionados.has(id)) seleccionados.delete(id);
+  else seleccionados.add(id);
+  renderLista();
+}
+
+function toggleSelectAll() {
+  todoSeleccionado = !todoSeleccionado;
+  seleccionados.clear();
+  if (todoSeleccionado) pacientesHoy.forEach(p => seleccionados.add(p.id));
+  renderLista();
+}
+
+function renderLista() {
+  const cont = document.getElementById('listaPacientes');
+  const count = pacientesHoy.length;
+  const pendientes = pacientesHoy.filter(p => !p.enviado).length;
+  const numSeleccionados = seleccionados.size;
+
+  document.getElementById('countBadge').textContent = `${count} paciente${count!==1?'s':''}`;
+
+  const pb = document.getElementById('pendingBadge');
+  if (pendientes > 0) { pb.style.display='inline-block'; pb.textContent=`${pendientes} pendiente${pendientes!==1?'s':''}`; }
+  else { pb.style.display='none'; }
+
+  document.getElementById('btnEnviar').disabled = pendientes === 0;
+  document.getElementById('btnReenviar').disabled = numSeleccionados === 0;
+
+  // Actualizar botón seleccionar todos
+  const btnSA = document.querySelector('.btn-select-all');
+  btnSA.textContent = todoSeleccionado ? '☑ Deseleccionar todos' : '☐ Seleccionar todos';
+
+  if (count === 0) {
+    cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div>Todavía no hay pacientes cargados hoy.</div>`;
+    return;
+  }
+
+  cont.innerHTML = pacientesHoy.map((p, i) => {
+    const partes = p.nombre_completo.trim().split(' ');
+    const initials = partes.length>=2 ? (partes[0][0]+partes[partes.length-1][0]).toUpperCase() : p.nombre_completo.slice(0,2).toUpperCase();
+    const estaSeleccionado = seleccionados.has(p.id);
+    const badge = p.enviado
+      ? `<span class="badge-enviado">✓ ENVIADO</span>`
+      : `<span class="badge-pendiente">⏳ PENDIENTE</span>`;
+
+    return `
+    <div class="paciente-card ${p.enviado?'enviado':''} ${estaSeleccionado?'seleccionado':''}">
+      <div class="card-checkbox ${estaSeleccionado?'checked':''}" onclick="toggleCheckbox('${p.id}')"></div>
+      <div class="paciente-initials">${initials}</div>
+      <div class="paciente-info">
+        <div class="paciente-nombre">${p.nombre_completo} ${badge}</div>
+        <div class="paciente-meta">DNI ${p.dni} · +${p.celular}</div>
+        <div class="paciente-estudios">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-remove" onclick="eliminar('${p.id}',${i})" title="Eliminar">&times;</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function eliminar(id, i) {
+  if (!confirm('¿Eliminar este paciente?')) return;
+  const { error } = await sb.from('pacientes').delete().eq('id', id);
+  if (error) { showToast('Error al eliminar'); return; }
+  pacientesHoy.splice(i, 1);
+  seleccionados.delete(id);
+  renderLista();
+  showToast('✓ Eliminado');
+}
+
+// Marca como enviados en Supabase
+async function marcarComoEnviados(ids) {
+  await sb.from('pacientes').update({ enviado: true }).in('id', ids);
+  pacientesHoy.forEach(p => { if (ids.includes(p.id)) p.enviado = true; });
+  renderLista();
+}
+
+// Genera CSV solo con los pacientes indicados
+function generarCSV(lista) {
+  const header = ['Nombre y Apellido','DNI','Celular','Fecha','Estudios'];
+  const rows = lista.map(p => [p.nombre_completo, p.dni, p.celular, p.fecha, p.estudios.join(' | ')]);
+  return [header,...rows].map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+}
+
+function descargarCSV(csv, nombre) {
+  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=nombre; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Enviar solo los pendientes
+async function enviarPendientes() {
+  const pendientes = pacientesHoy.filter(p => !p.enviado);
+  if (pendientes.length === 0) { showToast('No hay pendientes para enviar'); return; }
+
+  const hoy = new Date().toISOString().split('T')[0];
+  descargarCSV(generarCSV(pendientes), `envio_estudios_${hoy}.csv`);
+
+  // Marcar como enviados
+  const ids = pendientes.map(p => p.id);
+  await marcarComoEnviados(ids);
+  seleccionados.clear();
+  todoSeleccionado = false;
+
+  showToast(`✓ ${pendientes.length} paciente(s) marcados como enviados`);
+}
+
+// Reenviar los seleccionados (independientemente del estado)
+async function reenviarSeleccionados() {
+  if (seleccionados.size === 0) return;
+  const lista = pacientesHoy.filter(p => seleccionados.has(p.id));
+  const hoy = new Date().toISOString().split('T')[0];
+  descargarCSV(generarCSV(lista), `reenvio_estudios_${hoy}.csv`);
+
+  // Marcar como enviados también
+  await marcarComoEnviados([...seleccionados]);
+  seleccionados.clear();
+  todoSeleccionado = false;
+  renderLista();
+
+  showToast(`✓ ${lista.length} paciente(s) listos para reenviar`);
+}
+
+function exportarCSV() {
+  if (pacientesHoy.length===0) { showToast('No hay pacientes'); return; }
+  descargarCSV(generarCSV(pacientesHoy), `pacientes_${new Date().toISOString().split('T')[0]}.csv`);
+  showToast('✓ Exportado');
+}
+
+// ── BÚSQUEDA ──
+async function buscar() {
+  const query = document.getElementById('searchQuery').value.trim();
+  const desde = document.getElementById('searchFechaDesde').value;
+  const hasta = document.getElementById('searchFechaHasta').value;
+
+  document.getElementById('resultsArea').innerHTML = `<div class="loading"><div class="spinner"></div><br>Buscando...</div>`;
+
+  let q = sb.from('pacientes').select('*').order('fecha',{ascending:false}).order('created_at',{ascending:false});
+  if (query) {
+    if (/^\d+$/.test(query)) q = q.ilike('dni',`%${query}%`);
+    else q = q.ilike('nombre_completo',`%${query}%`);
+  }
+  if (desde) q = q.gte('fecha',desde);
+  if (hasta) q = q.lte('fecha',hasta);
+  q = q.limit(200);
+
+  const { data, error } = await q;
+  if (error||!data||data.length===0) {
+    document.getElementById('resultsArea').innerHTML=`<div class="empty-state"><div class="empty-icon">🔍</div>${error?'Error al buscar.':'Sin resultados.'}</div>`;
+    return;
+  }
+
+  const rows = data.map(p => {
+    const fechaStr = p.fecha ? new Date(p.fecha+'T12:00:00').toLocaleDateString('es-AR') : '';
+    const estadoBadge = p.enviado
+      ? `<span class="badge-enviado">✓ ENV</span>`
+      : `<span class="badge-pendiente">⏳ PEND</span>`;
+    return `<tr>
+      <td>${fechaStr}</td>
+      <td><strong>${p.nombre_completo}</strong></td>
+      <td>${p.dni}</td>
+      <td>+${p.celular}</td>
+      <td><div class="estudios-cell">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div></td>
+      <td>${estadoBadge}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('resultsArea').innerHTML=`
+    <div style="margin-bottom:10px;font-size:13px;color:#888;">${data.length} resultado${data.length!==1?'s':''}</div>
+    <table class="result-table">
+      <thead><tr><th>Fecha</th><th>Paciente</th><th>DNI</th><th>Celular</th><th>Estudios</th><th>Estado</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function limpiarBusqueda() {
+  document.getElementById('searchQuery').value='';
+  document.getElementById('searchFechaDesde').value='';
+  document.getElementById('searchFechaHasta').value='';
+  document.getElementById('resultsArea').innerHTML=`<div class="empty-state"><div class="empty-icon">🔍</div>Usá los filtros para buscar pacientes.</div>`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+init();
+</script>
+</body>
+</html>
