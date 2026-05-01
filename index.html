@@ -214,7 +214,8 @@
         </div>
       </div>
 
-      <button class="btn-agregar" id="btnAgregar" onclick="agregarPaciente()">+ Agregar paciente</button>
+      <button class="btn-agregar" id="btnAgregar" onclick="guardarPaciente()">+ Agregar paciente</button>
+      <button class="btn-agregar" id="btnCancelarEdicion" onclick="cancelarEdicion()" style="display:none;margin-top:6px;background:#888;">✕ Cancelar edición</button>
     </div>
 
     <div class="panel-list">
@@ -275,8 +276,9 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const ESTUDIOS = ['Campimetría','OCT','Paquimetría','Biometría','Retinografía','UBM'];
 let pacientesHoy = [];
 let estudiosSeleccionados = new Set();
-let seleccionados = new Set(); // IDs seleccionados para reenvío
+let seleccionados = new Set();
 let todoSeleccionado = false;
+let editandoId = null; // ID del paciente en edición
 
 function init() {
   const hoy = new Date();
@@ -326,7 +328,8 @@ function toggleEstudio(e, chip) {
   else { estudiosSeleccionados.add(e); chip.classList.add('active'); }
 }
 
-async function agregarPaciente() {
+async function guardarPaciente() {
+  if (editandoId) { await actualizarPaciente(); return; }
   const nombreCompleto = document.getElementById('nombreCompleto').value.trim();
   const dni = document.getElementById('dni').value.trim();
   const telNumero = document.getElementById('telNumero').value.trim().replace(/\D/g,'');
@@ -346,8 +349,9 @@ async function agregarPaciente() {
   btn.disabled = true; btn.textContent = 'Guardando...';
   setSyncStatus('saving');
 
+  const obraSocial = document.getElementById('obraSocial').value.trim();
   const { data, error } = await sb.from('pacientes')
-    .insert([{ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, enviado: false }])
+    .insert([{ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, enviado: false, obra_social: obraSocial }])
     .select();
 
   btn.disabled = false; btn.textContent = '+ Agregar paciente';
@@ -359,6 +363,87 @@ async function agregarPaciente() {
   renderLista();
   resetForm();
   showToast('✓ Paciente guardado');
+}
+
+function editarPaciente(id) {
+  const p = pacientesHoy.find(x => x.id === id);
+  if (!p) return;
+  editandoId = id;
+
+  // Cargar datos en el formulario
+  document.getElementById('nombreCompleto').value = p.nombre_completo;
+  document.getElementById('dni').value = p.dni;
+  document.getElementById('fecha').value = p.fecha;
+  document.getElementById('obraSocial').value = p.obra_social || '';
+
+  // Celular: separar código país del número
+  const celular = p.celular;
+  const paises = ['549','598','56','595','591','55','34','1'];
+  let paisEncontrado = '549';
+  let numSolo = celular;
+  for (const cod of paises) {
+    if (celular.startsWith(cod)) { paisEncontrado = cod; numSolo = celular.slice(cod.length); break; }
+  }
+  document.getElementById('paisCodigo').value = paisEncontrado;
+  document.getElementById('telNumero').value = numSolo;
+  actualizarPrefijo();
+
+  // Estudios
+  estudiosSeleccionados.clear();
+  document.querySelectorAll('.estudio-chip').forEach(c => c.classList.remove('active'));
+  p.estudios.forEach(e => {
+    estudiosSeleccionados.add(e);
+    document.querySelectorAll('.estudio-chip').forEach(c => { if(c.dataset && c.textContent.includes(e)) c.classList.add('active'); });
+  });
+
+  // Cambiar botón
+  document.getElementById('btnAgregar').textContent = '💾 Guardar cambios';
+  document.getElementById('btnCancelarEdicion').style.display = 'block';
+  document.getElementById('nombreCompleto').focus();
+  showToast('Editando paciente — modificá los datos y guardá');
+}
+
+async function actualizarPaciente() {
+  const nombreCompleto = document.getElementById('nombreCompleto').value.trim();
+  const dni = document.getElementById('dni').value.trim();
+  const telNumero = document.getElementById('telNumero').value.trim().replace(/\D/g,'');
+  const pais = document.getElementById('paisCodigo').value;
+  const fecha = document.getElementById('fecha').value;
+  const otros = document.getElementById('otrosEstudio').value.trim();
+  const obraSocial = document.getElementById('obraSocial').value.trim();
+
+  if (!nombreCompleto||!dni||!telNumero) { showToast('⚠️ Completá nombre, DNI y celular'); return; }
+
+  const estudios = [...estudiosSeleccionados];
+  if (otros) estudios.push(otros);
+  if (estudios.length===0) { showToast('⚠️ Seleccioná al menos un estudio'); return; }
+
+  const btn = document.getElementById('btnAgregar');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  setSyncStatus('saving');
+
+  const { error } = await sb.from('pacientes')
+    .update({ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, obra_social: obraSocial })
+    .eq('id', editandoId);
+
+  btn.disabled = false;
+  if (error) { setSyncStatus('error'); showToast('⚠️ Error: ' + error.message); return; }
+
+  // Actualizar localmente
+  const idx = pacientesHoy.findIndex(p => p.id === editandoId);
+  if (idx !== -1) Object.assign(pacientesHoy[idx], { nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, obra_social: obraSocial });
+
+  setSyncStatus('ok');
+  cancelarEdicion();
+  renderLista();
+  showToast('✓ Paciente actualizado');
+}
+
+function cancelarEdicion() {
+  editandoId = null;
+  document.getElementById('btnAgregar').textContent = '+ Agregar paciente';
+  document.getElementById('btnCancelarEdicion').style.display = 'none';
+  resetForm();
 }
 
 function resetForm() {
@@ -427,6 +512,7 @@ function renderLista() {
         <div class="paciente-estudios">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
       </div>
       <div class="card-actions">
+        <button class="btn-remove" onclick="editarPaciente('${p.id}')" title="Editar" style="color:#bbb;font-size:14px;">✏️</button>
         <button class="btn-remove" onclick="eliminar('${p.id}',${i})" title="Eliminar">&times;</button>
       </div>
     </div>`;
