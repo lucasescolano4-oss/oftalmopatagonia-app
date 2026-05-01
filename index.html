@@ -66,6 +66,8 @@
   .paciente-card { background: white; border: 1px solid #e5e5e3; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 10px; animation: slideIn 0.2s ease; transition: border-color 0.2s; }
   .paciente-card.enviado { border-color: #25D36640; background: #f6fff9; }
   .paciente-card.seleccionado { border-color: #378add; background: #f0f7ff; }
+  .paciente-card.sin-orden { border-color: #e24b4a; background: #fff5f5; }
+  .badge-sin-orden { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: #ffe0e0; color: #c0392b; letter-spacing: 0.04em; border: 1px solid #e24b4a60; white-space: nowrap; }
   @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; } }
 
   /* Checkbox personalizado */
@@ -196,12 +198,16 @@
         </div>
       </div>
       <div class="form-group">
+        <label class="form-label">Obra social</label>
+        <input type="text" id="obraSocial" placeholder="Ej: PAMI, OSDE, Particular...">
+      </div>
+      <div class="form-group">
         <label class="form-label">Fecha</label>
         <input type="date" id="fecha">
       </div>
-      <div class="form-group">
-        <label class="form-label">Obra social</label>
-        <input type="text" id="obraSocial" placeholder="Ej: PAMI, OSDE, Particular...">
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #ddd;border-radius:8px;cursor:pointer;" onclick="toggleOrden()">
+        <div id="ordenCheck" style="width:20px;height:20px;border:1.5px solid #ddd;border-radius:5px;display:flex;align-items:center;justify-content:center;background:white;flex-shrink:0;"></div>
+        <label style="font-size:14px;color:#555;cursor:pointer;margin:0;">Orden autorizada</label>
       </div>
 
       <div class="divider"></div>
@@ -278,7 +284,8 @@ let pacientesHoy = [];
 let estudiosSeleccionados = new Set();
 let seleccionados = new Set();
 let todoSeleccionado = false;
-let editandoId = null; // ID del paciente en edición
+let editandoId = null;
+let ordenAutorizada = false;
 
 function init() {
   const hoy = new Date();
@@ -319,6 +326,19 @@ async function cargarPacientesHoy() {
   if (!error && data) { pacientesHoy = data; renderLista(); }
 }
 
+function toggleOrden() {
+  ordenAutorizada = !ordenAutorizada;
+  const check = document.getElementById('ordenCheck');
+  const wrap = check.parentElement;
+  if (ordenAutorizada) {
+    check.innerHTML = '✓'; check.style.background = '#25D366'; check.style.borderColor = '#25D366'; check.style.color = 'white'; check.style.fontSize = '12px'; check.style.fontWeight = '700';
+    wrap.style.borderColor = '#25D366'; wrap.style.background = '#f6fff9';
+  } else {
+    check.innerHTML = ''; check.style.background = 'white'; check.style.borderColor = '#ddd';
+    wrap.style.borderColor = '#ddd'; wrap.style.background = 'white';
+  }
+}
+
 function actualizarPrefijo() {
   document.getElementById('telPrefijo').textContent = '+' + document.getElementById('paisCodigo').value;
 }
@@ -351,7 +371,7 @@ async function guardarPaciente() {
 
   const obraSocial = document.getElementById('obraSocial').value.trim();
   const { data, error } = await sb.from('pacientes')
-    .insert([{ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, enviado: false, obra_social: obraSocial }])
+    .insert([{ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, enviado: false, obra_social: obraSocial, orden_autorizada: ordenAutorizada }])
     .select();
 
   btn.disabled = false; btn.textContent = '+ Agregar paciente';
@@ -375,6 +395,18 @@ function editarPaciente(id) {
   document.getElementById('dni').value = p.dni;
   document.getElementById('fecha').value = p.fecha;
   document.getElementById('obraSocial').value = p.obra_social || '';
+
+  // Orden autorizada
+  ordenAutorizada = p.orden_autorizada || false;
+  const checkEl = document.getElementById('ordenCheck');
+  const wrapEl = checkEl.parentElement;
+  if (ordenAutorizada) {
+    checkEl.innerHTML='✓'; checkEl.style.background='#25D366'; checkEl.style.borderColor='#25D366'; checkEl.style.color='white'; checkEl.style.fontSize='12px'; checkEl.style.fontWeight='700';
+    wrapEl.style.borderColor='#25D366'; wrapEl.style.background='#f6fff9';
+  } else {
+    checkEl.innerHTML=''; checkEl.style.background='white'; checkEl.style.borderColor='#ddd';
+    wrapEl.style.borderColor='#ddd'; wrapEl.style.background='white';
+  }
 
   // Celular: separar código país del número
   const celular = p.celular;
@@ -423,7 +455,7 @@ async function actualizarPaciente() {
   setSyncStatus('saving');
 
   const { error } = await sb.from('pacientes')
-    .update({ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, obra_social: obraSocial })
+    .update({ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, obra_social: obraSocial, orden_autorizada: ordenAutorizada })
     .eq('id', editandoId);
 
   btn.disabled = false;
@@ -431,7 +463,7 @@ async function actualizarPaciente() {
 
   // Actualizar localmente
   const idx = pacientesHoy.findIndex(p => p.id === editandoId);
-  if (idx !== -1) Object.assign(pacientesHoy[idx], { nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, obra_social: obraSocial });
+  if (idx !== -1) Object.assign(pacientesHoy[idx], { nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, obra_social: obraSocial, orden_autorizada: ordenAutorizada });
 
   setSyncStatus('ok');
   cancelarEdicion();
@@ -448,6 +480,10 @@ function cancelarEdicion() {
 
 function resetForm() {
   ['nombreCompleto','dni','otrosEstudio','obraSocial'].forEach(id => document.getElementById(id).value='');
+  ordenAutorizada = false;
+  const check = document.getElementById('ordenCheck');
+  check.innerHTML=''; check.style.background='white'; check.style.borderColor='#ddd';
+  check.parentElement.style.borderColor='#ddd'; check.parentElement.style.background='white';
   document.getElementById('telNumero').value='';
   document.getElementById('paisCodigo').value='549';
   actualizarPrefijo();
@@ -501,14 +537,18 @@ function renderLista() {
     const badge = p.enviado
       ? `<span class="badge-enviado">✓ ENVIADO</span>`
       : `<span class="badge-pendiente">⏳ PENDIENTE</span>`;
+    const ordenBadge = p.orden_autorizada
+      ? `<span style="font-size:10px;color:#1a7a45;">✓ orden</span>`
+      : `<span class="badge-sin-orden">⚠ SIN ORDEN</span>`;
+    const sinOrdenClass = !p.orden_autorizada ? 'sin-orden' : '';
 
     return `
-    <div class="paciente-card ${p.enviado?'enviado':''} ${estaSeleccionado?'seleccionado':''}">
+    <div class="paciente-card ${p.enviado?'enviado':''} ${estaSeleccionado?'seleccionado':''} ${sinOrdenClass}">
       <div class="card-checkbox ${estaSeleccionado?'checked':''}" onclick="toggleCheckbox('${p.id}')"></div>
       <div class="paciente-initials">${initials}</div>
       <div class="paciente-info">
         <div class="paciente-nombre">${p.nombre_completo} ${badge}</div>
-        <div class="paciente-meta">DNI ${p.dni} · +${p.celular}${p.obra_social ? ' · ' + p.obra_social : ''}</div>
+        <div class="paciente-meta">DNI ${p.dni} · +${p.celular}${p.obra_social ? ' · ' + p.obra_social : ''} · ${ordenBadge}</div>
         <div class="paciente-estudios">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
       </div>
       <div class="card-actions">
@@ -626,8 +666,10 @@ async function buscar() {
       <td>${p.dni}</td>
       <td>+${p.celular}</td>
       <td>${p.obra_social||'-'}</td>
+      <td>${p.orden_autorizada ? '<span style="color:#1a7a45;font-size:12px;">✓ Sí</span>' : '<span style="color:#c0392b;font-size:12px;font-weight:600;">⚠ No</span>'}</td>
       <td><div class="estudios-cell">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div></td>
       <td>${estadoBadge}</td>
+      <td><button onclick="editarDesdeResultados('${p.id}')" style="padding:4px 10px;font-size:12px;border:1px solid #ddd;border-radius:6px;background:white;cursor:pointer;">✏️ Editar</button></td>
     </tr>`;
   }).join('');
 
@@ -638,13 +680,26 @@ async function buscar() {
   document.getElementById('resultsArea').innerHTML=`
     <div style="margin-bottom:10px;font-size:13px;color:#888;">${data.length} resultado${data.length!==1?'s':''}</div>
     <table class="result-table">
-      <thead><tr><th>Fecha</th><th>Paciente</th><th>DNI</th><th>Celular</th><th>Obra Social</th><th>Estudios</th><th>Estado</th></tr></thead>
+      <thead><tr><th>Fecha</th><th>Paciente</th><th>DNI</th><th>Celular</th><th>Obra Social</th><th>Orden</th><th>Estudios</th><th>Estado</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div style="margin-top:16px;padding:14px;background:white;border:1px solid #e5e5e3;border-radius:12px;">
       <div style="font-size:11px;font-weight:600;letter-spacing:0.07em;color:#888;text-transform:uppercase;margin-bottom:10px;">Resumen de estudios</div>
       <div>${resumenHTML||'Sin datos'}</div>
     </div>`;
+}
+
+async function editarDesdeResultados(id) {
+  // Buscar en Supabase por id
+  const { data, error } = await sb.from('pacientes').select('*').eq('id', id).single();
+  if (error || !data) { showToast('Error al cargar paciente'); return; }
+
+  // Si no está en la lista de hoy, agregarlo temporalmente
+  const existe = pacientesHoy.find(p => p.id === id);
+  if (!existe) pacientesHoy.push(data);
+
+  switchTab('carga');
+  setTimeout(() => editarPaciente(id), 100);
 }
 
 function limpiarBusqueda() {
