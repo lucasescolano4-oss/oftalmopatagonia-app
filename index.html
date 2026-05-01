@@ -669,7 +669,10 @@ async function buscar() {
       <td>${p.orden_autorizada ? '<span style="color:#1a7a45;font-size:12px;">✓ Sí</span>' : '<span style="color:#c0392b;font-size:12px;font-weight:600;">⚠ No</span>'}</td>
       <td><div class="estudios-cell">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div></td>
       <td>${estadoBadge}</td>
-      <td><button onclick="editarDesdeResultados('${p.id}')" style="padding:4px 10px;font-size:12px;border:1px solid #ddd;border-radius:6px;background:white;cursor:pointer;">✏️ Editar</button></td>
+      <td style="display:flex;gap:5px;">
+        <button onclick="editarDesdeResultados('${p.id}')" style="padding:4px 10px;font-size:12px;border:1px solid #ddd;border-radius:6px;background:white;cursor:pointer;">✏️</button>
+        <button onclick="eliminarDesdeResultados('${p.id}', this)" style="padding:4px 10px;font-size:12px;border:1px solid #fcc;border-radius:6px;background:white;color:#e24b4a;cursor:pointer;">✕</button>
+      </td>
     </tr>`;
   }).join('');
 
@@ -687,6 +690,18 @@ async function buscar() {
       <div style="font-size:11px;font-weight:600;letter-spacing:0.07em;color:#888;text-transform:uppercase;margin-bottom:10px;">Resumen de estudios</div>
       <div>${resumenHTML||'Sin datos'}</div>
     </div>`;
+}
+
+async function eliminarDesdeResultados(id, btn) {
+  if (!confirm('¿Eliminar este paciente?')) return;
+  const { error } = await sb.from('pacientes').delete().eq('id', id);
+  if (error) { showToast('Error al eliminar'); return; }
+  // Sacar la fila de la tabla
+  btn.closest('tr').remove();
+  // Sacar de la lista de hoy si está
+  const idx = pacientesHoy.findIndex(p => p.id === id);
+  if (idx !== -1) { pacientesHoy.splice(idx, 1); renderLista(); }
+  showToast('✓ Paciente eliminado');
 }
 
 async function editarDesdeResultados(id) {
