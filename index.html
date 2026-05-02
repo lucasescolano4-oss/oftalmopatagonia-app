@@ -597,7 +597,10 @@ async function enviarPendientes() {
   if (pendientes.length === 0) { showToast('No hay pendientes para enviar'); return; }
 
   const hoy = new Date().toISOString().split('T')[0];
-  descargarCSV(generarCSV(pendientes), `envio_estudios_${hoy}.csv`);
+  const csv = generarCSV(pendientes);
+  const nombre = `envio_estudios_${hoy}.csv`;
+
+  await compartirODescargar(csv, nombre);
 
   // Marcar como enviados
   const ids = pendientes.map(p => p.id);
@@ -613,7 +616,10 @@ async function reenviarSeleccionados() {
   if (seleccionados.size === 0) return;
   const lista = pacientesHoy.filter(p => seleccionados.has(p.id));
   const hoy = new Date().toISOString().split('T')[0];
-  descargarCSV(generarCSV(lista), `reenvio_estudios_${hoy}.csv`);
+  const csv = generarCSV(lista);
+  const nombre = `reenvio_estudios_${hoy}.csv`;
+
+  await compartirODescargar(csv, nombre);
 
   // Marcar como enviados también
   await marcarComoEnviados([...seleccionados]);
@@ -622,6 +628,32 @@ async function reenviarSeleccionados() {
   renderLista();
 
   showToast(`✓ ${lista.length} paciente(s) listos para reenviar`);
+}
+
+// Compartir nativo en celular o descargar en PC
+async function compartirODescargar(csv, nombre) {
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const file = new File([blob], nombre, { type: 'text/csv' });
+
+  // Si el navegador soporta compartir archivos (celular)
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({
+        title: 'Lista de estudios',
+        files: [file]
+      });
+      return;
+    } catch (err) {
+      // Si cancela el menú de compartir, no hacer nada
+      if (err.name === 'AbortError') return;
+    }
+  }
+
+  // Fallback: descarga normal (PC)
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nombre; a.click();
+  URL.revokeObjectURL(url);
 }
 
 function exportarCSV() {
