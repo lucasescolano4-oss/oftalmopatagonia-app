@@ -660,7 +660,8 @@ async function buscar() {
     const estadoBadge = p.enviado
       ? `<span class="badge-enviado">✓ ENV</span>`
       : `<span class="badge-pendiente">⏳ PEND</span>`;
-    return `<tr>
+    return `<tr data-id="${p.id}" data-nombre="${p.nombre_completo}" data-dni="${p.dni}" data-celular="${p.celular}" data-fecha="${p.fecha}" data-estudios="${p.estudios.join('|')}">
+      <td><input type="checkbox" class="check-resultado" value="${p.id}"></td>
       <td>${fechaStr}</td>
       <td><strong>${p.nombre_completo}</strong></td>
       <td>${p.dni}</td>
@@ -681,15 +682,49 @@ async function buscar() {
   data.forEach(p => p.estudios.forEach(e => { resumenEstudios[e] = (resumenEstudios[e]||0)+1; }));
   const resumenHTML = Object.entries(resumenEstudios).sort((a,b)=>b[1]-a[1]).map(([e,n])=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:#f0f0ee;border:1px solid #e0e0e0;border-radius:99px;font-size:12px;margin:3px;"><strong>${n}</strong> ${e}</span>`).join('');
   document.getElementById('resultsArea').innerHTML=`
-    <div style="margin-bottom:10px;font-size:13px;color:#888;">${data.length} resultado${data.length!==1?'s':''}</div>
+    <div style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:13px;color:#888;">${data.length} resultado${data.length!==1?'s':''}</div>
+      <button onclick="reenviarDesdeResultados()" style="padding:7px 16px;font-size:13px;font-weight:500;background:#25D366;color:white;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;">📤 Reenviar seleccionados</button>
+    </div>
     <table class="result-table">
-      <thead><tr><th>Fecha</th><th>Paciente</th><th>DNI</th><th>Celular</th><th>Obra Social</th><th>Orden</th><th>Estudios</th><th>Estado</th><th></th></tr></thead>
+      <thead><tr><th><input type="checkbox" id="checkTodosResultados" onclick="toggleTodosResultados()"></th><th>Fecha</th><th>Paciente</th><th>DNI</th><th>Celular</th><th>Obra Social</th><th>Orden</th><th>Estudios</th><th>Estado</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div style="margin-top:16px;padding:14px;background:white;border:1px solid #e5e5e3;border-radius:12px;">
       <div style="font-size:11px;font-weight:600;letter-spacing:0.07em;color:#888;text-transform:uppercase;margin-bottom:10px;">Resumen de estudios</div>
       <div>${resumenHTML||'Sin datos'}</div>
     </div>`;
+}
+
+function toggleTodosResultados() {
+  const checked = document.getElementById('checkTodosResultados').checked;
+  document.querySelectorAll('.check-resultado').forEach(c => c.checked = checked);
+}
+
+async function reenviarDesdeResultados() {
+  const checks = [...document.querySelectorAll('.check-resultado:checked')];
+  if (checks.length === 0) { showToast('⚠️ Seleccioná al menos un paciente'); return; }
+
+  const lista = checks.map(c => {
+    const tr = c.closest('tr');
+    return {
+      nombre_completo: tr.dataset.nombre,
+      dni: tr.dataset.dni,
+      celular: tr.dataset.celular,
+      fecha: tr.dataset.fecha,
+      estudios: tr.dataset.estudios.split('|')
+    };
+  });
+
+  const hoy = new Date().toISOString().split('T')[0];
+  descargarCSV(generarCSV(lista), `reenvio_${hoy}.csv`);
+
+  // Marcar como enviados en Supabase
+  const ids = checks.map(c => c.value);
+  await sb.from('pacientes').update({ enviado: true }).in('id', ids);
+
+  showToast(`✓ ${lista.length} paciente(s) listos para reenviar`);
+  checks.forEach(c => c.checked = false);
 }
 
 async function eliminarDesdeResultados(id, btn) {
