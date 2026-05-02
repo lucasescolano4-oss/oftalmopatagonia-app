@@ -68,6 +68,8 @@
   .paciente-card.seleccionado { border-color: #378add; background: #f0f7ff; }
   .paciente-card.sin-orden { border-color: #e24b4a; background: #fff5f5; }
   .badge-sin-orden { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: #ffe0e0; color: #c0392b; letter-spacing: 0.04em; border: 1px solid #e24b4a60; white-space: nowrap; }
+  .badge-informe { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: #e8f4fd; color: #185fa5; letter-spacing: 0.04em; border: 1px solid #378add60; white-space: nowrap; cursor:pointer; user-select:none; transition: all 0.15s; }
+  .badge-informe.hecho { background: #d4f5e2; color: #1a7a45; border-color: #25D36640; }
   @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; } }
 
   /* Checkbox personalizado */
@@ -385,6 +387,16 @@ async function guardarPaciente() {
   showToast('✓ Paciente guardado');
 }
 
+async function toggleInforme(id, i) {
+  const p = pacientesHoy[i];
+  const nuevoEstado = !p.informe_realizado;
+  const { error } = await sb.from('pacientes').update({ informe_realizado: nuevoEstado }).eq('id', id);
+  if (error) { showToast('Error al actualizar informe'); return; }
+  pacientesHoy[i].informe_realizado = nuevoEstado;
+  renderLista();
+  showToast(nuevoEstado ? '✓ Informe marcado como hecho' : 'Informe desmarcado');
+}
+
 function editarPaciente(id) {
   const p = pacientesHoy.find(x => x.id === id);
   if (!p) return;
@@ -549,6 +561,7 @@ function renderLista() {
       <div class="paciente-info">
         <div class="paciente-nombre">${p.nombre_completo} ${badge}</div>
         <div class="paciente-meta">DNI ${p.dni} · +${p.celular}${p.obra_social ? ' · ' + p.obra_social : ''} · ${ordenBadge}</div>
+        <div style="margin-top:5px;"><span class="badge-informe ${p.informe_realizado?'hecho':''}" onclick="toggleInforme('${p.id}',${i})">${p.informe_realizado ? '📋 Informe hecho' : '📋 Marcar informe'}</span></div>
         <div class="paciente-estudios">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
       </div>
       <div class="card-actions">
@@ -700,6 +713,7 @@ async function buscar() {
       <td>+${p.celular}</td>
       <td>${p.obra_social||'-'}</td>
       <td>${p.orden_autorizada ? '<span style="color:#1a7a45;font-size:12px;">✓ Sí</span>' : '<span style="color:#c0392b;font-size:12px;font-weight:600;">⚠ No</span>'}</td>
+      <td><span onclick="toggleInformeResultado('${p.id}', this)" style="cursor:pointer;font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid #ddd;background:${p.informe_realizado?'#d4f5e2':'white'};color:${p.informe_realizado?'#1a7a45':'#888'};user-select:none;">${p.informe_realizado ? '✓ Hecho' : 'Marcar'}</span></td>
       <td><div class="estudios-cell">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div></td>
       <td>${estadoBadge}</td>
       <td style="display:flex;gap:5px;">
@@ -719,13 +733,27 @@ async function buscar() {
       <button onclick="reenviarDesdeResultados()" style="padding:7px 16px;font-size:13px;font-weight:500;background:#25D366;color:white;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;">📤 Reenviar seleccionados</button>
     </div>
     <table class="result-table">
-      <thead><tr><th><input type="checkbox" id="checkTodosResultados" onclick="toggleTodosResultados()"></th><th>Fecha</th><th>Paciente</th><th>DNI</th><th>Celular</th><th>Obra Social</th><th>Orden</th><th>Estudios</th><th>Estado</th><th></th></tr></thead>
+      <thead><tr><th><input type="checkbox" id="checkTodosResultados" onclick="toggleTodosResultados()"></th><th>Fecha</th><th>Paciente</th><th>DNI</th><th>Celular</th><th>Obra Social</th><th>Orden</th><th>Informe</th><th>Estudios</th><th>Estado</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div style="margin-top:16px;padding:14px;background:white;border:1px solid #e5e5e3;border-radius:12px;">
       <div style="font-size:11px;font-weight:600;letter-spacing:0.07em;color:#888;text-transform:uppercase;margin-bottom:10px;">Resumen de estudios</div>
       <div>${resumenHTML||'Sin datos'}</div>
     </div>`;
+}
+
+async function toggleInformeResultado(id, el) {
+  const hecho = el.textContent.trim() === '✓ Hecho';
+  const nuevoEstado = !hecho;
+  const { error } = await sb.from('pacientes').update({ informe_realizado: nuevoEstado }).eq('id', id);
+  if (error) { showToast('Error al actualizar'); return; }
+  el.textContent = nuevoEstado ? '✓ Hecho' : 'Marcar';
+  el.style.background = nuevoEstado ? '#d4f5e2' : 'white';
+  el.style.color = nuevoEstado ? '#1a7a45' : '#888';
+  // actualizar en lista de hoy si existe
+  const p = pacientesHoy.find(x => x.id === id);
+  if (p) { p.informe_realizado = nuevoEstado; renderLista(); }
+  showToast(nuevoEstado ? '✓ Informe marcado' : 'Informe desmarcado');
 }
 
 function toggleTodosResultados() {
