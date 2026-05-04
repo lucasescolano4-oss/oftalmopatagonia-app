@@ -471,7 +471,10 @@ async function toggleInforme(id, i) {
   const { error } = await sb.from('pacientes').update({ informe_realizado: nuevoEstado }).eq('id', id);
   if (error) { showToast('Error al actualizar informe'); return; }
   pacientesHoy[i].informe_realizado = nuevoEstado;
-  if (nuevoEstado) window.open('https://docs.google.com/forms/d/e/1FAIpQLSdTf1c_ehg8vfUyKIPYlRawuCDpdREAmne7biMvGQa-bZ3T3w/viewform', '_blank');
+  if (nuevoEstado) {
+    const formsUrl = medicoActual === 'Dr. Polzonetti Ricardo' ? 'https://docs.google.com/forms/d/e/1FAIpQLScKxKG5at29vGwIa6qi47jotT20ps0DYZuDcjItZJPOzsUrSQ/viewform?fbzx=-3855424157826135869' : 'https://docs.google.com/forms/d/e/1FAIpQLSdTf1c_ehg8vfUyKIPYlRawuCDpdREAmne7biMvGQa-bZ3T3w/viewform';
+    window.open(formsUrl, '_blank');
+  }
   renderLista();
   showToast(nuevoEstado ? '✓ Informe marcado — abriendo formulario' : 'Informe desmarcado');
 }
