@@ -371,7 +371,8 @@ function cambiarMedico() {
 }
 
 async function cargarProximoNumero() {
-  const { data } = await sb.from('pacientes').select('numero_orden').order('numero_orden', { ascending: false }).limit(1);
+  if (!medicoActual) return;
+  const { data } = await sb.from('pacientes').select('numero_orden').eq('medico', medicoActual).order('numero_orden', { ascending: false }).limit(1);
   const ultimo = data && data.length > 0 ? (data[0].numero_orden || 0) : 0;
   document.getElementById('previewNumero').textContent = ultimo + 1;
 }
@@ -443,8 +444,13 @@ async function guardarPaciente() {
   setSyncStatus('saving');
 
   const obraSocial = document.getElementById('obraSocial').value.trim();
+
+  // Calcular próximo número de orden para este médico
+  const { data: ultimoData } = await sb.from('pacientes').select('numero_orden').eq('medico', medicoActual).order('numero_orden', { ascending: false }).limit(1);
+  const proximoNumero = (ultimoData && ultimoData.length > 0 ? (ultimoData[0].numero_orden || 0) : 0) + 1;
+
   const { data, error } = await sb.from('pacientes')
-    .insert([{ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, enviado: false, obra_social: obraSocial, orden_autorizada: ordenAutorizada, medico: medicoActual }])
+    .insert([{ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, enviado: false, obra_social: obraSocial, orden_autorizada: ordenAutorizada, medico: medicoActual, numero_orden: proximoNumero }])
     .select();
 
   btn.disabled = false; btn.textContent = '+ Agregar paciente';
