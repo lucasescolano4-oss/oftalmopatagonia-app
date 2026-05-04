@@ -142,6 +142,7 @@
   .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: #25D366; }
   .sync-dot.saving { background: #FAC775; }
   .sync-dot.error { background: #e24b4a; }
+  .numero-orden { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%; background:#1a1a1a; color:white; font-size:13px; font-weight:700; flex-shrink:0; margin-top:3px; }
 </style>
 </head>
 <body>
@@ -173,6 +174,14 @@
   <div class="layout">
     <div class="panel-form">
       <div class="section-label">Nuevo paciente</div>
+
+      <div class="form-group" style="background:#f5f5f3;border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;">
+        <div class="numero-orden" id="previewNumero">—</div>
+        <div>
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Número de orden</div>
+          <div style="font-size:13px;color:#555;">Se asigna automáticamente</div>
+        </div>
+      </div>
 
       <div class="form-group">
         <label class="form-label">Nombre y apellido</label>
@@ -304,6 +313,13 @@ function init() {
   });
 
   cargarPacientesHoy();
+  cargarProximoNumero();
+}
+
+async function cargarProximoNumero() {
+  const { data } = await sb.from('pacientes').select('numero_orden').order('numero_orden', { ascending: false }).limit(1);
+  const ultimo = data && data.length > 0 ? (data[0].numero_orden || 0) : 0;
+  document.getElementById('previewNumero').textContent = ultimo + 1;
 }
 
 function switchTab(tab) {
@@ -384,6 +400,7 @@ async function guardarPaciente() {
   pacientesHoy.push(data[0]);
   renderLista();
   resetForm();
+  cargarProximoNumero();
   showToast('✓ Paciente guardado');
 }
 
@@ -393,8 +410,9 @@ async function toggleInforme(id, i) {
   const { error } = await sb.from('pacientes').update({ informe_realizado: nuevoEstado }).eq('id', id);
   if (error) { showToast('Error al actualizar informe'); return; }
   pacientesHoy[i].informe_realizado = nuevoEstado;
+  if (nuevoEstado) window.open('https://docs.google.com/forms/d/e/1FAIpQLSdTf1c_ehg8vfUyKIPYlRawuCDpdREAmne7biMvGQa-bZ3T3w/viewform', '_blank');
   renderLista();
-  showToast(nuevoEstado ? '✓ Informe marcado como hecho' : 'Informe desmarcado');
+  showToast(nuevoEstado ? '✓ Informe marcado — abriendo formulario' : 'Informe desmarcado');
 }
 
 function editarPaciente(id) {
@@ -557,6 +575,7 @@ function renderLista() {
     return `
     <div class="paciente-card ${p.enviado?'enviado':''} ${estaSeleccionado?'seleccionado':''} ${sinOrdenClass}">
       <div class="card-checkbox ${estaSeleccionado?'checked':''}" onclick="toggleCheckbox('${p.id}')"></div>
+      <div class="numero-orden" style="width:28px;height:28px;font-size:12px;">${p.numero_orden||'—'}</div>
       <div class="paciente-initials">${initials}</div>
       <div class="paciente-info">
         <div class="paciente-nombre">${p.nombre_completo} ${badge}</div>
@@ -707,6 +726,7 @@ async function buscar() {
       : `<span class="badge-pendiente">⏳ PEND</span>`;
     return `<tr data-id="${p.id}" data-nombre="${p.nombre_completo}" data-dni="${p.dni}" data-celular="${p.celular}" data-fecha="${p.fecha}" data-estudios="${p.estudios.join('|')}">
       <td><input type="checkbox" class="check-resultado" value="${p.id}"></td>
+      <td style="font-weight:700;color:#555;">${p.numero_orden||'—'}</td>
       <td>${fechaStr}</td>
       <td><strong>${p.nombre_completo}</strong></td>
       <td>${p.dni}</td>
@@ -733,7 +753,7 @@ async function buscar() {
       <button onclick="reenviarDesdeResultados()" style="padding:7px 16px;font-size:13px;font-weight:500;background:#25D366;color:white;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;">📤 Reenviar seleccionados</button>
     </div>
     <table class="result-table">
-      <thead><tr><th><input type="checkbox" id="checkTodosResultados" onclick="toggleTodosResultados()"></th><th>Fecha</th><th>Paciente</th><th>DNI</th><th>Celular</th><th>Obra Social</th><th>Orden</th><th>Informe</th><th>Estudios</th><th>Estado</th><th></th></tr></thead>
+      <thead><tr><th><input type="checkbox" id="checkTodosResultados" onclick="toggleTodosResultados()"></th><th>#</th><th>Fecha</th><th>Paciente</th><th>DNI</th><th>Celular</th><th>Obra Social</th><th>Orden</th><th>Informe</th><th>Estudios</th><th>Estado</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div style="margin-top:16px;padding:14px;background:white;border:1px solid #e5e5e3;border-radius:12px;">
@@ -750,6 +770,7 @@ async function toggleInformeResultado(id, el) {
   el.textContent = nuevoEstado ? '✓ Hecho' : 'Marcar';
   el.style.background = nuevoEstado ? '#d4f5e2' : 'white';
   el.style.color = nuevoEstado ? '#1a7a45' : '#888';
+  if (nuevoEstado) window.open('https://docs.google.com/forms/d/e/1FAIpQLSdTf1c_ehg8vfUyKIPYlRawuCDpdREAmne7biMvGQa-bZ3T3w/viewform', '_blank');
   // actualizar en lista de hoy si existe
   const p = pacientesHoy.find(x => x.id === id);
   if (p) { p.informe_realizado = nuevoEstado; renderLista(); }
