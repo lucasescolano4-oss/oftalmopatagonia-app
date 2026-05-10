@@ -296,6 +296,7 @@
       <input type="date" id="searchFechaDesde" title="Fecha desde">
       <input type="date" id="searchFechaHasta" title="Fecha hasta">
       <button class="btn-limpiar" onclick="limpiarBusqueda()">Limpiar</button>
+      <button class="btn-limpiar" id="btnSoloPendientes" onclick="toggleSoloPendientes()" style="border-color:#FAC775;color:#a07000;background:#fff8e6;">⏳ Solo pendientes</button>
       <button class="btn-buscar" onclick="buscar()">Buscar</button>
     </div>
     <div class="results-area" id="resultsArea">
@@ -759,6 +760,19 @@ function exportarCSV() {
 }
 
 // ── BÚSQUEDA ──
+let soloPendientes = false;
+
+function toggleSoloPendientes() {
+  soloPendientes = !soloPendientes;
+  const btn = document.getElementById('btnSoloPendientes');
+  if (soloPendientes) {
+    btn.style.background = '#FAC775'; btn.style.color = '#7a4f00'; btn.style.borderColor = '#e0a800';
+  } else {
+    btn.style.background = '#fff8e6'; btn.style.color = '#a07000'; btn.style.borderColor = '#FAC775';
+  }
+  buscar();
+}
+
 async function buscar() {
   const query = document.getElementById('searchQuery').value.trim();
   const desde = document.getElementById('searchFechaDesde').value;
@@ -776,6 +790,7 @@ async function buscar() {
   if (desde) q = q.gte('fecha',desde);
   if (hasta) q = q.lte('fecha',hasta);
   if (obraS) q = q.ilike('obra_social',`%${obraS}%`);
+  if (soloPendientes) q = q.eq('enviado', false);
   q = q.limit(200);
 
   const { data, error } = await q;
@@ -900,6 +915,9 @@ async function editarDesdeResultados(id) {
 
 function limpiarBusqueda() {
   document.getElementById('searchQuery').value='';
+  soloPendientes = false;
+  const btn = document.getElementById('btnSoloPendientes');
+  btn.style.background = '#fff8e6'; btn.style.color = '#a07000'; btn.style.borderColor = '#FAC775';
   document.getElementById('searchObraSocial').value='';
   document.getElementById('searchFechaDesde').value='';
   document.getElementById('searchFechaHasta').value='';
