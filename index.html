@@ -196,6 +196,17 @@
   .btn-pdf { padding:11px 22px; background:#185fa5; color:white; border:none; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; transition:opacity 0.15s; }
   .btn-pdf:hover { opacity:0.85; }
   .btn-pdf:disabled { opacity:0.4; cursor:not-allowed; }
+  .informe-estudio-section { margin-bottom:14px; border:1px solid #d8e4f0; border-radius:10px; overflow:hidden; }
+  .informe-estudio-titulo { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:white; background:#185fa5; padding:7px 14px; }
+  .informe-ojo-grid { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:#dde8f5; }
+  .informe-ojo-item { padding:11px 13px; background:white; }
+  .informe-ojo-item.full-width { grid-column:1 / -1; }
+  .informe-ojo-label { font-size:10px; font-weight:700; color:#185fa5; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
+  .opciones-chips { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:7px; }
+  .opcion-chip { font-size:11px; padding:3px 9px; border:1px solid #ddd; border-radius:99px; background:white; cursor:pointer; color:#555; transition:all 0.12s; line-height:1.5; }
+  .opcion-chip:hover { border-color:#378add; color:#185fa5; background:#f0f7ff; }
+  .opcion-chip.normal-chip { border-color:#25D366; color:#1a7a45; background:#f0fff6; font-weight:600; }
+  .opcion-chip.selected { border-color:#378add; color:#185fa5; background:#e8f4fd; font-weight:600; }
 </style>
 </head>
 <body>
@@ -1084,26 +1095,93 @@ async function doLogout() {
 
 // ─── MODAL INFORME ────────────────────────────────────────────────────────────
 
+const ESTUDIOS_CONFIG = {
+  'Retinografía': {
+    label: 'Fondo de Ojo (Retinografía)',
+    campos: [
+      { id:'FOOD',  ojo:'OD — Ojo Derecho',   normal:'Brillo Macular conservado, vasos sin alteraciones, papila bordes netos.', opciones:[{label:'✓ Normal',texto:'Brillo Macular conservado, vasos sin alteraciones, papila bordes netos.'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'FOOI',  ojo:'OI — Ojo Izquierdo', normal:'Brillo Macular conservado, vasos sin alteraciones, papila bordes netos.', opciones:[{label:'✓ Normal',texto:'Brillo Macular conservado, vasos sin alteraciones, papila bordes netos.'},{label:'No solicitado',texto:'Estudio no solicitado'}] }
+    ]
+  },
+  'OCT': {
+    label: 'OCT',
+    campos: [
+      { id:'OCTOD',  ojo:'OD — Retinal',                        normal:'Espesor retinal sin alteraciones en todos los cortes observados, depresión foveal conservado', opciones:[{label:'✓ Normal',texto:'Espesor retinal sin alteraciones en todos los cortes observados, depresión foveal conservado'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'OCTOI',  ojo:'OI — Retinal',                        normal:'Espesor retinal sin alteraciones en todos los cortes observados, depresión foveal conservado', opciones:[{label:'✓ Normal',texto:'Espesor retinal sin alteraciones en todos los cortes observados, depresión foveal conservado'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'OCTCFN', ojo:'CFN — Capa de Fibras Nerviosas', fullWidth:true, normal:'Dentro de los valores normales en los 4 cuadrantes AMBOS OJOS', opciones:[{label:'✓ Normal (AO)',texto:'Dentro de los valores normales en los 4 cuadrantes AMBOS OJOS'},{label:'Normal OD',texto:'OD: Dentro de los valores normales en los 4 cuadrantes'},{label:'Normal OI',texto:'OI: Dentro de los valores normales en los 4 cuadrantes'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'OCTCG',  ojo:'CG — Células Ganglionares',     fullWidth:true, normal:'Capa de células ganglionares dentro de los parámetros normales para la edad en AMBOS OJOS', opciones:[{label:'✓ Normal (AO)',texto:'Capa de células ganglionares dentro de los parámetros normales para la edad en AMBOS OJOS'},{label:'Normal OD',texto:'OD: Capa de células ganglionares dentro de los parámetros normales para la edad'},{label:'Normal OI',texto:'OI: Capa de células ganglionares dentro de los parámetros normales para la edad'},{label:'No solicitado',texto:'Estudio no solicitado'}] }
+    ]
+  },
+  'Paquimetría': {
+    label: 'Paquimetría',
+    campos: [
+      { id:'PAQOD',  ojo:'OD — Paquimetría Corneal', normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'PAQOI',  ojo:'OI — Paquimetría Corneal', normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'CPIOOD', ojo:'OD — CPIO',                normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'CPIOOI', ojo:'OI — CPIO',                normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] }
+    ]
+  },
+  'Campimetría': {
+    label: 'Campimetría Visual (CVC)',
+    campos: [
+      { id:'CVCOD', ojo:'OD — Ojo Derecho',   normal:'No se observan escotomas sin alteraciones de la sensibilidad', opciones:[{label:'✓ Normal',texto:'No se observan escotomas sin alteraciones de la sensibilidad'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'CVCOI', ojo:'OI — Ojo Izquierdo', normal:'No se observan escotomas sin alteraciones de la sensibilidad', opciones:[{label:'✓ Normal',texto:'No se observan escotomas sin alteraciones de la sensibilidad'},{label:'No solicitado',texto:'Estudio no solicitado'}] }
+    ]
+  },
+  'UBM': {
+    label: 'UBM (Ultrabiomicroscopía)',
+    campos: [
+      { id:'UBMOD', ojo:'OD — Ojo Derecho',   normal:'Angulo Abierto en los 4 cuadrantes', opciones:[{label:'✓ Ángulo abierto',texto:'Angulo Abierto en los 4 cuadrantes'},{label:'2c ocluible',texto:'2 cuadrantes ocluible 2 ángulo abierto'},{label:'3c ocluible',texto:'3 cuadrantes ocluible 1 abierto'},{label:'Ángulos cerrados',texto:'Ángulos cerrados en todos los cuadrantes'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'UBMOI', ojo:'OI — Ojo Izquierdo', normal:'Angulo Abierto en los 4 cuadrantes', opciones:[{label:'✓ Ángulo abierto',texto:'Angulo Abierto en los 4 cuadrantes'},{label:'2c ocluible',texto:'2 cuadrantes ocluible 2 ángulo abierto'},{label:'3c ocluible',texto:'3 cuadrantes ocluible 1 abierto'},{label:'Ángulos cerrados',texto:'Ángulos cerrados en todos los cuadrantes'},{label:'No solicitado',texto:'Estudio no solicitado'}] }
+    ]
+  },
+  'Biometría': {
+    label: 'Biometría (LIO)',
+    campos: [
+      { id:'LIOOD', ojo:'OD — Ojo Derecho',   normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'LIOOI', ojo:'OI — Ojo Izquierdo', normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] }
+    ]
+  }
+};
+
 let _informeId = null;
 let _informeIdx = -1;
 let _informeResultadoEl = null;
 
 function abrirModalInforme(id, i) {
   const p = pacientesHoy[i];
-  _informeId = id;
-  _informeIdx = i;
-  const fecha = p.fecha ? new Date(p.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day:'numeric', month:'long', year:'numeric' }) : p.fecha;
+  _informeId = id; _informeIdx = i;
+  const fecha = p.fecha ? new Date(p.fecha+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'}) : '';
   document.getElementById('modalInformeSub').textContent = `${p.nombre_completo} · DNI ${p.dni} · ${fecha}`;
-  const estudios = (p.estudios && p.estudios.length) ? p.estudios : ['Estudio oftalmológico'];
-  const fields = estudios.map(estudio => `
-    <div class="informe-section">
-      <span class="informe-section-label">${estudio}</span>
-      <textarea class="informe-textarea" id="campo_${estudio.replace(/[^a-zA-Z0-9]/g,'_')}" placeholder="Hallazgos de ${estudio}..."></textarea>
-    </div>`).join('');
-  document.getElementById('modalInformeFields').innerHTML = fields;
+
+  const estudios = (p.estudios && p.estudios.length) ? p.estudios : [];
+  let html = '';
+  for (const estudio of estudios) {
+    const config = ESTUDIOS_CONFIG[estudio];
+    if (!config) {
+      html += `<div class="informe-estudio-section"><div class="informe-estudio-titulo">${estudio}</div><div style="padding:12px 14px;background:white;"><textarea class="informe-textarea" id="campo_${estudio.replace(/[^a-zA-Z0-9]/g,'_')}" placeholder="Hallazgos..."></textarea></div></div>`;
+      continue;
+    }
+    html += `<div class="informe-estudio-section"><div class="informe-estudio-titulo">${config.label}</div><div class="informe-ojo-grid">`;
+    for (const campo of config.campos) {
+      const isNormalChip = (op) => campo.normal && op.texto === campo.normal;
+      const chips = campo.opciones.map(op =>
+        `<button type="button" class="opcion-chip${isNormalChip(op)?' normal-chip':''}" data-id="${campo.id}" data-texto="${op.texto.replace(/"/g,'&quot;')}" onclick="setOpcionInforme('${campo.id}',this)">${op.label}</button>`
+      ).join('');
+      html += `<div class="informe-ojo-item${campo.fullWidth?' full-width':''}"><div class="informe-ojo-label">${campo.ojo}</div><div class="opciones-chips">${chips}</div><textarea class="informe-textarea" id="campo_${campo.id}">${campo.normal||''}</textarea></div>`;
+    }
+    html += `</div></div>`;
+  }
+  document.getElementById('modalInformeFields').innerHTML = html;
   document.getElementById('informeDiagnostico').value = '';
   document.getElementById('informeObservaciones').value = '';
   document.getElementById('modalInforme').classList.add('show');
+}
+
+function setOpcionInforme(id, btn) {
+  btn.closest('.opciones-chips').querySelectorAll('.opcion-chip').forEach(c => c.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('campo_' + id).value = btn.dataset.texto;
 }
 
 function cerrarModalInforme() {
@@ -1117,12 +1195,23 @@ async function generarYSubirInforme() {
   const btn = document.getElementById('btnGenerarPDF');
   btn.disabled = true; btn.textContent = 'Generando...';
 
-  const estudios = (p.estudios && p.estudios.length) ? p.estudios : ['Estudio oftalmológico'];
-  const hallazgos = {};
-  estudios.forEach(estudio => {
-    const el = document.getElementById('campo_' + estudio.replace(/[^a-zA-Z0-9]/g, '_'));
-    if (el && el.value.trim()) hallazgos[estudio] = el.value.trim();
-  });
+  const estudios = (p.estudios && p.estudios.length) ? p.estudios : [];
+  const secciones = [];
+  for (const estudio of estudios) {
+    const config = ESTUDIOS_CONFIG[estudio];
+    if (!config) {
+      const el = document.getElementById('campo_' + estudio.replace(/[^a-zA-Z0-9]/g,'_'));
+      if (el && el.value.trim()) secciones.push({ titulo: estudio, campos: [{ ojo:'', texto: el.value.trim() }] });
+      continue;
+    }
+    const campos = [];
+    for (const campo of config.campos) {
+      const el = document.getElementById('campo_' + campo.id);
+      const val = el ? el.value.trim() : '';
+      if (val) campos.push({ ojo: campo.ojo, texto: val });
+    }
+    if (campos.length) secciones.push({ titulo: config.label, campos });
+  }
   const diagnostico = document.getElementById('informeDiagnostico').value.trim();
   const observaciones = document.getElementById('informeObservaciones').value.trim();
 
@@ -1130,54 +1219,62 @@ async function generarYSubirInforme() {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
 
-  // Header azul
-  doc.setFillColor(24, 95, 165);
-  doc.rect(0, 0, pageW, 30, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(16); doc.setFont('helvetica', 'bold');
-  doc.text('OFTALMOPATAGONIA', pageW / 2, 13, { align: 'center' });
-  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-  doc.text('Roca 543, Esquel, Chubut  ·  Tel: 2945339020  ·  oftalmopatagoniaesquel@gmail.com', pageW / 2, 22, { align: 'center' });
+  doc.setFillColor(24,95,165); doc.rect(0,0,pageW,30,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text('OFTALMOPATAGONIA', pageW/2, 13, {align:'center'});
+  doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('Roca 543, Esquel, Chubut  ·  Tel: 2945339020  ·  oftalmopatagoniaesquel@gmail.com', pageW/2, 22, {align:'center'});
 
-  // Datos paciente
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(13); doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0,0,0); doc.setFontSize(13); doc.setFont('helvetica','bold');
   doc.text('INFORME OFTALMOLÓGICO', 14, 42);
-  doc.setFontSize(10); doc.setFont('helvetica', 'normal');
   const mpNum = medicoActual.includes('Escolano') ? 'MP 5030 / MN 163483' : 'MP 1486 / MN 52146';
-  const fechaStr = p.fecha ? new Date(p.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day:'numeric', month:'long', year:'numeric' }) : '';
+  const fechaStr = p.fecha ? new Date(p.fecha+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'}) : '';
+  doc.setFontSize(10); doc.setFont('helvetica','normal');
   doc.text(`Fecha: ${fechaStr}`, 14, 51);
   doc.text(`Paciente: ${p.nombre_completo}`, 14, 58);
   doc.text(`DNI: ${p.dni}`, 14, 65);
-  doc.text(`Obra social: ${p.obra_social || 'Particular'}`, 14, 72);
+  doc.text(`Obra social: ${p.obra_social||'Particular'}`, 14, 72);
   doc.text(`Médico: ${medicoActual}  —  ${mpNum}`, 14, 79);
-  doc.setDrawColor(200, 200, 200);
-  doc.line(14, 84, pageW - 14, 84);
+  doc.setDrawColor(200,200,200); doc.line(14,84,pageW-14,84);
 
   let y = 93;
+  const chk = (n) => { if (y+n > 270) { doc.addPage(); y = 20; } };
 
-  const addSection = (titulo, texto) => {
+  for (const sec of secciones) {
+    chk(18);
+    doc.setFillColor(232,244,253); doc.rect(14,y-5,pageW-28,9,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(24,95,165);
+    doc.text(sec.titulo.toUpperCase(), 16, y); y += 10;
+    for (const campo of sec.campos) {
+      if (campo.ojo) {
+        chk(12); doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(80,80,80);
+        doc.text(campo.ojo+':', 16, y); y += 5;
+      }
+      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(0,0,0);
+      const lines = doc.splitTextToSize(campo.texto, pageW-32);
+      chk(lines.length*6+4); doc.text(lines, 16, y); y += lines.length*6+5;
+    }
+    y += 3;
+  }
+
+  const addFinal = (titulo, texto) => {
     if (!texto) return;
-    if (y > 255) { doc.addPage(); y = 20; }
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(24, 95, 165);
-    doc.text(titulo.toUpperCase(), 14, y); y += 6;
-    doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 0, 0);
-    const lines = doc.splitTextToSize(texto, pageW - 28);
-    if (y + lines.length * 6 > 270) { doc.addPage(); y = 20; }
-    doc.text(lines, 14, y); y += lines.length * 6 + 8;
+    chk(20);
+    doc.setFillColor(232,244,253); doc.rect(14,y-5,pageW-28,9,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(24,95,165);
+    doc.text(titulo, 16, y); y += 10;
+    doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0);
+    const lines = doc.splitTextToSize(texto, pageW-32);
+    chk(lines.length*6); doc.text(lines, 16, y); y += lines.length*6+8;
   };
+  addFinal('DIAGNÓSTICO', diagnostico);
+  addFinal('INDICACIONES / OBSERVACIONES', observaciones);
 
-  for (const [estudio, texto] of Object.entries(hallazgos)) addSection(estudio, texto);
-  addSection('Diagnóstico', diagnostico);
-  addSection('Indicaciones / Observaciones', observaciones);
-
-  // Firma
-  y = Math.max(y + 10, 230);
+  y = Math.max(y+10, 230);
   if (y > 265) { doc.addPage(); y = 30; }
-  doc.setDrawColor(120); doc.line(14, y, 82, y); y += 5;
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(80, 80, 80);
-  doc.text(medicoActual, 14, y); y += 5;
-  doc.text(mpNum, 14, y);
+  doc.setDrawColor(120); doc.line(14,y,82,y); y += 5;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(80,80,80);
+  doc.text(medicoActual, 14, y); y += 5; doc.text(mpNum, 14, y);
 
   const filename = `Informe_${p.dni}_${p.fecha}.pdf`;
   const pdfBase64 = doc.output('datauristring').split(',')[1];
@@ -1185,12 +1282,11 @@ async function generarYSubirInforme() {
   let subidoOk = false;
   try {
     const resp = await fetch('https://botwhatsapp-production-fdbe.up.railway.app/upload-informe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ filename, pdfBase64, dni: p.dni })
     });
     subidoOk = resp.ok;
-  } catch (_) { /* fallback a descarga */ }
+  } catch(_) {}
 
   if (!subidoOk) doc.save(filename);
 
@@ -1204,7 +1300,6 @@ async function generarYSubirInforme() {
     }
     renderLista();
   }
-
   cerrarModalInforme();
   showToast(subidoOk ? '✓ Informe subido a Drive' : '⚠️ PDF descargado — subilo a Drive manualmente');
   btn.disabled = false; btn.textContent = '📄 Generar y subir PDF';
