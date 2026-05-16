@@ -207,6 +207,8 @@
   .opcion-chip:hover { border-color:#378add; color:#185fa5; background:#f0f7ff; }
   .opcion-chip.normal-chip { border-color:#25D366; color:#1a7a45; background:#f0fff6; font-weight:600; }
   .opcion-chip.selected { border-color:#378add; color:#185fa5; background:#e8f4fd; font-weight:600; }
+  .informe-subgrupo-titulo { grid-column:1/-1; background:#edf3fa; padding:5px 13px; font-size:10px; font-weight:700; color:#185fa5; letter-spacing:0.06em; text-transform:uppercase; border-top:1px solid #dde8f5; }
+  .informe-subgrupo-titulo:first-child { border-top:none; }
 </style>
 </head>
 <body>
@@ -1097,51 +1099,57 @@ async function doLogout() {
 
 const ESTUDIOS_CONFIG = {
   'Retinografía': {
-    label: 'Fondo de Ojo (Retinografía)',
+    label: 'Retinografía',
     campos: [
-      { id:'FOOD',  ojo:'OD — Ojo Derecho',   normal:'Brillo Macular conservado, vasos sin alteraciones, papila bordes netos.', opciones:[{label:'✓ Normal',texto:'Brillo Macular conservado, vasos sin alteraciones, papila bordes netos.'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
-      { id:'FOOI',  ojo:'OI — Ojo Izquierdo', normal:'Brillo Macular conservado, vasos sin alteraciones, papila bordes netos.', opciones:[{label:'✓ Normal',texto:'Brillo Macular conservado, vasos sin alteraciones, papila bordes netos.'},{label:'No solicitado',texto:'Estudio no solicitado'}] }
+      { id:'FOOD',  ojo:'OD: Ojo Derecho',   normal:'Brillo Macular conservado, vasos sin alteraciones, papila bordes netos.', opciones:[{label:'✓ Normal',texto:'Brillo Macular conservado, vasos sin alteraciones, papila bordes netos.'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'FOOI',  ojo:'OI: Ojo Izquierdo', normal:'Brillo Macular conservado, vasos sin alteraciones, papila bordes netos.', opciones:[{label:'✓ Normal',texto:'Brillo Macular conservado, vasos sin alteraciones, papila bordes netos.'},{label:'No solicitado',texto:'Estudio no solicitado'}] }
     ]
   },
   'OCT': {
-    label: 'OCT',
-    campos: [
-      { id:'OCTOD',    ojo:'OD — OCT MACULAR', normal:'Espesor retinal sin alteraciones en todos los cortes observados, depresión foveal conservado', opciones:[{label:'✓ Normal',texto:'Espesor retinal sin alteraciones en todos los cortes observados, depresión foveal conservado'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
-      { id:'OCTOI',    ojo:'OI — OCT MACULAR', normal:'Espesor retinal sin alteraciones en todos los cortes observados, depresión foveal conservado', opciones:[{label:'✓ Normal',texto:'Espesor retinal sin alteraciones en todos los cortes observados, depresión foveal conservado'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
-      { id:'OCTCFNOD', ojo:'OD — CFN',         normal:'OD: Dentro de los valores normales en los 4 cuadrantes', opciones:[{label:'✓ Normal',texto:'OD: Dentro de los valores normales en los 4 cuadrantes'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
-      { id:'OCTCFNOI', ojo:'OI — CFN',         normal:'OI: Dentro de los valores normales en los 4 cuadrantes', opciones:[{label:'✓ Normal',texto:'OI: Dentro de los valores normales en los 4 cuadrantes'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
-      { id:'OCTCGOD',  ojo:'OD — CG',          normal:'OD: Capa de células ganglionares dentro de los parámetros normales para la edad', opciones:[{label:'✓ Normal',texto:'OD: Capa de células ganglionares dentro de los parámetros normales para la edad'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
-      { id:'OCTCGOI',  ojo:'OI — CG',          normal:'OI: Capa de células ganglionares dentro de los parámetros normales para la edad', opciones:[{label:'✓ Normal',texto:'OI: Capa de células ganglionares dentro de los parámetros normales para la edad'},{label:'No solicitado',texto:'Estudio no solicitado'}] }
+    label: 'OCT (Tomografía de Coherencia Óptica) - REVO FUNDUS CAMARA',
+    grupos: [
+      { titulo: 'OCT MACULAR', campos: [
+        { id:'OCTOD', ojo:'OD: Ojo Derecho', normal:'Espesor retinal sin alteraciones en todos los cortes observados, depresión foveal conservado', opciones:[{label:'✓ Normal',texto:'Espesor retinal sin alteraciones en todos los cortes observados, depresión foveal conservado'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
+        { id:'OCTOI', ojo:'OI: Ojo Izquierdo', normal:'Espesor retinal sin alteraciones en todos los cortes observados, depresión foveal conservado', opciones:[{label:'✓ Normal',texto:'Espesor retinal sin alteraciones en todos los cortes observados, depresión foveal conservado'},{label:'No solicitado',texto:'Estudio no solicitado'}] }
+      ]},
+      { titulo: 'CFN: Capa de Fibras Nerviosas', campos: [
+        { id:'OCTCFNOD', ojo:'OD: Ojo Derecho', normal:'Dentro de los valores normales en los 4 cuadrantes', opciones:[{label:'✓ Normal',texto:'Dentro de los valores normales en los 4 cuadrantes'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
+        { id:'OCTCFNOI', ojo:'OI: Ojo Izquierdo', normal:'Dentro de los valores normales en los 4 cuadrantes', opciones:[{label:'✓ Normal',texto:'Dentro de los valores normales en los 4 cuadrantes'},{label:'No solicitado',texto:'Estudio no solicitado'}] }
+      ]},
+      { titulo: 'CG: Capa de Células Ganglionares', campos: [
+        { id:'OCTCGOD', ojo:'OD: Ojo Derecho', normal:'Capa de células ganglionares dentro de los parámetros normales para la edad', opciones:[{label:'✓ Normal',texto:'Capa de células ganglionares dentro de los parámetros normales para la edad'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
+        { id:'OCTCGOI', ojo:'OI: Ojo Izquierdo', normal:'Capa de células ganglionares dentro de los parámetros normales para la edad', opciones:[{label:'✓ Normal',texto:'Capa de células ganglionares dentro de los parámetros normales para la edad'},{label:'No solicitado',texto:'Estudio no solicitado'}] }
+      ]}
     ]
   },
   'Paquimetría': {
     label: 'Paquimetría',
     campos: [
-      { id:'PAQOD',  ojo:'OD — Paquimetría Corneal', normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] },
-      { id:'PAQOI',  ojo:'OI — Paquimetría Corneal', normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] },
-      { id:'CPIOOD', ojo:'OD — CPIO',                normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] },
-      { id:'CPIOOI', ojo:'OI — CPIO',                normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] }
+      { id:'PAQOD',  ojo:'OD: Paquimetría Corneal', normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'PAQOI',  ojo:'OI: Paquimetría Corneal', normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'CPIOOD', ojo:'OD: CPIO',                normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'CPIOOI', ojo:'OI: CPIO',                normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] }
     ]
   },
   'Campimetría': {
     label: 'Campimetría Visual (CVC)',
     campos: [
-      { id:'CVCOD', ojo:'OD — Ojo Derecho',   normal:'No se observan escotomas sin alteraciones de la sensibilidad', opciones:[{label:'✓ Normal',texto:'No se observan escotomas sin alteraciones de la sensibilidad'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
-      { id:'CVCOI', ojo:'OI — Ojo Izquierdo', normal:'No se observan escotomas sin alteraciones de la sensibilidad', opciones:[{label:'✓ Normal',texto:'No se observan escotomas sin alteraciones de la sensibilidad'},{label:'No solicitado',texto:'Estudio no solicitado'}] }
+      { id:'CVCOD', ojo:'OD: Ojo Derecho',   normal:'No se observan escotomas sin alteraciones de la sensibilidad', opciones:[{label:'✓ Normal',texto:'No se observan escotomas sin alteraciones de la sensibilidad'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'CVCOI', ojo:'OI: Ojo Izquierdo', normal:'No se observan escotomas sin alteraciones de la sensibilidad', opciones:[{label:'✓ Normal',texto:'No se observan escotomas sin alteraciones de la sensibilidad'},{label:'No solicitado',texto:'Estudio no solicitado'}] }
     ]
   },
   'UBM': {
     label: 'UBM (Ultrabiomicroscopía)',
     campos: [
-      { id:'UBMOD', ojo:'OD — Ojo Derecho',   normal:'Angulo Abierto en los 4 cuadrantes', opciones:[{label:'✓ Ángulo abierto',texto:'Angulo Abierto en los 4 cuadrantes'},{label:'2c ocluible',texto:'2 cuadrantes ocluible 2 ángulo abierto'},{label:'3c ocluible',texto:'3 cuadrantes ocluible 1 abierto'},{label:'Ángulos cerrados',texto:'Ángulos cerrados en todos los cuadrantes'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
-      { id:'UBMOI', ojo:'OI — Ojo Izquierdo', normal:'Angulo Abierto en los 4 cuadrantes', opciones:[{label:'✓ Ángulo abierto',texto:'Angulo Abierto en los 4 cuadrantes'},{label:'2c ocluible',texto:'2 cuadrantes ocluible 2 ángulo abierto'},{label:'3c ocluible',texto:'3 cuadrantes ocluible 1 abierto'},{label:'Ángulos cerrados',texto:'Ángulos cerrados en todos los cuadrantes'},{label:'No solicitado',texto:'Estudio no solicitado'}] }
+      { id:'UBMOD', ojo:'OD: Ojo Derecho',   normal:'Angulo Abierto en los 4 cuadrantes', opciones:[{label:'✓ Ángulo abierto',texto:'Angulo Abierto en los 4 cuadrantes'},{label:'2c ocluible',texto:'2 cuadrantes ocluible 2 ángulo abierto'},{label:'3c ocluible',texto:'3 cuadrantes ocluible 1 abierto'},{label:'Ángulos cerrados',texto:'Ángulos cerrados en todos los cuadrantes'},{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'UBMOI', ojo:'OI: Ojo Izquierdo', normal:'Angulo Abierto en los 4 cuadrantes', opciones:[{label:'✓ Ángulo abierto',texto:'Angulo Abierto en los 4 cuadrantes'},{label:'2c ocluible',texto:'2 cuadrantes ocluible 2 ángulo abierto'},{label:'3c ocluible',texto:'3 cuadrantes ocluible 1 abierto'},{label:'Ángulos cerrados',texto:'Ángulos cerrados en todos los cuadrantes'},{label:'No solicitado',texto:'Estudio no solicitado'}] }
     ]
   },
   'Biometría': {
-    label: 'Biometría (LIO)',
+    label: 'Biometría Óptica',
     campos: [
-      { id:'LIOOD', ojo:'OD — Ojo Derecho',   normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] },
-      { id:'LIOOI', ojo:'OI — Ojo Izquierdo', normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] }
+      { id:'LIOOD', ojo:'OD: Ojo Derecho',   normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] },
+      { id:'LIOOI', ojo:'OI: Ojo Izquierdo', normal:'', opciones:[{label:'No solicitado',texto:'Estudio no solicitado'}] }
     ]
   }
 };
@@ -1158,6 +1166,17 @@ function abrirModalInforme(id, i) {
 
   const estudios = (p.estudios && p.estudios.length) ? p.estudios : [];
   let html = '';
+  const renderCampos = (campos) => {
+    let s = '';
+    for (const campo of campos) {
+      const isNormalChip = (op) => campo.normal && op.texto === campo.normal;
+      const chips = campo.opciones.map(op =>
+        `<button type="button" class="opcion-chip${isNormalChip(op)?' normal-chip':''}" data-id="${campo.id}" data-texto="${op.texto.replace(/"/g,'&quot;')}" onclick="setOpcionInforme('${campo.id}',this)">${op.label}</button>`
+      ).join('');
+      s += `<div class="informe-ojo-item"><div class="informe-ojo-label">${campo.ojo}</div><div class="opciones-chips">${chips}</div><textarea class="informe-textarea" id="campo_${campo.id}">${campo.normal||''}</textarea></div>`;
+    }
+    return s;
+  };
   for (const estudio of estudios) {
     const config = ESTUDIOS_CONFIG[estudio];
     if (!config) {
@@ -1165,12 +1184,13 @@ function abrirModalInforme(id, i) {
       continue;
     }
     html += `<div class="informe-estudio-section"><div class="informe-estudio-titulo">${config.label}</div><div class="informe-ojo-grid">`;
-    for (const campo of config.campos) {
-      const isNormalChip = (op) => campo.normal && op.texto === campo.normal;
-      const chips = campo.opciones.map(op =>
-        `<button type="button" class="opcion-chip${isNormalChip(op)?' normal-chip':''}" data-id="${campo.id}" data-texto="${op.texto.replace(/"/g,'&quot;')}" onclick="setOpcionInforme('${campo.id}',this)">${op.label}</button>`
-      ).join('');
-      html += `<div class="informe-ojo-item${campo.fullWidth?' full-width':''}"><div class="informe-ojo-label">${campo.ojo}</div><div class="opciones-chips">${chips}</div><textarea class="informe-textarea" id="campo_${campo.id}">${campo.normal||''}</textarea></div>`;
+    if (config.grupos) {
+      for (const grupo of config.grupos) {
+        html += `<div class="informe-subgrupo-titulo">${grupo.titulo}</div>`;
+        html += renderCampos(grupo.campos);
+      }
+    } else {
+      html += renderCampos(config.campos);
     }
     html += `</div></div>`;
   }
@@ -1199,20 +1219,33 @@ async function generarYSubirInforme() {
 
   const estudios = (p.estudios && p.estudios.length) ? p.estudios : [];
   const secciones = [];
-  for (const estudio of estudios) {
-    const config = ESTUDIOS_CONFIG[estudio];
-    if (!config) {
-      const el = document.getElementById('campo_' + estudio.replace(/[^a-zA-Z0-9]/g,'_'));
-      if (el && el.value.trim()) secciones.push({ titulo: estudio, campos: [{ ojo:'', texto: el.value.trim() }] });
-      continue;
-    }
+  const recogerCampos = (camposArr) => {
     const campos = [];
-    for (const campo of config.campos) {
+    for (const campo of camposArr) {
       const el = document.getElementById('campo_' + campo.id);
       const val = el ? el.value.trim() : '';
       if (val) campos.push({ ojo: campo.ojo, texto: val });
     }
-    if (campos.length) secciones.push({ titulo: config.label, campos });
+    return campos;
+  };
+  for (const estudio of estudios) {
+    const config = ESTUDIOS_CONFIG[estudio];
+    if (!config) {
+      const el = document.getElementById('campo_' + estudio.replace(/[^a-zA-Z0-9]/g,'_'));
+      if (el && el.value.trim()) secciones.push({ titulo: estudio, grupos: [{ titulo:'', campos: [{ ojo:'', texto: el.value.trim() }] }] });
+      continue;
+    }
+    if (config.grupos) {
+      const grupos = [];
+      for (const grupo of config.grupos) {
+        const campos = recogerCampos(grupo.campos);
+        if (campos.length) grupos.push({ titulo: grupo.titulo, campos });
+      }
+      if (grupos.length) secciones.push({ titulo: config.label, grupos });
+    } else {
+      const campos = recogerCampos(config.campos);
+      if (campos.length) secciones.push({ titulo: config.label, grupos: [{ titulo:'', campos }] });
+    }
   }
   const diagnostico = document.getElementById('informeDiagnostico').value.trim();
   const observaciones = document.getElementById('informeObservaciones').value.trim();
@@ -1247,14 +1280,21 @@ async function generarYSubirInforme() {
     doc.setFillColor(232,244,253); doc.rect(14,y-5,pageW-28,9,'F');
     doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(24,95,165);
     doc.text(sec.titulo.toUpperCase(), 16, y); y += 10;
-    for (const campo of sec.campos) {
-      if (campo.ojo) {
-        chk(12); doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(80,80,80);
-        doc.text(campo.ojo+':', 16, y); y += 5;
+    for (const grupo of sec.grupos) {
+      if (grupo.titulo) {
+        chk(10);
+        doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(50,100,160);
+        doc.text(grupo.titulo, 16, y); y += 7;
       }
-      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(0,0,0);
-      const lines = doc.splitTextToSize(campo.texto, pageW-32);
-      chk(lines.length*6+4); doc.text(lines, 16, y); y += lines.length*6+5;
+      for (const campo of grupo.campos) {
+        if (campo.ojo) {
+          chk(12); doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(80,80,80);
+          doc.text(campo.ojo+':', 16, y); y += 5;
+        }
+        doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(0,0,0);
+        const lines = doc.splitTextToSize(campo.texto, pageW-32);
+        chk(lines.length*6+4); doc.text(lines, 16, y); y += lines.length*6+5;
+      }
     }
     y += 3;
   }
