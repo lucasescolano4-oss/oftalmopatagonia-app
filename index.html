@@ -1249,7 +1249,7 @@ async function generarYSubirInforme() {
   const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzA4fTNPd8Hie707sIYO2oeq8r-aNMPxB8VgPpkVcnSKjwListjvbxBw8MelLJh3Z2w/exec';
 
   try {
-    await fetch(SHEET_URL, { method:'POST', body: JSON.stringify(payload) });
+    await fetch(SHEET_URL, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) });
 
     const { error } = await sb.from('pacientes').update({ informe_realizado: true }).eq('id', _informeId);
     if (!error) {
