@@ -1220,7 +1220,7 @@ async function generarYSubirInforme() {
 
   const val = (id) => { const el = document.getElementById('campo_' + id); return el ? el.value.trim() : ''; };
   const join = (a, b) => [val(a), val(b)].filter(Boolean).join(' // ');
-  const fechaStr = p.fecha ? new Date(p.fecha+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'}) : '';
+  const fechaStr = p.fecha ? p.fecha.split('-').reverse().join('/') : '';
 
   const payload = {
     FECHA:       fechaStr,
