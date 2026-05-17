@@ -803,7 +803,7 @@ async function enviarPendientes() {
 }
 
 // Reenviar los seleccionados (independientemente del estado)
-async async function enviarSeleccionados() {
+async function enviarSeleccionados() {
   if (seleccionados.size === 0) return;
   const lista = pacientesHoy.filter(p => seleccionados.has(p.id));
   const btn = document.getElementById('btnEnviarSel');
