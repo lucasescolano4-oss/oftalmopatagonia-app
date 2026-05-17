@@ -898,7 +898,7 @@ async function buscar() {
     const estadoBadge = p.enviado
       ? `<span class="badge-enviado">✓ ENV</span>`
       : `<span class="badge-pendiente">⏳ PEND</span>`;
-    return `<tr data-id="${p.id}" data-nombre="${p.nombre_completo}" data-dni="${p.dni}" data-celular="${p.celular}" data-fecha="${p.fecha}" data-estudios="${p.estudios.join('|')}">
+    return `<tr data-id="${p.id}" data-nombre="${p.nombre_completo}" data-dni="${p.dni}" data-celular="${p.celular}" data-fecha="${p.fecha}" data-estudios="${p.estudios.join('|')}" data-obra_social="${p.obra_social||''}" data-numero_orden="${p.numero_orden||''}">
       <td><input type="checkbox" class="check-resultado" value="${p.id}"></td>
       <td style="font-weight:700;color:#555;">${p.numero_orden||'—'}</td>
       <td>${fechaStr}</td>
@@ -949,7 +949,8 @@ async function toggleInformeResultado(id, el) {
       celular: tr.dataset.celular,
       fecha: tr.dataset.fecha,
       estudios,
-      obra_social: '',
+      obra_social: tr.dataset.obra_social || '',
+      numero_orden: parseInt(tr.dataset.numero_orden) || null,
       informe_realizado: false
     };
     const existeIdx = pacientesHoy.findIndex(p => p.id === id);
