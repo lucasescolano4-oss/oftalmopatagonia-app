@@ -942,7 +942,7 @@ async function buscar() {
   document.getElementById('resultsArea').innerHTML=`
     <div style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:13px;color:#888;">${data.length} resultado${data.length!==1?'s':''}</div>
-      <button onclick="reenviarDesdeResultados()" style="padding:7px 16px;font-size:13px;font-weight:500;background:#25D366;color:white;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;">📤 Reenviar seleccionados</button>
+      <button onclick="reenviarDesdeResultados()" style="padding:7px 16px;font-size:13px;font-weight:500;background:#25D366;color:white;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;">📤 Enviar seleccionados</button>
     </div>
     <table class="result-table">
       <thead><tr><th><input type="checkbox" id="checkTodosResultados" onclick="toggleTodosResultados()"></th><th>#</th><th>Fecha</th><th>Paciente</th><th>DNI</th><th>Celular</th><th>Obra Social</th><th>Orden</th><th>Informe</th><th>Estudios</th><th>Estado</th><th></th></tr></thead>
@@ -999,27 +999,41 @@ function toggleTodosResultados() {
 
 async function reenviarDesdeResultados() {
   const checks = [...document.querySelectorAll('.check-resultado:checked')];
-  if (checks.length === 0) { showToast('⚠️ Seleccioná al menos un paciente'); return; }
+  if (checks.length === 0) { showToast('Selecciona al menos un paciente'); return; }
 
   const lista = checks.map(c => {
     const tr = c.closest('tr');
-    return {
-      nombre_completo: tr.dataset.nombre,
-      dni: tr.dataset.dni,
-      celular: tr.dataset.celular,
-      fecha: tr.dataset.fecha,
-      estudios: tr.dataset.estudios.split('|')
-    };
+    return { nombre: tr.dataset.nombre, dni: tr.dataset.dni, celular: tr.dataset.celular };
   });
 
-  const hoy = new Date().toISOString().split('T')[0];
-  descargarCSV(generarCSV(lista), `reenvio_${hoy}.csv`);
+  const btn = document.querySelector('[onclick="reenviarDesdeResultados()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
 
-  // Marcar como enviados en Supabase
-  const ids = checks.map(c => c.value);
-  await sb.from('pacientes').update({ enviado: true }).in('id', ids);
+  try {
+    const resp = await fetch('https://botwhatsapp-production-fdbe.up.railway.app/enviar-estudios', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lista)
+    });
+    const data = await resp.json();
 
-  showToast(`✓ ${lista.length} paciente(s) listos para reenviar`);
+    if (data.resultados) {
+      const ok = data.resultados.filter(r => r.ok).length;
+      const sinArchivos = data.resultados.filter(r => !r.ok);
+      let resumen = ok + ' de ' + lista.length + ' enviados por WhatsApp';
+      if (sinArchivos.length > 0) {
+        resumen += '\n\nSin archivos en Drive:\n' + sinArchivos.map(r => r.mensaje).join('\n');
+      }
+      alert(resumen);
+      const ids = checks.map(c => c.value);
+      await sb.from('pacientes').update({ enviado: true }).in('id', ids);
+    }
+  } catch(err) {
+    alert('Error al conectar con el bot.');
+    console.error(err);
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Enviar seleccionados'; }
   checks.forEach(c => c.checked = false);
 }
 
