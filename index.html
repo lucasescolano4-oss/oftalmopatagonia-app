@@ -811,7 +811,7 @@ async function enviarSeleccionados() {
 
   try {
     const payload = lista.map(p => ({ dni: p.dni, celular: p.celular, nombre: p.nombre_completo }));
-    const resp = await fetch('https://botwhatsapp-production-fdbe.up.railway.app/enviar-estudios', {
+    const resp = await fetch('/api/enviar-estudios', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -1009,7 +1009,7 @@ async function reenviarDesdeResultados() {
   if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
 
   try {
-    const resp = await fetch('https://botwhatsapp-production-fdbe.up.railway.app/enviar-estudios', {
+    const resp = await fetch('/api/enviar-estudios', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(lista)
