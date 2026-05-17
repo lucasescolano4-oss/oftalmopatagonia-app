@@ -816,20 +816,19 @@ async function enviarSeleccionados() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`HTTP ${resp.status}: ${txt.substring(0, 200)}`);
+    }
     const data = await resp.json();
-
-    if (data.resultados) {
-      const ok = data.resultados.filter(r => r.ok).length;
-      const sinArchivos = data.resultados.filter(r => !r.ok);
-      let resumen = ok + ' de ' + lista.length + ' enviados por WhatsApp';
-      if (sinArchivos.length > 0) {
-        resumen += '\n\nSin archivos en Drive:\n' + sinArchivos.map(r => r.mensaje).join('\n');
-      }
-      alert(resumen);
-      await marcarComoEnviados(data.resultados.filter(r => r.ok).map(r => lista.find(p => p.dni === r.dni) ? lista.find(p => p.dni === r.dni).id : null).filter(Boolean));
+    if (data.ok) {
+      showToast(`📤 Enviando WhatsApp a ${lista.length} paciente(s)...`);
+      await marcarComoEnviados(lista.map(p => p.id));
+    } else {
+      throw new Error(data.error || 'Respuesta inesperada del bot');
     }
   } catch (err) {
-    alert('Error al conectar con el bot.');
+    alert('Error al conectar con el bot:\n' + err.message);
     console.error(err);
   }
 
@@ -1015,25 +1014,25 @@ async function reenviarDesdeResultados() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(lista)
     });
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`HTTP ${resp.status}: ${txt.substring(0, 200)}`);
+    }
     const data = await resp.json();
-
-    if (data.resultados) {
-      const ok = data.resultados.filter(r => r.ok).length;
-      const sinArchivos = data.resultados.filter(r => !r.ok);
-      let resumen = ok + ' de ' + lista.length + ' enviados por WhatsApp';
-      if (sinArchivos.length > 0) {
-        resumen += '\n\nSin archivos en Drive:\n' + sinArchivos.map(r => r.mensaje).join('\n');
-      }
-      alert(resumen);
+    if (data.ok) {
+      showToast(`📤 Enviando WhatsApp a ${lista.length} paciente(s)...`);
       const ids = checks.map(c => c.value);
       await sb.from('pacientes').update({ enviado: true }).in('id', ids);
+      buscarPacientes();
+    } else {
+      throw new Error(data.error || 'Respuesta inesperada del bot');
     }
   } catch(err) {
-    alert('Error al conectar con el bot.');
+    alert('Error al conectar con el bot:\n' + err.message);
     console.error(err);
   }
 
-  if (btn) { btn.disabled = false; btn.textContent = 'Enviar seleccionados'; }
+  if (btn) { btn.disabled = false; btn.textContent = '📤 Enviar seleccionados'; }
   checks.forEach(c => c.checked = false);
 }
 
