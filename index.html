@@ -1215,181 +1215,59 @@ async function generarYSubirInforme() {
   if (!_informeId) return;
   const p = pacientesHoy[_informeIdx];
   const btn = document.getElementById('btnGenerarPDF');
-  btn.disabled = true; btn.textContent = 'Generando...';
+  btn.disabled = true; btn.textContent = 'Enviando...';
 
-  // Lee el valor del campo del formulario
   const val = (id) => { const el = document.getElementById('campo_' + id); return el ? el.value.trim() : ''; };
-  const estudios = new Set(p.estudios || []);
-  const diagnostico = document.getElementById('informeDiagnostico').value.trim();
-  const observaciones = document.getElementById('informeObservaciones').value.trim();
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const mL = 14, mR = pageW - 14, tW = pageW - 28;
-
-  // Encabezado con logo real
-  const logoEl = document.querySelector('.header .logo img') || document.querySelector('.medico-logo img');
-  if (logoEl) {
-    doc.addImage(logoEl.src, 'PNG', mL, 4, 42, 42);
-  }
-
-  const mpNum = medicoActual.includes('Escolano') ? 'MP: 5030 / MN: 163483' : 'MP: 1486 / MN: 52146';
-  const nombreMedico = medicoActual.includes('Escolano') ? 'DR. ESCOLANO LUCAS G.' : 'DR. POLZONETTI RICARDO';
+  const join = (a, b) => [val(a), val(b)].filter(Boolean).join(' // ');
   const fechaStr = p.fecha ? new Date(p.fecha+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'}) : '';
 
-  doc.setTextColor(0,0,0);
-  doc.setFontSize(11); doc.setFont('helvetica','bold');
-  doc.text(nombreMedico, 60, 16);
-  doc.setFontSize(9); doc.setFont('helvetica','normal');
-  doc.text('Medico - Oftalmologo', 60, 23);
-  doc.text(mpNum, 60, 30);
-  doc.setFontSize(8);
-  doc.text('Roca 543, Esquel, Chubut  -  Tel: 2945339020  -  oftalmopatagoniaesquel@gmail.com', 60, 37);
-
-  doc.setDrawColor(180,180,180); doc.line(mL, 50, mR, 50);
-
-  doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0);
-  doc.text('Fecha: ' + fechaStr, mL, 58);
-  doc.text('Nombre y apellido: ' + p.nombre_completo, mL, 65);
-  doc.text('DNI: ' + p.dni, mL, 72);
-  doc.text('Obra Social: ' + (p.obra_social||'Particular'), mL, 79);
-  doc.setDrawColor(200,200,200); doc.line(mL, 84, mR, 84);
-
-  let y = 92;
-  const chk = (n) => { if (y+n > pageH-20) { doc.addPage(); y = 20; } };
-
-  // Título de sección con fondo azul claro
-  const secTit = (txt) => {
-    chk(14);
-    doc.setFillColor(232,244,253); doc.rect(mL,y-5,tW,9,'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(24,95,165);
-    doc.text(txt, mL+2, y); y += 11;
-    doc.setTextColor(0,0,0);
-  };
-  // Subtítulo de subgrupo
-  const subTit = (txt) => {
-    chk(9);
-    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(50,100,160);
-    doc.text(txt, mL+2, y); y += 7;
-    doc.setTextColor(0,0,0);
-  };
-  // Línea de texto normal
-  const linea = (texto, indent=0) => {
-    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(0,0,0);
-    const ls = doc.splitTextToSize(texto, tW - indent);
-    chk(ls.length*6+2); doc.text(ls, mL+indent, y); y += ls.length*6+3;
-  };
-  // Bloque OD / OI: label en negrita + texto abajo
-  const ojoBloque = (ojoLabel, texto) => {
-    chk(14);
-    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(80,80,80);
-    doc.text(ojoLabel+':', mL+2, y); y += 5;
-    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(0,0,0);
-    const ls = doc.splitTextToSize(texto, tW-4);
-    chk(ls.length*6+2); doc.text(ls, mL+4, y); y += ls.length*6+4;
+  const payload = {
+    FECHA:       fechaStr,
+    NOMBRE:      p.nombre_completo,
+    DNI:         p.dni,
+    OBRA_SOCIAL: p.obra_social || 'Particular',
+    FOOD:        val('FOOD'),
+    FOOI:        val('FOOI'),
+    OCTOD:       val('OCTOD'),
+    OCTOI:       val('OCTOI'),
+    OCTCFN:      join('OCTCFNOD','OCTCFNOI'),
+    OCTCG:       join('OCTCGOD','OCTCGOI'),
+    PAQOD:       val('PAQOD'),
+    PAQOI:       val('PAQOI'),
+    CPIOOD:      val('CPIOOD'),
+    CPIOOI:      val('CPIOOI'),
+    CVCOD:       val('CVCOD'),
+    CVCOI:       val('CVCOI'),
+    UBMOD:       val('UBMOD'),
+    UBMOI:       val('UBMOI'),
+    LIOOD:       val('LIOOD'),
+    LIOOI:       val('LIOOI'),
+    NUMERO_ORDEN: p.numero_orden || ''
   };
 
-  // ── Secciones siguiendo el esquema del template ──────────────────────────
+  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzA4fTNPd8Hie707sIYO2oeq8r-aNMPxB8VgPpkVcnSKjwListjvbxBw8MelLJh3Z2w/exec';
 
-  if (estudios.has('OCT')) {
-    secTit('OCT (Tomografía de Coherencia Óptica) - REVO FUNDUS CAMARA');
-    linea('Estudio de OCT realizado con Optopol Revo FC 80.000 scan/seg. Solo se informarán los campos de los estudios solicitados por su médico.', 2);
-    y += 2;
-    subTit('OCT Macular');
-    ojoBloque('OD: Ojo Derecho',   val('OCTOD')    || 'ESTUDIO NO REALIZADO');
-    ojoBloque('OI: Ojo Izquierdo', val('OCTOI')    || 'ESTUDIO NO REALIZADO');
-    subTit('CFN: Capa de Fibras Nerviosas (OCT Nervio Óptico / RNFL)');
-    ojoBloque('OD: Ojo Derecho',   val('OCTCFNOD') || 'ESTUDIO NO REALIZADO');
-    ojoBloque('OI: Ojo Izquierdo', val('OCTCFNOI') || 'ESTUDIO NO REALIZADO');
-    subTit('CG: Capa de Células Ganglionares');
-    ojoBloque('OD: Ojo Derecho',   val('OCTCGOD')  || 'ESTUDIO NO REALIZADO');
-    ojoBloque('OI: Ojo Izquierdo', val('OCTCGOI')  || 'ESTUDIO NO REALIZADO');
-    y += 4;
-  }
-
-  if (estudios.has('Retinografía')) {
-    secTit('RETINOGRAFÍA');
-    ojoBloque('OD: Ojo Derecho',   val('FOOD') || 'ESTUDIO NO REALIZADO');
-    ojoBloque('OI: Ojo Izquierdo', val('FOOI') || 'ESTUDIO NO REALIZADO');
-    y += 4;
-  }
-
-  if (estudios.has('Paquimetría')) {
-    secTit('PAQUIMETRÍA');
-    linea(`OD: ${val('PAQOD') || '---'} µm     CORRECCIÓN DE PIO OD: ${val('CPIOOD') || '---'} mmhg`, 2);
-    linea(`OI: ${val('PAQOI') || '---'} µm     CORRECCIÓN DE PIO OI: ${val('CPIOOI') || '---'} mmhg`, 2);
-    y += 4;
-  }
-
-  if (estudios.has('Biometría')) {
-    secTit('BIOMETRÍA ÓPTICA');
-    linea('Cálculo de lente intraocular (biométrico OCT Optopol FC, se utiliza ESCRS IOL Calculator para cálculo final)', 2);
-    linea(`OD: ${val('LIOOD') || '---'} Dioptrías`, 4);
-    linea(`OI: ${val('LIOOI') || '---'} Dioptrías`, 4);
-    y += 4;
-  }
-
-  if (estudios.has('Campimetría')) {
-    secTit('CAMPO VISUAL (CAMPIMETRÍA CVC)');
-    ojoBloque('OD: Ojo Derecho',   val('CVCOD') || 'ESTUDIO NO REALIZADO');
-    ojoBloque('OI: Ojo Izquierdo', val('CVCOI') || 'ESTUDIO NO REALIZADO');
-    y += 4;
-  }
-
-  if (estudios.has('UBM')) {
-    secTit('UBM (ULTRABIOMICROSCOPÍA DE SEGMENTO ANTERIOR)');
-    ojoBloque('OD: Ojo Derecho',   val('UBMOD') || 'ESTUDIO NO REALIZADO');
-    ojoBloque('OI: Ojo Izquierdo', val('UBMOI') || 'ESTUDIO NO REALIZADO');
-    y += 4;
-  }
-
-  if (diagnostico) {
-    secTit('DIAGNÓSTICO');
-    linea(diagnostico, 2);
-    y += 4;
-  }
-  if (observaciones) {
-    secTit('INDICACIONES / OBSERVACIONES');
-    linea(observaciones, 2);
-    y += 4;
-  }
-
-  // — Firma —
-  y = Math.max(y+10, 230);
-  if (y > pageH-30) { doc.addPage(); y = 30; }
-  doc.setDrawColor(120); doc.line(mL, y, mL+68, y); y += 5;
-  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(80,80,80);
-  doc.text(medicoActual, mL, y); y += 5; doc.text(mpNum, mL, y);
-
-  const filename = `Informe_${p.dni}_${p.fecha}.pdf`;
-  const pdfBase64 = doc.output('datauristring').split(',')[1];
-
-  let subidoOk = false;
   try {
-    const resp = await fetch('https://botwhatsapp-production-fdbe.up.railway.app/upload-informe', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ filename, pdfBase64, dni: p.dni })
-    });
-    subidoOk = resp.ok;
-  } catch(_) {}
+    await fetch(SHEET_URL, { method:'POST', body: JSON.stringify(payload) });
 
-  if (!subidoOk) doc.save(filename);
-
-  const { error } = await sb.from('pacientes').update({ informe_realizado: true }).eq('id', _informeId);
-  if (!error) {
-    if (_informeIdx >= 0) pacientesHoy[_informeIdx].informe_realizado = true;
-    if (_informeResultadoEl) {
-      _informeResultadoEl.textContent = '✓ Hecho';
-      _informeResultadoEl.style.background = '#d4f5e2';
-      _informeResultadoEl.style.color = '#1a7a45';
+    const { error } = await sb.from('pacientes').update({ informe_realizado: true }).eq('id', _informeId);
+    if (!error) {
+      if (_informeIdx >= 0) pacientesHoy[_informeIdx].informe_realizado = true;
+      if (_informeResultadoEl) {
+        _informeResultadoEl.textContent = 'Hecho';
+        _informeResultadoEl.style.background = '#d4f5e2';
+        _informeResultadoEl.style.color = '#1a7a45';
+      }
+      renderLista();
     }
-    renderLista();
+    cerrarModalInforme();
+    showToast('Informe enviado - Autocrat generara el PDF automaticamente');
+  } catch(err) {
+    showToast('Error al enviar el informe');
+    console.error(err);
   }
-  cerrarModalInforme();
-  showToast(subidoOk ? '✓ Informe subido a Drive' : '⚠️ PDF descargado — subilo a Drive manualmente');
-  btn.disabled = false; btn.textContent = '📄 Generar y subir PDF';
+
+  btn.disabled = false; btn.textContent = 'Enviar informe';
 }
 
 init();
