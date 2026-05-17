@@ -1229,30 +1229,35 @@ async function generarYSubirInforme() {
   const pageH = doc.internal.pageSize.getHeight();
   const mL = 14, mR = pageW - 14, tW = pageW - 28;
 
-  // — Encabezado azul —
-  doc.setFillColor(24,95,165); doc.rect(0,0,pageW,30,'F');
-  doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
-  doc.text('OFTALMOPATAGONIA', pageW/2, 13, {align:'center'});
-  doc.setFontSize(9); doc.setFont('helvetica','normal');
-  doc.text('Roca 543, Esquel, Chubut  ·  Tel: 2945339020  ·  oftalmopatagoniaesquel@gmail.com', pageW/2, 22, {align:'center'});
+  // Encabezado con logo real
+  const logoEl = document.querySelector('.header .logo img') || document.querySelector('.medico-logo img');
+  if (logoEl) {
+    doc.addImage(logoEl.src, 'PNG', mL, 4, 42, 42);
+  }
 
   const mpNum = medicoActual.includes('Escolano') ? 'MP: 5030 / MN: 163483' : 'MP: 1486 / MN: 52146';
-  const mpLinea = medicoActual.includes('Escolano')
-    ? 'DR. ESCOLANO LUCAS G.  —  Médico Oftalmólogo  —  MP: 5030 / MN: 163483'
-    : 'DR. POLZONETTI RICARDO  —  Médico Oftalmólogo  —  MP: 1486 / MN: 52146';
+  const nombreMedico = medicoActual.includes('Escolano') ? 'DR. ESCOLANO LUCAS G.' : 'DR. POLZONETTI RICARDO';
   const fechaStr = p.fecha ? new Date(p.fecha+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'}) : '';
 
   doc.setTextColor(0,0,0);
-  doc.setFontSize(9); doc.setFont('helvetica','bold');
-  doc.text(mpLinea, mL, 38);
-  doc.setFont('helvetica','normal');
-  doc.text(`Fecha: ${fechaStr}`, mL, 46);
-  doc.text(`Nombre y apellido: ${p.nombre_completo}`, mL, 53);
-  doc.text(`DNI: ${p.dni}`, mL, 60);
-  doc.text(`Obra Social: ${p.obra_social||'Particular'}`, mL, 67);
-  doc.setDrawColor(200,200,200); doc.line(mL,72,mR,72);
+  doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.text(nombreMedico, 60, 16);
+  doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('Medico - Oftalmologo', 60, 23);
+  doc.text(mpNum, 60, 30);
+  doc.setFontSize(8);
+  doc.text('Roca 543, Esquel, Chubut  -  Tel: 2945339020  -  oftalmopatagoniaesquel@gmail.com', 60, 37);
 
-  let y = 80;
+  doc.setDrawColor(180,180,180); doc.line(mL, 50, mR, 50);
+
+  doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0);
+  doc.text('Fecha: ' + fechaStr, mL, 58);
+  doc.text('Nombre y apellido: ' + p.nombre_completo, mL, 65);
+  doc.text('DNI: ' + p.dni, mL, 72);
+  doc.text('Obra Social: ' + (p.obra_social||'Particular'), mL, 79);
+  doc.setDrawColor(200,200,200); doc.line(mL, 84, mR, 84);
+
+  let y = 92;
   const chk = (n) => { if (y+n > pageH-20) { doc.addPage(); y = 20; } };
 
   // Título de sección con fondo azul claro
