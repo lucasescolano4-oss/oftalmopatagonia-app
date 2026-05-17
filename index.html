@@ -821,19 +821,15 @@ async function enviarSeleccionados() {
     if (data.resultados) {
       const ok = data.resultados.filter(r => r.ok).length;
       const sinArchivos = data.resultados.filter(r => !r.ok);
-      let resumen = `✓ ${ok} de ${lista.length} enviados por WhatsApp`;
+      let resumen = ok + ' de ' + lista.length + ' enviados por WhatsApp';
       if (sinArchivos.length > 0) {
-        resumen += '
-
-Sin archivos:
-' + sinArchivos.map(r => r.mensaje).join('
-');
+        resumen += '\n\nSin archivos en Drive:\n' + sinArchivos.map(r => r.mensaje).join('\n');
       }
       alert(resumen);
-      await marcarComoEnviados(data.resultados.filter(r => r.ok).map(r => lista.find(p => p.dni === r.dni)?.id).filter(Boolean));
+      await marcarComoEnviados(data.resultados.filter(r => r.ok).map(r => lista.find(p => p.dni === r.dni) ? lista.find(p => p.dni === r.dni).id : null).filter(Boolean));
     }
   } catch (err) {
-    alert('Error al conectar con el bot. Verificá que esté activo.');
+    alert('Error al conectar con el bot.');
     console.error(err);
   }
 
