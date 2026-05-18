@@ -226,25 +226,33 @@
   .fecha-grupo-label { font-size:13px; font-weight:700; color:#185fa5; letter-spacing:0.02em; }
   .fecha-grupo-count { font-size:12px; color:#bbb; }
 
-  .res-card { background:white; border:1px solid #e5e5e3; border-radius:12px; margin-bottom:8px; overflow:hidden; cursor:pointer; transition:transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; }
-  .res-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.09); border-color:#c5d9f0; }
-  .res-card.res-enviada { border-color:#25D36630; background:#f8fff9; }
+  /* Grid de cards — 4 por fila en PC */
+  .res-cards-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:4px; }
+
+  .res-card { background:white; border:1px solid #e5e5e3; border-radius:10px; overflow:hidden; cursor:pointer; transition:transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; display:flex; flex-direction:column; }
+  .res-card:hover { transform:translateY(-3px); box-shadow:0 8px 20px rgba(0,0,0,0.10); border-color:#c5d9f0; }
+  .res-card.res-enviada { border-color:#25D36650; background:#f8fff9; }
   .res-card.res-seleccionada { border-color:#378add80; background:#f0f7ff; }
 
-  .res-card-top { display:flex; align-items:center; gap:10px; padding:12px 14px; }
-  .res-card-top input[type=checkbox] { flex-shrink:0; width:16px; height:16px; cursor:pointer; accent-color:#378add; }
-  .res-num { font-size:12px; font-weight:700; color:#bbb; flex-shrink:0; min-width:22px; text-align:center; background:#f0f0ee; border-radius:99px; padding:2px 7px; }
-  .res-nombre { font-size:14px; font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .res-badges { display:flex; gap:5px; align-items:center; flex-shrink:0; }
+  .res-card-top { display:flex; flex-direction:column; gap:5px; padding:10px 11px 8px; flex:1; }
+  .res-card-top-row1 { display:flex; align-items:center; gap:6px; }
+  .res-card-top input[type=checkbox] { flex-shrink:0; width:14px; height:14px; cursor:pointer; accent-color:#378add; }
+  .res-num { font-size:11px; font-weight:700; color:#bbb; background:#f0f0ee; border-radius:99px; padding:1px 6px; flex-shrink:0; }
+  .res-badges { display:flex; gap:4px; align-items:center; margin-left:auto; flex-shrink:0; }
+  .res-nombre { font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; }
+  .res-estudios-mini { display:flex; flex-wrap:wrap; gap:3px; }
+  .res-estudios-mini .estudio-tag { font-size:10px; padding:1px 6px; }
 
   .res-card-bottom { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid #f0f0ee; }
-  .res-card-informe { padding:10px 14px; display:flex; flex-direction:column; gap:3px; border-right:1px solid #f0f0ee; cursor:pointer; transition:background 0.15s; }
+  .res-card-informe { padding:7px 11px; display:flex; flex-direction:column; gap:2px; border-right:1px solid #f0f0ee; cursor:pointer; transition:background 0.15s; }
   .res-card-informe:hover { background:#f0f7ff; }
-  .res-card-informe-lbl { font-size:10px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#bbb; }
-  .res-card-informe-val { font-size:13px; font-weight:600; }
+  .res-card-informe-lbl { font-size:9px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#bbb; }
+  .res-card-informe-val { font-size:11px; font-weight:600; }
   .res-card-informe-val.hecho { color:#1a7a45; }
   .res-card-informe-val.pendiente { color:#aaa; }
-  .res-card-estudios { padding:10px 14px; display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
+  .res-card-estado { padding:7px 11px; display:flex; flex-direction:column; gap:2px; }
+  .res-card-estado-lbl { font-size:9px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#bbb; }
+  .res-card-estado-val { font-size:11px; font-weight:600; }
 
   /* ── Panel lateral detalle paciente ── */
   .detalle-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:700; opacity:0; pointer-events:none; transition:opacity 0.25s; }
@@ -362,6 +370,10 @@
     }
     .results-area > div:first-child { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .result-table { min-width: 620px; }
+
+    /* Cards: 1 por fila en móvil */
+    .res-cards-grid { grid-template-columns: 1fr !important; }
+    .detalle-sidebar { width: 100vw; }
 
     /* Modal informe */
     .modal-overlay { padding: 8px; align-items: flex-end; }
@@ -1101,29 +1113,35 @@ async function buscar() {
 
   function cardHTML(p) {
     const informeHecho = p.informe_realizado;
-    const estudiosEsc = JSON.stringify(p.estudios).replace(/"/g,'&quot;');
-    return `<div class="res-card${p.enviado?' res-enviada':''}"
+    const enviado = p.enviado;
+    return `<div class="res-card${enviado?' res-enviada':''}"
       data-id="${p.id}" data-nombre="${p.nombre_completo.replace(/"/g,'&quot;')}"
       data-dni="${p.dni}" data-celular="${p.celular}" data-fecha="${p.fecha||''}"
       data-estudios="${p.estudios.join('|')}" data-obra_social="${(p.obra_social||'').replace(/"/g,'&quot;')}"
-      data-numero_orden="${p.numero_orden||''}" data-enviado="${p.enviado?'1':'0'}"
+      data-numero_orden="${p.numero_orden||''}" data-enviado="${enviado?'1':'0'}"
       data-informe="${informeHecho?'1':'0'}" data-orden_aut="${p.orden_autorizada?'1':'0'}"
       onclick="abrirDetalle(this)">
       <div class="res-card-top">
-        <input type="checkbox" class="check-resultado" value="${p.id}" onclick="event.stopPropagation()">
-        <span class="res-num">${p.numero_orden||'—'}</span>
+        <div class="res-card-top-row1">
+          <input type="checkbox" class="check-resultado" value="${p.id}" onclick="event.stopPropagation()">
+          <span class="res-num">${p.numero_orden||'—'}</span>
+          <span class="res-badges">
+            ${enviado ? '<span class="badge-enviado">ENV</span>' : '<span class="badge-pendiente">PEND</span>'}
+            ${!p.orden_autorizada ? '<span class="badge-sin-orden">⚠</span>' : ''}
+          </span>
+        </div>
         <span class="res-nombre">${p.nombre_completo}</span>
-        <span class="res-badges">
-          ${p.enviado ? '<span class="badge-enviado">✓ ENV</span>' : '<span class="badge-pendiente">⏳ PEND</span>'}
-          ${!p.orden_autorizada ? '<span class="badge-sin-orden">⚠</span>' : ''}
-        </span>
+        <div class="res-estudios-mini">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
       </div>
       <div class="res-card-bottom">
         <div class="res-card-informe" onclick="event.stopPropagation(); toggleInformeResultado('${p.id}', this)">
           <span class="res-card-informe-lbl">Informe</span>
-          <span class="res-card-informe-val ${informeHecho?'hecho':'pendiente'}">${informeHecho ? '✓ Realizado' : '· Pendiente'}</span>
+          <span class="res-card-informe-val ${informeHecho?'hecho':'pendiente'}">${informeHecho ? '✓ Hecho' : '· Pend.'}</span>
         </div>
-        <div class="res-card-estudios">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
+        <div class="res-card-estado">
+          <span class="res-card-estado-lbl">WhatsApp</span>
+          <span class="res-card-estado-val" style="color:${enviado?'#1a7a45':'#aaa'}">${enviado?'✓ Env.':'· Pend.'}</span>
+        </div>
       </div>
     </div>`;
   }
@@ -1133,7 +1151,7 @@ async function buscar() {
       <span class="fecha-grupo-label">${labelFecha(fecha)}</span>
       <span class="fecha-grupo-count">${pacientes.length} paciente${pacientes.length!==1?'s':''}</span>
     </div>
-    ${pacientes.map(cardHTML).join('')}
+    <div class="res-cards-grid">${pacientes.map(cardHTML).join('')}</div>
   `).join('');
 
   // Resumen de estudios
