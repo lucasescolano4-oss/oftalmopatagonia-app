@@ -1023,7 +1023,7 @@ async function reenviarDesdeResultados() {
       showToast(`📤 Enviando WhatsApp a ${lista.length} paciente(s)...`);
       const ids = checks.map(c => c.value);
       await sb.from('pacientes').update({ enviado: true }).in('id', ids);
-      buscarPacientes();
+      buscar();
     } else {
       throw new Error(data.error || 'Respuesta inesperada del bot');
     }
