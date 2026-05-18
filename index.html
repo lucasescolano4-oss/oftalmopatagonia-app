@@ -209,7 +209,121 @@
   .opcion-chip.selected { border-color:#378add; color:#185fa5; background:#e8f4fd; font-weight:600; }
   .informe-subgrupo-titulo { grid-column:1/-1; background:#edf3fa; padding:5px 13px; font-size:10px; font-weight:700; color:#185fa5; letter-spacing:0.06em; text-transform:uppercase; border-top:1px solid #dde8f5; }
   .informe-subgrupo-titulo:first-child { border-top:none; }
+
+  /* ═══════════════════════════════════════
+     RESPONSIVO MÓVIL  (max-width: 768px)
+  ═══════════════════════════════════════ */
+  @media (max-width: 768px) {
+
+    /* Body y contenedor principal */
+    body {
+      height: auto !important;
+      overflow: auto !important;
+      font-size: 16px;
+    }
+    .view { overflow: visible !important; height: auto !important; }
+    .view.active { display: block !important; }
+
+    /* Header */
+    .header { padding: 0.75rem 1rem; }
+    .logo-sub, .fecha-hoy { display: none; }
+
+    /* Tabs — scroll horizontal si no caben */
+    .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-shrink: 0; }
+    .tab { padding: 10px 14px; font-size: 13px; white-space: nowrap; }
+
+    /* Layout: 2 columnas → 1 columna vertical */
+    .layout {
+      grid-template-columns: 1fr !important;
+      height: auto !important;
+      overflow: visible !important;
+    }
+    .panel-form {
+      border-right: none;
+      border-bottom: 1px solid #e5e5e3;
+      overflow-y: visible;
+      padding: 1rem;
+    }
+    .panel-list {
+      overflow-y: visible;
+      padding: 1rem;
+    }
+
+    /* Inputs más cómodos para dedo */
+    input[type=text], input[type=date], input[type=tel], input[type=search], select {
+      padding: 12px 14px !important;
+      font-size: 16px !important; /* evita el zoom automático de iOS */
+    }
+    .tel-wrap select { width: 100px; }
+
+    /* Estudios: 1 chip por fila */
+    .estudios-grid { grid-template-columns: 1fr !important; gap: 8px; }
+    .estudio-chip { padding: 12px 14px; font-size: 14px; }
+
+    /* Botón agregar */
+    .btn-agregar { padding: 14px !important; font-size: 16px !important; margin-top: 16px; }
+
+    /* Actions bar — fija al fondo */
+    .actions-bar {
+      position: sticky;
+      bottom: 0;
+      z-index: 90;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+      padding: 0.75rem 1rem !important;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .actions-left, .actions-right { gap: 6px; }
+    .btn-select-all, .btn-export { padding: 9px 12px; font-size: 13px; }
+    .btn-enviar, .btn-reenviar { padding: 10px 14px; font-size: 14px; }
+
+    /* Tarjetas paciente */
+    .paciente-card { padding: 12px; gap: 8px; }
+    .card-actions { flex-direction: row !important; gap: 8px; }
+
+    /* Búsqueda */
+    .search-view { overflow: visible !important; }
+    .search-bar {
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0.875rem 1rem;
+    }
+    .search-bar input[type=search] { min-width: 0; }
+    .search-bar input[type=date] { width: 100%; }
+    .btn-buscar, .btn-limpiar { width: 100%; text-align: center; padding: 11px; }
+    #btnSoloPendientes { width: 100%; text-align: center; padding: 11px; }
+
+    /* Tabla de resultados: scroll horizontal */
+    .results-area {
+      padding: 0.875rem 1rem;
+      overflow: visible !important;
+    }
+    .results-area > div:first-child { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .result-table { min-width: 620px; }
+
+    /* Modal informe */
+    .modal-overlay { padding: 8px; align-items: flex-end; }
+    .modal-box {
+      width: 100% !important;
+      max-width: 100% !important;
+      max-height: 95vh !important;
+      padding: 20px 16px !important;
+      border-radius: 16px 16px 0 0;
+    }
+    .informe-textarea { font-size: 16px !important; }
+
+    /* Login */
+    .login-box { width: 92vw; padding: 28px 20px; }
+
+    /* Medico cards */
+    .medico-cards { flex-direction: column; align-items: center; }
+    .medico-card { width: 80vw; max-width: 320px; padding: 20px 24px; }
+
+    /* Toast más arriba para no quedar tapado por la actions-bar */
+    .toast { bottom: 100px; }
+  }
 </style>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
 </head>
 <body>
 
