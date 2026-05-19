@@ -615,6 +615,7 @@
       </div>
 
       <button class="btn-agregar" onclick="guardarCirugia()" style="margin-top:14px;">+ Agregar cirugía</button>
+      <button id="btnCancelarCir" class="btn-agregar" onclick="cancelarEdicionCir()" style="display:none;margin-top:6px;background:#888;">✕ Cancelar edición</button>
     </div>
 
     <div class="panel-list">
@@ -1709,6 +1710,7 @@ function renderCirugias() {
             ? '<span class="badge-enviado">✓ ENV</span>'
             : '<span class="badge-pendiente">⏳ PEND</span>'}
         </div>
+        <button onclick="editarCirugia('${c.id}')" onclick="event.stopPropagation()" style="padding:4px 9px;font-size:12px;border:1px solid #ddd;border-radius:6px;background:white;cursor:pointer;" title="Editar">✏️</button>
         <button class="btn-remove" onclick="eliminarCirugia('${c.id}')" title="Eliminar">✕</button>
       </div>`).join('');
 
@@ -1717,6 +1719,79 @@ function renderCirugias() {
       <span class="fecha-grupo-count">${lista.length} paciente${lista.length!==1?'s':''}</span>
     </div>${cards}`;
   }).join('');
+}
+
+let _cirEditandoId = null;
+
+function editarCirugia(id) {
+  const c = cirugias.find(x => x.id === id);
+  if (!c) return;
+  _cirEditandoId = id;
+
+  // Separar prefijo y número del celular almacenado
+  const celularCompleto = c.celular || '';
+  // Intentar detectar prefijo (549, 598, 56, 55, 1…)
+  const prefijos = ['549','598','595','591','55','56','34','1'];
+  let paisVal = '549', telVal = celularCompleto;
+  for (const p of prefijos) {
+    if (celularCompleto.startsWith(p)) { paisVal = p; telVal = celularCompleto.slice(p.length); break; }
+  }
+
+  document.getElementById('cir-nombre').value  = c.nombre_completo || '';
+  document.getElementById('cir-dni').value     = c.dni || '';
+  document.getElementById('cir-pais').value    = paisVal;
+  document.getElementById('cir-prefijo').textContent = '+' + paisVal;
+  document.getElementById('cir-tel').value     = telVal;
+  document.getElementById('cir-obra').value    = c.obra_social || '';
+  document.getElementById('cir-fecha').value   = c.fecha || '';
+  document.getElementById('cir-horario').value = c.horario || '';
+
+  const btn = document.querySelector('#view-cirugia .btn-agregar');
+  btn.textContent = '💾 Guardar cambios';
+  btn.onclick = guardarEdicionCirugia;
+
+  // Mostrar botón cancelar
+  const cancelBtn = document.getElementById('btnCancelarCir');
+  if (cancelBtn) cancelBtn.style.display = 'block';
+
+  // Scroll al formulario en móvil
+  document.getElementById('cir-nombre').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById('cir-nombre').focus();
+}
+
+async function guardarEdicionCirugia() {
+  if (!_cirEditandoId) return;
+  const nombre  = document.getElementById('cir-nombre').value.trim();
+  const dni     = document.getElementById('cir-dni').value.trim();
+  const tel     = document.getElementById('cir-tel').value.replace(/\D/g,'');
+  const pais    = document.getElementById('cir-pais').value;
+  const obra    = document.getElementById('cir-obra').value.trim();
+  const fecha   = document.getElementById('cir-fecha').value;
+  const horario = document.getElementById('cir-horario').value;
+
+  if (!nombre || !dni || !tel || !fecha) { showToast('Completá nombre, DNI, celular y fecha'); return; }
+
+  const celular = pais + tel;
+  const { error } = await sb.from('cirugias').update({
+    nombre_completo: nombre, dni, celular, obra_social: obra, fecha, horario
+  }).eq('id', _cirEditandoId);
+
+  if (error) { showToast('Error al guardar: ' + error.message); return; }
+
+  showToast('✓ Datos actualizados');
+  cancelarEdicionCir();
+  cargarCirugias();
+}
+
+function cancelarEdicionCir() {
+  _cirEditandoId = null;
+  ['cir-nombre','cir-dni','cir-tel','cir-obra','cir-horario'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('cir-fecha').value = '';
+  const btn = document.querySelector('#view-cirugia .btn-agregar');
+  btn.textContent = '+ Agregar cirugía';
+  btn.onclick = guardarCirugia;
+  const cancelBtn = document.getElementById('btnCancelarCir');
+  if (cancelBtn) cancelBtn.style.display = 'none';
 }
 
 async function actualizarHorarioCir(id, horario) {
