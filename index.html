@@ -254,6 +254,20 @@
   .res-card-estado-lbl { font-size:9px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#bbb; }
   .res-card-estado-val { font-size:11px; font-weight:600; }
 
+  /* ── Cards de cirugía ── */
+  .cir-card { background:white; border:1px solid #e5e5e3; border-radius:10px; margin-bottom:7px; padding:11px 14px; display:flex; align-items:center; gap:10px; transition:box-shadow 0.18s, border-color 0.18s; }
+  .cir-card:hover { box-shadow:0 4px 14px rgba(0,0,0,0.08); border-color:#c5d9f0; }
+  .cir-card.cir-enviada { border-color:#25D36640; background:#f8fff9; }
+  .cir-card-check { flex-shrink:0; }
+  .cir-card-check input { width:15px; height:15px; accent-color:#378add; cursor:pointer; }
+  .cir-card-info { flex:1; min-width:0; }
+  .cir-nombre { font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cir-meta { font-size:12px; color:#888; margin-top:2px; }
+  .cir-horario-wrap { flex-shrink:0; }
+  .cir-horario-input { padding:5px 8px; border:1px solid #ddd; border-radius:7px; font-size:13px; font-weight:600; color:#185fa5; background:#f0f7ff; cursor:pointer; width:95px; }
+  .cir-horario-input:focus { outline:none; border-color:#378add; }
+  .cir-estado { flex-shrink:0; }
+
   /* ── Panel lateral detalle paciente ── */
   .detalle-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:700; opacity:0; pointer-events:none; transition:opacity 0.25s; }
   .detalle-overlay.show { opacity:1; pointer-events:all; }
@@ -463,6 +477,7 @@
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('carga')">📋 Carga del día</button>
+  <button class="tab" onclick="switchTab('cirugia')">🔪 Cirugía</button>
   <button class="tab" onclick="switchTab('buscar')">🔍 Buscar pacientes</button>
 </div>
 
@@ -542,6 +557,87 @@
       </div>
       <div id="listaPacientes" style="flex:1;"></div>
     </div>
+  </div>
+</div>
+
+<!-- PESTAÑA CIRUGÍA -->
+<div class="view" id="view-cirugia">
+  <div class="layout">
+    <div class="panel-form">
+      <div class="section-label">Nueva cirugía</div>
+
+      <div class="form-group">
+        <label class="form-label">Nombre y apellido</label>
+        <input type="text" id="cir-nombre" placeholder="Ej: Juan Pérez">
+      </div>
+      <div class="form-group">
+        <label class="form-label">DNI</label>
+        <input type="text" id="cir-dni" placeholder="12345678" maxlength="8">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Celular</label>
+        <div class="tel-wrap">
+          <select id="cir-pais" onchange="actualizarPrefijoC()">
+            <option value="549" selected>🇦🇷 +549</option>
+            <option value="598">🇺🇾 +598</option>
+            <option value="56">🇨🇱 +56</option>
+            <option value="55">🇧🇷 +55</option>
+            <option value="1">🇺🇸 +1</option>
+          </select>
+          <div class="tel-prefix" id="cir-prefijo">+549</div>
+          <input type="tel" id="cir-tel" placeholder="2945 590047" maxlength="15">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Obra social</label>
+        <input type="text" id="cir-obra" placeholder="PAMI, OSDE, Particular...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fecha de cirugía</label>
+        <input type="date" id="cir-fecha">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Horario</label>
+        <input type="time" id="cir-horario" style="width:100%;">
+      </div>
+
+      <div class="divider"></div>
+
+      <div style="background:#f0f7ff;border:1px solid #c5d9f0;border-radius:10px;padding:12px;font-size:12px;color:#185fa5;line-height:1.7;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:#888;margin-bottom:8px;">Mensaje que se enviará</div>
+        <div style="color:#1a1a1a;font-size:13px;">
+          📍 <strong>Lugar:</strong> Clínica Los Alerces<br>
+          ⏰ <strong>Horario:</strong> según paciente<br><br>
+          💊 <strong>Tratamiento previo:</strong><br>
+          • <strong>Martes</strong> (2 días antes): MOXIFLOXACINA 0.5% cada 4 hs<br>
+          • <strong>Jueves:</strong> gota tapa roja (Tropicamida/Fenilefrina) cada 10 min, una <strong><u>"hora y media antes de la cirugía"</u></strong>
+        </div>
+      </div>
+
+      <button class="btn-agregar" onclick="guardarCirugia()" style="margin-top:14px;">+ Agregar cirugía</button>
+    </div>
+
+    <div class="panel-list">
+      <div class="list-header">
+        <div class="list-header-left">
+          <div class="section-label" style="margin:0;">Lista de cirugías</div>
+          <span class="count-badge" id="cir-countBadge">0 pacientes</span>
+        </div>
+      </div>
+      <div id="listaCirugias" style="flex:1;"></div>
+    </div>
+  </div>
+</div>
+<!-- actions bar cirugía -->
+<div class="actions-bar" id="actionsBarCirugia" style="display:none;">
+  <div class="actions-left">
+    <button class="btn-select-all" onclick="seleccionarTodasCirugias()">Seleccionar todo</button>
+  </div>
+  <div class="actions-right">
+    <button class="btn-enviar" id="btnEnviarCir" onclick="enviarCirugias()">
+      <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
+      Enviar recordatorios
+    </button>
   </div>
 </div>
 
@@ -661,11 +757,16 @@ async function cargarProximoNumero() {
 }
 
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='carga')||(i===1&&tab==='buscar')));
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', (i===0&&tab==='carga')||(i===1&&tab==='cirugia')||(i===2&&tab==='buscar'));
+  });
   document.getElementById('view-carga').classList.toggle('active', tab==='carga');
+  document.getElementById('view-cirugia').classList.toggle('active', tab==='cirugia');
   document.getElementById('view-buscar').classList.toggle('active', tab==='buscar');
   document.getElementById('actionsBar').style.display = tab==='carga' ? 'flex' : 'none';
+  document.getElementById('actionsBarCirugia').style.display = tab==='cirugia' ? 'flex' : 'none';
   if (tab==='buscar') buscar();
+  if (tab==='cirugia') cargarCirugias();
 }
 
 function setSyncStatus(state) {
@@ -1526,6 +1627,152 @@ async function generarYSubirInforme() {
 
 init();
 checkAuth();
+
+// ── CIRUGÍAS ─────────────────────────────────────────────────────────────────
+
+let cirugias = [];
+
+function actualizarPrefijoC() {
+  const val = document.getElementById('cir-pais').value;
+  document.getElementById('cir-prefijo').textContent = '+' + val;
+}
+
+async function guardarCirugia() {
+  const nombre = document.getElementById('cir-nombre').value.trim();
+  const dni    = document.getElementById('cir-dni').value.trim();
+  const tel    = document.getElementById('cir-tel').value.replace(/\D/g,'');
+  const pais   = document.getElementById('cir-pais').value;
+  const obra   = document.getElementById('cir-obra').value.trim();
+  const fecha  = document.getElementById('cir-fecha').value;
+  const horario= document.getElementById('cir-horario').value;
+
+  if (!nombre || !dni || !tel || !fecha) { showToast('Completá nombre, DNI, celular y fecha'); return; }
+
+  const celular = pais + tel;
+  const { data, error } = await sb.from('cirugias').insert([{
+    medico: medicoActual, nombre_completo: nombre, dni, celular,
+    obra_social: obra, fecha, horario, enviado: false
+  }]).select();
+
+  if (error) { showToast('Error al guardar: ' + error.message); return; }
+
+  // Limpiar form
+  ['cir-nombre','cir-dni','cir-tel','cir-obra','cir-horario'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('cir-fecha').value = '';
+  showToast('✓ Cirugía agregada');
+  cargarCirugias();
+}
+
+async function cargarCirugias() {
+  if (!medicoActual) return;
+  const { data } = await sb.from('cirugias').select('*').eq('medico', medicoActual).order('fecha').order('horario');
+  cirugias = data || [];
+  renderCirugias();
+}
+
+function renderCirugias() {
+  const el = document.getElementById('listaCirugias');
+  document.getElementById('cir-countBadge').textContent = cirugias.length + ' paciente' + (cirugias.length!==1?'s':'');
+
+  if (cirugias.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🔪</div>No hay cirugías cargadas.</div>`;
+    return;
+  }
+
+  // Agrupar por fecha
+  const grupos = {};
+  cirugias.forEach(c => { const f = c.fecha||'Sin fecha'; if(!grupos[f]) grupos[f]=[]; grupos[f].push(c); });
+
+  const diasES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+  el.innerHTML = Object.entries(grupos).map(([fecha, lista]) => {
+    const d = new Date(fecha + 'T12:00:00');
+    const label = `${diasES[d.getDay()]} ${d.getDate()} de ${mesesES[d.getMonth()]}`;
+    const cards = lista.map(c => `
+      <div class="cir-card${c.enviado?' cir-enviada':''}" data-id="${c.id}">
+        <div class="cir-card-check">
+          <input type="checkbox" class="check-cir" value="${c.id}" onclick="event.stopPropagation()">
+        </div>
+        <div class="cir-card-info">
+          <div class="cir-nombre">${c.nombre_completo}</div>
+          <div class="cir-meta">DNI ${c.dni} · ${c.obra_social||'Particular'}</div>
+        </div>
+        <div class="cir-horario-wrap">
+          <input type="time" class="cir-horario-input" value="${c.horario||''}"
+            onclick="event.stopPropagation()"
+            onchange="actualizarHorarioCir('${c.id}', this.value)"
+            title="Horario de cirugía">
+        </div>
+        <div class="cir-estado">
+          ${c.enviado
+            ? '<span class="badge-enviado">✓ ENV</span>'
+            : '<span class="badge-pendiente">⏳ PEND</span>'}
+        </div>
+        <button class="btn-remove" onclick="eliminarCirugia('${c.id}')" title="Eliminar">✕</button>
+      </div>`).join('');
+
+    return `<div class="fecha-grupo-header">
+      <span class="fecha-grupo-label">${label}</span>
+      <span class="fecha-grupo-count">${lista.length} paciente${lista.length!==1?'s':''}</span>
+    </div>${cards}`;
+  }).join('');
+}
+
+async function actualizarHorarioCir(id, horario) {
+  await sb.from('cirugias').update({ horario }).eq('id', id);
+  const c = cirugias.find(x => x.id === id);
+  if (c) c.horario = horario;
+  showToast('Horario actualizado');
+}
+
+async function eliminarCirugia(id) {
+  if (!confirm('¿Eliminar esta cirugía?')) return;
+  await sb.from('cirugias').delete().eq('id', id);
+  cirugias = cirugias.filter(c => c.id !== id);
+  renderCirugias();
+}
+
+function seleccionarTodasCirugias() {
+  const checks = document.querySelectorAll('.check-cir');
+  const todas = [...checks].every(c => c.checked);
+  checks.forEach(c => c.checked = !todas);
+}
+
+async function enviarCirugias() {
+  const checks = [...document.querySelectorAll('.check-cir:checked')];
+  if (checks.length === 0) { showToast('Seleccioná al menos una cirugía'); return; }
+
+  const btn = document.getElementById('btnEnviarCir');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+
+  const lista = checks.map(ch => {
+    const c = cirugias.find(x => x.id === ch.value);
+    return { nombre: c.nombre_completo, celular: c.celular, horario: c.horario || '—' };
+  });
+
+  try {
+    const resp = await fetch('/api/enviar-cirugia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lista)
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    if (data.ok) {
+      showToast('📤 Enviando recordatorios a ' + lista.length + ' paciente(s)...');
+      const ids = checks.map(c => c.value);
+      await sb.from('cirugias').update({ enviado: true }).in('id', ids);
+      cirugias.forEach(c => { if (ids.includes(c.id)) c.enviado = true; });
+      renderCirugias();
+    } else { throw new Error(data.error); }
+  } catch(err) {
+    alert('Error al conectar con el bot:\n' + err.message);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg> Enviar recordatorios`;
+}
 
 // ── DETALLE SIDEBAR ──────────────────────────────────────────────────────────
 let _detalleId = null;
