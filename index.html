@@ -593,6 +593,10 @@
         <input type="text" id="cir-obra" placeholder="PAMI, OSDE, Particular...">
       </div>
       <div class="form-group">
+        <label class="form-label">Tipo de cirugía</label>
+        <input type="text" id="cir-tipo" placeholder="Ej: cataratas, pterigion...">
+      </div>
+      <div class="form-group">
         <label class="form-label">Fecha de cirugía</label>
         <input type="date" id="cir-fecha">
       </div>
@@ -1644,6 +1648,7 @@ async function guardarCirugia() {
   const tel    = document.getElementById('cir-tel').value.replace(/\D/g,'');
   const pais   = document.getElementById('cir-pais').value;
   const obra   = document.getElementById('cir-obra').value.trim();
+  const tipo   = document.getElementById('cir-tipo').value.trim() || 'cataratas';
   const fecha  = document.getElementById('cir-fecha').value;
   const horario= document.getElementById('cir-horario').value;
 
@@ -1652,13 +1657,13 @@ async function guardarCirugia() {
   const celular = pais + tel;
   const { data, error } = await sb.from('cirugias').insert([{
     medico: medicoActual, nombre_completo: nombre, dni, celular,
-    obra_social: obra, fecha, horario, enviado: false
+    obra_social: obra, tipo_cirugia: tipo, fecha, horario, enviado: false
   }]).select();
 
   if (error) { showToast('Error al guardar: ' + error.message); return; }
 
   // Limpiar form
-  ['cir-nombre','cir-dni','cir-tel','cir-obra','cir-horario'].forEach(id => document.getElementById(id).value = '');
+  ['cir-nombre','cir-dni','cir-tel','cir-obra','cir-tipo','cir-horario'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('cir-fecha').value = '';
   showToast('✓ Cirugía agregada');
   cargarCirugias();
@@ -1743,6 +1748,7 @@ function editarCirugia(id) {
   document.getElementById('cir-prefijo').textContent = '+' + paisVal;
   document.getElementById('cir-tel').value     = telVal;
   document.getElementById('cir-obra').value    = c.obra_social || '';
+  document.getElementById('cir-tipo').value    = c.tipo_cirugia || '';
   document.getElementById('cir-fecha').value   = c.fecha || '';
   document.getElementById('cir-horario').value = c.horario || '';
 
@@ -1766,6 +1772,7 @@ async function guardarEdicionCirugia() {
   const tel     = document.getElementById('cir-tel').value.replace(/\D/g,'');
   const pais    = document.getElementById('cir-pais').value;
   const obra    = document.getElementById('cir-obra').value.trim();
+  const tipo    = document.getElementById('cir-tipo').value.trim() || 'cataratas';
   const fecha   = document.getElementById('cir-fecha').value;
   const horario = document.getElementById('cir-horario').value;
 
@@ -1773,7 +1780,7 @@ async function guardarEdicionCirugia() {
 
   const celular = pais + tel;
   const { error } = await sb.from('cirugias').update({
-    nombre_completo: nombre, dni, celular, obra_social: obra, fecha, horario
+    nombre_completo: nombre, dni, celular, obra_social: obra, tipo_cirugia: tipo, fecha, horario
   }).eq('id', _cirEditandoId);
 
   if (error) { showToast('Error al guardar: ' + error.message); return; }
@@ -1785,7 +1792,7 @@ async function guardarEdicionCirugia() {
 
 function cancelarEdicionCir() {
   _cirEditandoId = null;
-  ['cir-nombre','cir-dni','cir-tel','cir-obra','cir-horario'].forEach(id => document.getElementById(id).value = '');
+  ['cir-nombre','cir-dni','cir-tel','cir-obra','cir-tipo','cir-horario'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('cir-fecha').value = '';
   const btn = document.querySelector('#view-cirugia .btn-agregar');
   btn.textContent = '+ Agregar cirugía';
@@ -1823,7 +1830,7 @@ async function enviarCirugias() {
 
   const lista = checks.map(ch => {
     const c = cirugias.find(x => x.id === ch.value);
-    return { nombre: c.nombre_completo, celular: c.celular, horario: c.horario || '—' };
+    return { nombre: c.nombre_completo, celular: c.celular, horario: c.horario || '—', tipo: c.tipo_cirugia || 'cataratas' };
   });
 
   try {
