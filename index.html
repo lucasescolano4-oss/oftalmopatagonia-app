@@ -190,6 +190,12 @@
   .btn-logout { font-size:12px; padding:4px 12px; background:#f5f5f3; color:#888; border:1px solid #e5e5e3; border-radius:99px; cursor:pointer; transition:all 0.15s; }
   .btn-logout:hover { background:#fee; color:#e24b4a; border-color:#e24b4a60; }
 
+  /* Informe resumen en sidebar */
+  .inf-res-section { margin-bottom:10px; }
+  .inf-res-titulo { font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#185fa5;margin-bottom:5px; }
+  .inf-res-row { display:flex;gap:8px;align-items:baseline;font-size:12px;padding:2px 0;line-height:1.4; }
+  .inf-res-ojo { font-weight:700;color:#aaa;font-size:10px;width:22px;flex-shrink:0;text-transform:uppercase;padding-top:1px; }
+
   /* Modal informe */
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:800; display:none; align-items:center; justify-content:center; padding:20px; }
   .modal-overlay.show { display:flex; }
@@ -634,7 +640,8 @@
   </div>
 </div>
 <!-- actions bar cirugía -->
-<div class="actions-bar" id="actionsBarCirugia" style="display:none;">
+<div class="actions-bar" id="actionsBarCirugia" style="display:none;flex-wrap:wrap;row-gap:6px;">
+  <textarea id="cir-msg-extra" placeholder="Mensaje adicional opcional (se agrega al final del recordatorio)..." style="width:100%;resize:none;height:50px;padding:8px 10px;font-size:13px;border:1px solid #ddd;border-radius:8px;font-family:inherit;color:#1a1a1a;"></textarea>
   <div class="actions-left">
     <button class="btn-select-all" onclick="seleccionarTodasCirugias()">Seleccionar todo</button>
   </div>
@@ -1610,7 +1617,26 @@ async function generarYSubirInforme() {
     Object.entries(payload).forEach(([k,v]) => formData.append(k, String(v||'')));
     await fetch(SHEET_URL, { method:'POST', mode:'no-cors', body: formData });
 
-    const { error } = await sb.from('pacientes').update({ informe_realizado: true }).eq('id', _informeId);
+    // Guardar datos del informe para mostrar en la sidebar
+    const informeDataToSave = {
+      estudios: p.estudios || [],
+      campos: {},
+      diagnostico: document.getElementById('informeDiagnostico').value.trim(),
+      observaciones: document.getElementById('informeObservaciones').value.trim()
+    };
+    const todosLosCampos = [];
+    for (const est of (p.estudios || [])) {
+      const cfg = ESTUDIOS_CONFIG[est];
+      if (!cfg) continue;
+      if (cfg.grupos) cfg.grupos.forEach(g => todosLosCampos.push(...g.campos));
+      else todosLosCampos.push(...cfg.campos);
+    }
+    todosLosCampos.forEach(campo => {
+      const el = document.getElementById('campo_' + campo.id);
+      if (el) informeDataToSave.campos[campo.id] = el.value.trim();
+    });
+
+    const { error } = await sb.from('pacientes').update({ informe_realizado: true, informe_data: informeDataToSave }).eq('id', _informeId);
     if (!error) {
       if (_informeIdx >= 0) pacientesHoy[_informeIdx].informe_realizado = true;
       if (_informeResultadoEl) {
@@ -1828,9 +1854,10 @@ async function enviarCirugias() {
   const btn = document.getElementById('btnEnviarCir');
   btn.disabled = true; btn.textContent = 'Enviando...';
 
+  const mensajeExtra = (document.getElementById('cir-msg-extra').value || '').trim();
   const lista = checks.map(ch => {
     const c = cirugias.find(x => x.id === ch.value);
-    return { nombre: c.nombre_completo, celular: c.celular, horario: c.horario || '—', tipo: c.tipo_cirugia || 'cataratas' };
+    return { nombre: c.nombre_completo, celular: c.celular, horario: c.horario || '—', tipo: c.tipo_cirugia || 'cataratas', mensajeExtra };
   });
 
   try {
@@ -1859,7 +1886,42 @@ async function enviarCirugias() {
 // ── DETALLE SIDEBAR ──────────────────────────────────────────────────────────
 let _detalleId = null;
 
-function abrirDetalle(cardEl) {
+function renderInformeResumen(informeData, estudios) {
+  if (!informeData || !informeData.campos) return '<span style="color:#aaa;font-size:12px;">Sin datos guardados</span>';
+  const campos = informeData.campos;
+  const shortOjo = s => s.split(':')[0].trim();
+  const renderCampoRow = (campo) => {
+    const val = campos[campo.id];
+    if (val === undefined || val === null || val === '') return '';
+    const isNormal = campo.normal && val === campo.normal;
+    const display = isNormal
+      ? `<span style="color:#1a7a45;font-weight:500">Normal</span>`
+      : `<span style="color:#1a1a1a">${val.length > 50 ? val.substring(0,50)+'…' : val}</span>`;
+    return `<div class="inf-res-row"><span class="inf-res-ojo">${shortOjo(campo.ojo)}</span>${display}</div>`;
+  };
+  let html = '';
+  for (const estudio of estudios) {
+    const config = ESTUDIOS_CONFIG[estudio];
+    if (!config) continue;
+    if (config.grupos) {
+      for (const grupo of config.grupos) {
+        const rows = grupo.campos.map(renderCampoRow).filter(Boolean).join('');
+        if (!rows) continue;
+        html += `<div class="inf-res-section"><div class="inf-res-titulo">${grupo.titulo}</div>${rows}</div>`;
+      }
+    } else {
+      const rows = config.campos.map(renderCampoRow).filter(Boolean).join('');
+      if (!rows) continue;
+      html += `<div class="inf-res-section"><div class="inf-res-titulo">${estudio}</div>${rows}</div>`;
+    }
+  }
+  if (informeData.diagnostico) {
+    html += `<div class="inf-res-section"><div class="inf-res-titulo">Diagnostico</div><div style="font-size:12px;color:#1a1a1a;line-height:1.5">${informeData.diagnostico}</div></div>`;
+  }
+  return html || '<span style="color:#aaa;font-size:12px;">Sin datos guardados</span>';
+}
+
+async function abrirDetalle(cardEl) {
   const d = cardEl.dataset;
   _detalleId = d.id;
   const estudios = (d.estudios || '').split('|').filter(Boolean);
@@ -1883,6 +1945,10 @@ function abrirDetalle(cardEl) {
     <div class="detalle-section-label">Estado</div>
     <div class="detalle-row"><span class="detalle-row-lbl">WhatsApp</span><span class="detalle-row-val" style="color:${enviado?'#1a7a45':'#856404'}">${enviado?'✓ Enviado':'⏳ Pendiente'}</span></div>
     <div class="detalle-row"><span class="detalle-row-lbl">Informe</span><span class="detalle-row-val" style="color:${informeHecho?'#1a7a45':'#aaa'}">${informeHecho?'✓ Realizado':'· Pendiente'}</span></div>
+    ${informeHecho ? `
+    <div class="detalle-section-label" style="margin-top:14px;">Resultados del informe</div>
+    <div id="detalleInformeResumen" style="padding:0 2px"><span style="color:#aaa;font-size:12px;">Cargando...</span></div>
+    ` : ''}
   `;
   // Nombre en header
   document.getElementById('detalleNombre').textContent = d.nombre;
@@ -1890,6 +1956,13 @@ function abrirDetalle(cardEl) {
 
   document.getElementById('detalleOverlay').classList.add('show');
   document.getElementById('detalleSidebar').classList.add('show');
+
+  // Fetch informe data si el informe está realizado
+  if (informeHecho) {
+    const { data } = await sb.from('pacientes').select('informe_data').eq('id', d.id).single();
+    const el = document.getElementById('detalleInformeResumen');
+    if (el) el.innerHTML = renderInformeResumen(data && data.informe_data, estudios);
+  }
 }
 
 function cerrarDetalle() {
