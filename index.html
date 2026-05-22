@@ -640,14 +640,20 @@
   </div>
 </div>
 <!-- actions bar cirugía -->
-<div class="actions-bar" id="actionsBarCirugia" style="display:none;flex-wrap:wrap;row-gap:6px;">
-  <textarea id="cir-msg-extra" placeholder="Mensaje adicional opcional (se agrega al final del recordatorio)..." style="width:100%;resize:none;height:50px;padding:8px 10px;font-size:13px;border:1px solid #ddd;border-radius:8px;font-family:inherit;color:#1a1a1a;"></textarea>
-  <div class="actions-left">
-    <button class="btn-select-all" onclick="seleccionarTodasCirugias()">Seleccionar todo</button>
+<div class="actions-bar" id="actionsBarCirugia" style="display:none;flex-wrap:wrap;row-gap:8px;align-items:flex-end;">
+  <div style="width:100%;display:flex;gap:8px;align-items:flex-end;">
+    <div style="flex:1;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#888;margin-bottom:4px;">Mensaje libre</div>
+      <textarea id="cir-msg-libre" placeholder="Escribí un mensaje para enviar a los seleccionados..." style="width:100%;resize:none;height:56px;padding:8px 10px;font-size:13px;border:1px solid #ddd;border-radius:8px;font-family:inherit;color:#1a1a1a;"></textarea>
+    </div>
+    <button class="btn-enviar" id="btnEnviarLibre" onclick="enviarMensajeLibre()" style="background:#185fa5;height:56px;white-space:nowrap;flex-shrink:0;">
+      Enviar mensaje
+    </button>
   </div>
-  <div class="actions-right">
+  <div style="width:100%;display:flex;justify-content:space-between;align-items:center;">
+    <button class="btn-select-all" onclick="seleccionarTodasCirugias()">Seleccionar todo</button>
     <button class="btn-enviar" id="btnEnviarCir" onclick="enviarCirugias()">
-      <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
+      <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:white;flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
       Enviar recordatorios
     </button>
   </div>
@@ -1854,10 +1860,9 @@ async function enviarCirugias() {
   const btn = document.getElementById('btnEnviarCir');
   btn.disabled = true; btn.textContent = 'Enviando...';
 
-  const mensajeExtra = (document.getElementById('cir-msg-extra').value || '').trim();
   const lista = checks.map(ch => {
     const c = cirugias.find(x => x.id === ch.value);
-    return { nombre: c.nombre_completo, celular: c.celular, horario: c.horario || '—', tipo: c.tipo_cirugia || 'cataratas', mensajeExtra };
+    return { nombre: c.nombre_completo, celular: c.celular, horario: c.horario || '—', tipo: c.tipo_cirugia || 'cataratas' };
   });
 
   try {
@@ -1881,6 +1886,39 @@ async function enviarCirugias() {
 
   btn.disabled = false;
   btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg> Enviar recordatorios`;
+}
+
+async function enviarMensajeLibre() {
+  const checks = [...document.querySelectorAll('.check-cir:checked')];
+  if (checks.length === 0) { showToast('Seleccioná al menos una cirugía'); return; }
+  const texto = (document.getElementById('cir-msg-libre').value || '').trim();
+  if (!texto) { showToast('Escribí un mensaje antes de enviar'); return; }
+
+  const btn = document.getElementById('btnEnviarLibre');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+
+  const lista = checks.map(ch => {
+    const c = cirugias.find(x => x.id === ch.value);
+    return { nombre: c.nombre_completo, celular: c.celular, mensaje: texto };
+  });
+
+  try {
+    const resp = await fetch('/api/enviar-libre', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lista)
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    if (data.ok) {
+      showToast('Mensaje enviado a ' + lista.length + ' paciente(s)');
+      document.getElementById('cir-msg-libre').value = '';
+    } else { throw new Error(data.error); }
+  } catch(err) {
+    alert('Error al enviar:\n' + err.message);
+  }
+
+  btn.disabled = false; btn.textContent = 'Enviar mensaje';
 }
 
 // ── DETALLE SIDEBAR ──────────────────────────────────────────────────────────
