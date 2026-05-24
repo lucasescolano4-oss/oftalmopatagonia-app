@@ -15,6 +15,8 @@
 <meta name="apple-mobile-web-app-title" content="Oftalmopatagonia">
 <link rel="apple-touch-icon" href="/icon.svg">
 
+<!-- Aplica tema antes de renderizar para evitar flash -->
+<script>(function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -416,6 +418,170 @@
     /* Toast más arriba para no quedar tapado por la actions-bar */
     .toast { bottom: 100px; }
   }
+
+  /* ═══════════════════════════════════════
+     DARK MODE
+  ═══════════════════════════════════════ */
+  .btn-theme { font-size:18px; background:none; border:none; cursor:pointer; padding:4px 6px; border-radius:8px; line-height:1; transition:background 0.15s; }
+  .btn-theme:hover { background:rgba(0,0,0,0.06); }
+  [data-theme="dark"] .btn-theme:hover { background:rgba(255,255,255,0.08); }
+
+  [data-theme="dark"] { color-scheme: dark; }
+  [data-theme="dark"] body { background:#111113; color:#e4e4e6; }
+
+  /* Estructura */
+  [data-theme="dark"] .header { background:#1c1c1e; border-color:#2c2c2e; }
+  [data-theme="dark"] .tabs { background:#1c1c1e; border-color:#2c2c2e; }
+  [data-theme="dark"] .tab { color:#666; background:none; }
+  [data-theme="dark"] .tab:hover { color:#e4e4e6; }
+  [data-theme="dark"] .tab.active { color:#e4e4e6; border-bottom-color:#e4e4e6; }
+  [data-theme="dark"] .actions-bar { background:#1c1c1e; border-color:#2c2c2e; }
+  [data-theme="dark"] .panel-form { background:#1c1c1e; border-color:#2c2c2e; }
+  [data-theme="dark"] .panel-list { background:#111113; }
+  [data-theme="dark"] .search-bar { background:#1c1c1e; border-color:#2c2c2e; }
+  [data-theme="dark"] .results-area { background:#111113; }
+  [data-theme="dark"] .divider { background:#2c2c2e; }
+
+  /* Textos */
+  [data-theme="dark"] .section-label { color:#555; }
+  [data-theme="dark"] .form-label { color:#888; }
+  [data-theme="dark"] .logo-sub,[data-theme="dark"] .fecha-hoy { color:#555; }
+  [data-theme="dark"] .paciente-meta,[data-theme="dark"] .cir-meta { color:#666; }
+  [data-theme="dark"] .empty-state { color:#555; }
+  [data-theme="dark"] .sync-status { color:#555; }
+
+  /* Inputs y selects */
+  [data-theme="dark"] input[type=text],[data-theme="dark"] input[type=date],
+  [data-theme="dark"] input[type=tel],[data-theme="dark"] input[type=search],
+  [data-theme="dark"] input[type=email],[data-theme="dark"] input[type=password],
+  [data-theme="dark"] select,[data-theme="dark"] textarea {
+    background:#242426; border-color:#3a3a3c; color:#e4e4e6;
+  }
+  [data-theme="dark"] input::placeholder,[data-theme="dark"] textarea::placeholder { color:#555; }
+  [data-theme="dark"] .tel-prefix { background:#242426; border-color:#3a3a3c; color:#888; }
+  [data-theme="dark"] .cir-horario-input { background:#162030; border-color:#2a4060; color:#5aadee; }
+
+  /* Chips de estudios */
+  [data-theme="dark"] .estudio-chip { background:#242426; border-color:#3a3a3c; color:#888; }
+  [data-theme="dark"] .estudio-chip:hover { border-color:#5a5a5c; color:#e4e4e6; }
+  [data-theme="dark"] .estudio-chip.active { background:#162030; border-color:#4a9de0; color:#4a9de0; }
+  [data-theme="dark"] .chip-dot { background:#555; }
+  [data-theme="dark"] .estudio-chip.active .chip-dot { background:#4a9de0; }
+
+  /* Botones */
+  [data-theme="dark"] .btn-agregar { background:#e4e4e6; color:#111113; }
+  [data-theme="dark"] .btn-select-all,[data-theme="dark"] .btn-export { background:#242426; border-color:#3a3a3c; color:#bbb; }
+  [data-theme="dark"] .btn-select-all:hover,[data-theme="dark"] .btn-export:hover { background:#2c2c2e; }
+  [data-theme="dark"] .btn-buscar { background:#e4e4e6; color:#111113; }
+  [data-theme="dark"] .btn-limpiar { background:#242426; border-color:#3a3a3c; color:#888; }
+  [data-theme="dark"] .btn-logout { background:#242426; color:#888; border-color:#3a3a3c; }
+  [data-theme="dark"] .btn-logout:hover { background:#2a0a0a; color:#e05050; border-color:#4a1010; }
+
+  /* Badges */
+  [data-theme="dark"] .count-badge { background:#242426; border-color:#3a3a3c; color:#888; }
+  [data-theme="dark"] .pending-badge { background:#2a200a; border-color:#4a360a; color:#d4a030; }
+  [data-theme="dark"] .badge-sin-orden { background:#2a0a0a; color:#e05050; border-color:#4a1010; }
+  [data-theme="dark"] .badge-informe { background:#162030; color:#4a9de0; border-color:#2a4060; }
+  [data-theme="dark"] .badge-informe.hecho { background:#0a2010; color:#30c870; border-color:#1a4030; }
+  [data-theme="dark"] .badge-enviado { background:#0a2010; color:#30c870; border-color:#1a4030; }
+  [data-theme="dark"] .badge-pendiente { background:#2a200a; color:#d4a030; border-color:#4a360a; }
+  [data-theme="dark"] .badge-sin-orden { background:#2a0a0a; color:#e05050; border-color:#4a1010; }
+  [data-theme="dark"] .medico-badge { background:#162030; color:#4a9de0; border-color:#2a4060; }
+  [data-theme="dark"] .medico-badge:hover { background:#1a2f45; }
+
+  /* Tarjetas paciente */
+  [data-theme="dark"] .paciente-card { background:#1c1c1e; border-color:#2c2c2e; }
+  [data-theme="dark"] .paciente-card.enviado { background:#0a1810; border-color:#1a4030; }
+  [data-theme="dark"] .paciente-card.seleccionado { background:#101820; border-color:#2a4060; }
+  [data-theme="dark"] .paciente-card.sin-orden { background:#180a0a; border-color:#4a1010; }
+  [data-theme="dark"] .paciente-initials { background:#162030; color:#4a9de0; }
+  [data-theme="dark"] .card-checkbox { background:#242426; border-color:#3a3a3c; }
+  [data-theme="dark"] .numero-orden { background:#e4e4e6; color:#111113; }
+  [data-theme="dark"] .estudio-tag { background:#242426; border-color:#3a3a3c; color:#888; }
+
+  /* Cards resultados */
+  [data-theme="dark"] .res-card { background:#1c1c1e; border-color:#2c2c2e; }
+  [data-theme="dark"] .res-card:hover { border-color:#2a4060; box-shadow:0 8px 20px rgba(0,0,0,0.5); }
+  [data-theme="dark"] .res-card.res-enviada { background:#0a1810; border-color:#1a4030; }
+  [data-theme="dark"] .res-card.res-seleccionada { background:#101820; border-color:#2a4060; }
+  [data-theme="dark"] .res-card-bottom { border-color:#2c2c2e; }
+  [data-theme="dark"] .res-card-informe { border-color:#2c2c2e; }
+  [data-theme="dark"] .res-card-informe:hover { background:#162030; }
+  [data-theme="dark"] .res-card-informe-lbl,[data-theme="dark"] .res-card-estado-lbl { color:#555; }
+  [data-theme="dark"] .res-card-informe-val.pendiente { color:#555; }
+  [data-theme="dark"] .res-num { background:#242426; color:#555; }
+  [data-theme="dark"] .fecha-grupo-header { border-color:#2c2c2e; }
+  [data-theme="dark"] .fecha-grupo-count { color:#555; }
+
+  /* Cards cirugía */
+  [data-theme="dark"] .cir-card { background:#1c1c1e; border-color:#2c2c2e; }
+  [data-theme="dark"] .cir-card:hover { border-color:#2a4060; box-shadow:0 4px 14px rgba(0,0,0,0.5); }
+  [data-theme="dark"] .cir-card.cir-enviada { background:#0a1810; border-color:#1a4030; }
+  [data-theme="dark"] .cir-nombre { color:#e4e4e6; }
+
+  /* Sidebar detalle */
+  [data-theme="dark"] .detalle-sidebar { background:#1c1c1e; }
+  [data-theme="dark"] .detalle-section-label { color:#555; }
+  [data-theme="dark"] .detalle-row { border-color:#2c2c2e; }
+  [data-theme="dark"] .detalle-row-lbl { color:#666; }
+  [data-theme="dark"] .detalle-row-val { color:#e4e4e6; }
+  [data-theme="dark"] .detalle-footer { border-color:#2c2c2e; background:#1c1c1e; }
+  [data-theme="dark"] .dbtn-edit { background:#242426; border-color:#3a3a3c; color:#e4e4e6; }
+  [data-theme="dark"] .dbtn-edit:hover { background:#2c2c2e; }
+  [data-theme="dark"] .dbtn-del { background:#1c1c1e; border-color:#4a1010; color:#e05050; }
+  [data-theme="dark"] .dbtn-del:hover { background:#180a0a; }
+  [data-theme="dark"] .inf-res-titulo { color:#4a9de0; }
+  [data-theme="dark"] #detalleInformeResumen span[style*="color:#1a1a1a"] { color:#e4e4e6 !important; }
+  [data-theme="dark"] .detalle-row-val[style*="color:#1a7a45"] { color:#30c870 !important; }
+  [data-theme="dark"] .detalle-row-val[style*="color:#c0392b"] { color:#e05050 !important; }
+  [data-theme="dark"] .detalle-row-val[style*="color:#856404"] { color:#d4a030 !important; }
+  [data-theme="dark"] .detalle-row-val[style*="color:#aaa"] { color:#555 !important; }
+
+  /* Modal informe */
+  [data-theme="dark"] .modal-box { background:#1c1c1e; }
+  [data-theme="dark"] .modal-title { color:#e4e4e6; }
+  [data-theme="dark"] .modal-sub { color:#666; }
+  [data-theme="dark"] .modal-close-btn { color:#666; }
+  [data-theme="dark"] .informe-section-label { color:#666; }
+  [data-theme="dark"] .informe-divider { border-color:#2c2c2e; }
+  [data-theme="dark"] .informe-estudio-section { border-color:#2c2c2e; }
+  [data-theme="dark"] .informe-ojo-grid { background:#2c2c2e; }
+  [data-theme="dark"] .informe-ojo-item { background:#1c1c1e; }
+  [data-theme="dark"] .informe-subgrupo-titulo { background:#242426; border-color:#2c2c2e; color:#4a9de0; }
+  [data-theme="dark"] .opcion-chip { background:#242426; border-color:#3a3a3c; color:#888; }
+  [data-theme="dark"] .opcion-chip:hover { border-color:#4a9de0; color:#4a9de0; background:#162030; }
+  [data-theme="dark"] .opcion-chip.normal-chip { background:#0a2010; color:#30c870; border-color:#1a4030; }
+  [data-theme="dark"] .opcion-chip.selected { background:#162030; color:#4a9de0; border-color:#2a4060; }
+  [data-theme="dark"] .btn-pdf { background:#4a9de0; }
+
+  /* Result table */
+  [data-theme="dark"] .result-table { background:#1c1c1e; border-color:#2c2c2e; }
+  [data-theme="dark"] .result-table th { background:#242426; color:#555; border-color:#2c2c2e; }
+  [data-theme="dark"] .result-table td { border-color:#2c2c2e; color:#e4e4e6; }
+  [data-theme="dark"] .result-table tr:hover td { background:#242426; }
+
+  /* Pantalla médico y login */
+  [data-theme="dark"] .medico-screen { background:#111113; }
+  [data-theme="dark"] .medico-card { background:#1c1c1e; border-color:#2c2c2e; }
+  [data-theme="dark"] .medico-card:hover { background:#162030; border-color:#4a9de0; box-shadow:0 4px 12px rgba(74,157,224,0.15); }
+  [data-theme="dark"] .medico-card-nombre { color:#e4e4e6; }
+  [data-theme="dark"] .medico-card-titulo { color:#666; }
+  [data-theme="dark"] .medico-card-avatar { background:#162030; color:#4a9de0; }
+  [data-theme="dark"] .medico-logo-icon { background:#162030; }
+  [data-theme="dark"] .medico-title { color:#666; }
+  [data-theme="dark"] .login-screen { background:#111113; }
+  [data-theme="dark"] .login-box { background:#1c1c1e; border-color:#2c2c2e; box-shadow:0 8px 32px rgba(0,0,0,0.5); }
+  [data-theme="dark"] .login-title { color:#e4e4e6; }
+  [data-theme="dark"] .login-sub { color:#666; }
+  [data-theme="dark"] .login-field label { color:#888; }
+  [data-theme="dark"] .btn-login { background:#e4e4e6; color:#111113; }
+
+  /* Varios */
+  [data-theme="dark"] .logo-icon { background:#162030; }
+  [data-theme="dark"] .spinner { border-color:#333; border-top-color:#4a9de0; }
+  [data-theme="dark"] .toast { background:#e4e4e6; color:#111113; }
+  [data-theme="dark"] .panel-form .section-label { color:#555; }
+  [data-theme="dark"] .loading { color:#555; }
 </style>
 <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
 </head>
@@ -474,6 +640,7 @@
       <span id="syncText">Conectado</span>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
+      <button class="btn-theme" id="btnTheme" onclick="toggleTheme()" title="Cambiar tema"></button>
       <span class="medico-badge" id="medicoBadge"></span>
       <button class="btn-logout" id="btnLogout" onclick="doLogout()" style="display:none;">Salir</button>
       <div class="fecha-hoy" id="fechaHoy"></div>
@@ -1659,6 +1826,21 @@ async function generarYSubirInforme() {
 
 init();
 checkAuth();
+
+// ── TEMA OSCURO ───────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = dark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  document.getElementById('btnTheme').textContent = next === 'dark' ? '☀️' : '🌙';
+}
+
+// Inicializar ícono del botón según tema guardado
+(function() {
+  const saved = localStorage.getItem('theme') || 'light';
+  document.getElementById('btnTheme').textContent = saved === 'dark' ? '☀️' : '🌙';
+})();
 
 // ── CIRUGÍAS ─────────────────────────────────────────────────────────────────
 
