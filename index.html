@@ -423,23 +423,70 @@
      VENTANA MEDIANA (split-screen ~900-1200px)
   ═══════════════════════════════════════ */
   @media (max-width: 1200px) and (min-width: 769px) {
-    /* Panel formulario más angosto */
-    .layout { grid-template-columns: 280px 1fr; }
-    /* Cards: 2 columnas en vez de 4 */
+    .layout { grid-template-columns: 260px 1fr; }
     .res-cards-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    /* Chips de estudios: 1 columna */
     .estudios-grid { grid-template-columns: 1fr !important; }
   }
 
   @media (max-width: 960px) and (min-width: 769px) {
-    /* Panel formulario muy angosto */
-    .layout { grid-template-columns: 230px 1fr; }
+    .layout { grid-template-columns: 210px 1fr; }
+    .res-cards-grid { grid-template-columns: 1fr !important; }
+    .logo-sub, .fecha-hoy { display: none; }
+    .tab { padding: 10px 12px; font-size: 13px; }
+    .panel-form { padding: 0.875rem; }
+    .panel-list { padding: 0.875rem; }
+  }
+
+  /* ═══════════════════════════════════════
+     SPLIT-SCREEN ANGOSTO (600-768px)
+     Mantiene 2 columnas, muy compacto
+  ═══════════════════════════════════════ */
+  @media (max-width: 768px) and (min-width: 560px) {
+    body { height: auto !important; overflow: auto !important; }
+    .view { overflow: visible !important; height: auto !important; }
+    .view.active { display: flex !important; }
+
+    .logo-sub, .fecha-hoy { display: none; }
+    .header { padding: 0.6rem 0.875rem; }
+    .tab { padding: 8px 10px; font-size: 12px; white-space: nowrap; }
+    .tabs { overflow-x: auto; }
+
+    /* Mantiene 2 columnas con panel izquierdo angosto */
+    .layout {
+      grid-template-columns: 190px 1fr !important;
+      height: auto !important;
+      overflow: visible !important;
+    }
+    .panel-form { padding: 0.75rem; overflow-y: auto; border-right: 1px solid #e5e5e3; border-bottom: none; }
+    .panel-list { padding: 0.75rem; overflow-y: auto; }
+
+    /* Inputs compactos */
+    input[type=text], input[type=date], input[type=tel], input[type=search], select {
+      padding: 7px 8px !important;
+      font-size: 13px !important;
+    }
+    .section-label { font-size: 10px; margin-bottom: 8px; }
+    .form-label { font-size: 12px; }
+    .form-group { margin-bottom: 8px; }
+
+    /* Teléfono en columna para que quepa */
+    .tel-wrap { flex-wrap: wrap; }
+    .tel-wrap select { width: 100%; }
+    .tel-prefix { width: 100%; justify-content: center; }
+
+    /* Chips: 1 columna */
+    .estudios-grid { grid-template-columns: 1fr !important; gap: 5px; }
+    .estudio-chip { padding: 7px 8px; font-size: 12px; }
+
+    .btn-agregar { padding: 9px; font-size: 13px; margin-top: 10px; }
+
     /* Cards: 1 columna */
     .res-cards-grid { grid-template-columns: 1fr !important; }
-    /* Ocultar texto secundario del header */
-    .logo-sub, .fecha-hoy { display: none; }
-    /* Tabs más compactas */
-    .tab { padding: 10px 14px; font-size: 13px; }
+    .detalle-sidebar { width: 100vw; }
+
+    /* Modal informe */
+    .modal-overlay { padding: 8px; align-items: flex-end; }
+    .modal-box { width: 100% !important; max-width: 100% !important; max-height: 95vh !important; padding: 16px !important; border-radius: 16px 16px 0 0; }
   }
 
   /* ═══════════════════════════════════════
