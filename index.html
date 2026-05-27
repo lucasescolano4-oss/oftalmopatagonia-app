@@ -1748,8 +1748,9 @@ async function generarYSubirInforme() {
   const btn = document.getElementById('btnGenerarPDF');
   btn.disabled = true; btn.textContent = 'Enviando...';
 
-  const val = (id) => { const el = document.getElementById('campo_' + id); return el ? el.value.trim() : ''; };
-  const join = (a, b) => { const od = val(a), oi = val(b); const parts = []; if (od) parts.push('OD: ' + od); if (oi) parts.push('OI: ' + oi); return parts.join(' /// '); };
+  const NO_SOL = 'Estudio no solicitado';
+  const val = (id) => { const el = document.getElementById('campo_' + id); return el ? el.value.trim() : NO_SOL; };
+  const join = (a, b) => { const elA = document.getElementById('campo_' + a), elB = document.getElementById('campo_' + b); if (!elA && !elB) return NO_SOL; const parts = []; const od = elA ? elA.value.trim() : ''; const oi = elB ? elB.value.trim() : ''; if (od) parts.push('OD: ' + od); if (oi) parts.push('OI: ' + oi); return parts.join(' /// '); };
   const fechaStr = p.fecha ? p.fecha.split('-').reverse().join('/') : '';
 
   const payload = {
