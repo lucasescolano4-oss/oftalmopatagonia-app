@@ -1749,7 +1749,7 @@ async function generarYSubirInforme() {
   btn.disabled = true; btn.textContent = 'Enviando...';
 
   const val = (id) => { const el = document.getElementById('campo_' + id); return el ? el.value.trim() : ''; };
-  const join = (a, b) => [val(a), val(b)].filter(Boolean).join(' // ');
+  const join = (a, b) => { const od = val(a), oi = val(b); const parts = []; if (od) parts.push('OD: ' + od); if (oi) parts.push('OI: ' + oi); return parts.join(' /// '); };
   const fechaStr = p.fecha ? p.fecha.split('-').reverse().join('/') : '';
 
   const payload = {
