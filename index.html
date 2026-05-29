@@ -1764,6 +1764,9 @@ function abrirModalInforme(id, i) {
   _informeId = id; _informeIdx = i;
   const fecha = p.fecha ? new Date(p.fecha+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'}) : '';
   document.getElementById('modalInformeSub').textContent = `${p.nombre_completo} · DNI ${p.dni} · ${fecha}`;
+  const btnPDF = document.getElementById('btnGenerarPDF');
+  btnPDF.textContent = p.informe_realizado ? '🔄 Reenviar informe' : '📄 Enviar informe';
+  btnPDF.disabled = false;
 
   const estudios = (p.estudios && p.estudios.length) ? p.estudios : [];
   let html = '';
@@ -1885,14 +1888,13 @@ async function generarYSubirInforme() {
       }
       renderLista();
     }
-    cerrarModalInforme();
-    showToast('Informe enviado - Autocrat generara el PDF automaticamente');
+    showToast('✅ Informe enviado correctamente');
   } catch(err) {
     showToast('Error al enviar el informe');
     console.error(err);
   }
 
-  btn.disabled = false; btn.textContent = 'Enviar informe';
+  cerrarModalInforme();
 }
 
 init();
