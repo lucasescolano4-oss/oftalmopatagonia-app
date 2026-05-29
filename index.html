@@ -1492,10 +1492,13 @@ async function buscar() {
 
   const gruposHTML = Object.entries(grupos).map(([fecha, pacientes]) => `
     <div class="fecha-grupo-header">
-      <span class="fecha-grupo-label">${labelFecha(fecha)}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" class="check-grupo" data-fecha="${fecha}" onclick="toggleGrupo(this,'${fecha}')" style="width:15px;height:15px;cursor:pointer;accent-color:#378add;flex-shrink:0;">
+        <span class="fecha-grupo-label">${labelFecha(fecha)}</span>
+      </div>
       <span class="fecha-grupo-count">${pacientes.length} paciente${pacientes.length!==1?'s':''}</span>
     </div>
-    <div class="res-cards-grid">${pacientes.map(cardHTML).join('')}</div>
+    <div class="res-cards-grid" data-fecha-grid="${fecha}">${pacientes.map(cardHTML).join('')}</div>
   `).join('');
 
   // Resumen de estudios
@@ -1621,6 +1624,12 @@ async function editarDesdeResultados(id) {
 
   switchTab('carga');
   setTimeout(() => editarPaciente(id), 100);
+}
+
+function toggleGrupo(checkEl, fecha) {
+  const grid = document.querySelector(`.res-cards-grid[data-fecha-grid="${fecha}"]`);
+  if (!grid) return;
+  grid.querySelectorAll('.check-resultado').forEach(c => c.checked = checkEl.checked);
 }
 
 function limpiarBusqueda() {
