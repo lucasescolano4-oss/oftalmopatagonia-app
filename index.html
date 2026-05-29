@@ -709,6 +709,7 @@
       <span id="syncText">Conectado</span>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
+      <button id="btnTestBot" onclick="testearBot()" title="Verificar que el bot de WhatsApp está funcionando" style="display:none;padding:5px 11px;font-size:12px;border:1px solid #ddd;border-radius:8px;background:white;color:#555;cursor:pointer;transition:all 0.15s;">🤖 Test bot</button>
       <button class="btn-theme" id="btnTheme" onclick="toggleTheme()" title="Cambiar tema"></button>
       <span class="medico-badge" id="medicoBadge"></span>
       <button class="btn-logout" id="btnLogout" onclick="doLogout()" style="display:none;">Salir</button>
@@ -979,6 +980,7 @@ function seleccionarMedico(nombre) {
   medicoActual = nombre;
   document.getElementById('medicoScreen').classList.add('hidden');
   document.getElementById('medicoBadge').textContent = '👤 ' + nombre;
+  document.getElementById('btnTestBot').style.display = nombre.includes('Escolano') ? '' : 'none';
   cargarPacientesHoy();
   cargarProximoNumero();
 }
@@ -1895,6 +1897,41 @@ async function generarYSubirInforme() {
 
 init();
 checkAuth();
+
+// ── TEST BOT ──────────────────────────────────────────────────────────────────
+async function testearBot() {
+  const btn = document.getElementById('btnTestBot');
+  btn.textContent = '⏳ Enviando...';
+  btn.disabled = true;
+  try {
+    const resp = await fetch('/api/enviar-libre', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([{
+        nombre: 'Dr. Escolano',
+        celular: '5493512591423',
+        mensaje: '✅ Bot funcionando correctamente.\n\nSi no recibís este mensaje, el bot puede estar desvinculado de WhatsApp. En ese caso ingresá a la URL del servidor y escaneá el QR nuevamente.'
+      }])
+    });
+    if (resp.ok) {
+      btn.textContent = '✅ Enviado';
+      btn.style.borderColor = '#25D366';
+      btn.style.color = '#1a7a45';
+    } else {
+      throw new Error('Error ' + resp.status);
+    }
+  } catch (err) {
+    btn.textContent = '❌ Sin respuesta';
+    btn.style.borderColor = '#e24b4a';
+    btn.style.color = '#c0392b';
+  }
+  setTimeout(() => {
+    btn.textContent = '🤖 Test bot';
+    btn.disabled = false;
+    btn.style.borderColor = '';
+    btn.style.color = '';
+  }, 4000);
+}
 
 // ── TEMA OSCURO ───────────────────────────────────────────────────────────────
 function toggleTheme() {
