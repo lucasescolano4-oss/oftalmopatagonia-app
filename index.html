@@ -2295,7 +2295,8 @@ function cerrarDetalle() {
 }
 
 function detalleEditar() {
-  if (_detalleId) { cerrarDetalle(); editarDesdeResultados(_detalleId); }
+  const id = _detalleId;
+  if (id) { cerrarDetalle(); editarDesdeResultados(id); }
 }
 
 function detalleEliminar() {
