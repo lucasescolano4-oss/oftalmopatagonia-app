@@ -305,6 +305,8 @@
   .dbtn-informe { width:100%; padding:10px; font-size:13px; font-weight:600; background:#185fa5; color:white; border:none; border-radius:8px; cursor:pointer; text-align:center; }
   .dbtn-informe:hover { opacity:0.88; }
   .dbtn-informe:disabled { opacity:0.45; cursor:not-allowed; }
+  .dbtn-marcar { width:100%; padding:8px; font-size:12px; font-weight:500; background:white; color:#888; border:1px solid #ddd; border-radius:8px; cursor:pointer; text-align:center; }
+  .dbtn-marcar:hover { background:#f5f5f3; color:#555; }
 
   /* ═══════════════════════════════════════
      RESPONSIVO MÓVIL  (max-width: 768px)
@@ -2345,10 +2347,37 @@ async function detalleEnviarInforme() {
   btn.disabled = false; btn.textContent = '📋 Enviar informe';
 }
 
+async function detalleMarcarEnviado() {
+  if (!_detalleId) return;
+  const card = document.querySelector(`.res-card[data-id="${_detalleId}"]`);
+  if (!card) return;
+  const nombre = card.dataset.nombre || 'el paciente';
+  const yaEnviado = card.dataset.enviado === '1';
+  if (yaEnviado) {
+    showToast(`${nombre} ya está marcado como enviado`);
+    return;
+  }
+  await sb.from('pacientes').update({ enviado: true }).eq('id', _detalleId);
+  card.classList.add('res-enviada'); card.dataset.enviado = '1';
+  showToast(`✓ ${nombre} marcado como enviado`);
+  // Actualizar el estado en el sidebar
+  const estadoEl = document.querySelector('#detalleSidebarContent .detalle-row-val[data-field="enviado"]');
+  if (estadoEl) { estadoEl.textContent = '✓ Enviado'; estadoEl.style.color = '#1a7a45'; }
+}
+
 async function detalleEnviarWA() {
   if (!_detalleId) return;
   const card = document.querySelector(`.res-card[data-id="${_detalleId}"]`);
   if (!card) return;
+  const nombre = card.dataset.nombre || 'Este paciente';
+  const yaEnviado = card.dataset.enviado === '1';
+
+  // Confirmación si ya fue enviado
+  if (yaEnviado) {
+    const confirmar = confirm(`${nombre} ya tiene los estudios enviados.\n¿Querés enviarlos nuevamente?`);
+    if (!confirmar) return;
+  }
+
   const btn = document.getElementById('detalleBtnWA');
   btn.disabled = true; btn.textContent = 'Enviando...';
   try {
@@ -2363,7 +2392,7 @@ async function detalleEnviarWA() {
       card.classList.add('res-enviada'); card.dataset.enviado = '1';
     }
   } catch(e) { alert('Error: ' + e.message); }
-  btn.disabled = false; btn.textContent = '📤 Enviar WhatsApp';
+  btn.disabled = false; btn.textContent = '📤 Enviar estudios';
 }
 </script>
 
@@ -2385,6 +2414,7 @@ async function detalleEnviarWA() {
       <button class="dbtn-wa" id="detalleBtnWA" onclick="detalleEnviarWA()">📤 Enviar estudios</button>
     </div>
     <button class="dbtn-informe" id="detalleBtnInforme" onclick="detalleEnviarInforme()">📋 Enviar informe</button>
+    <button class="dbtn-marcar" id="detalleBtnMarcar" onclick="detalleMarcarEnviado()">✓ Marcar estudios como enviado</button>
   </div>
 </div>
 
