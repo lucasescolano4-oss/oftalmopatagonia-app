@@ -294,13 +294,17 @@
   .detalle-row-lbl { color:#888; font-size:13px; }
   .detalle-row-val { font-weight:500; font-size:13px; text-align:right; max-width:60%; }
   .detalle-estudios-wrap { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
-  .detalle-footer { padding:14px 20px; border-top:1px solid #e5e5e3; display:flex; gap:8px; flex-shrink:0; }
+  .detalle-footer { padding:14px 20px; border-top:1px solid #e5e5e3; display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
+  .detalle-footer-row { display:flex; gap:8px; }
   .dbtn-edit { flex:1; padding:10px; font-size:13px; font-weight:500; background:#f0f0ee; border:1px solid #ddd; border-radius:8px; cursor:pointer; text-align:center; }
   .dbtn-edit:hover { background:#e8e8e6; }
   .dbtn-del { padding:10px 14px; font-size:13px; font-weight:500; background:white; border:1px solid #fcc; border-radius:8px; cursor:pointer; color:#e24b4a; }
   .dbtn-del:hover { background:#fff5f5; }
   .dbtn-wa { flex:1; padding:10px; font-size:13px; font-weight:600; background:#25D366; color:white; border:none; border-radius:8px; cursor:pointer; text-align:center; }
   .dbtn-wa:hover { opacity:0.88; }
+  .dbtn-informe { width:100%; padding:10px; font-size:13px; font-weight:600; background:#185fa5; color:white; border:none; border-radius:8px; cursor:pointer; text-align:center; }
+  .dbtn-informe:hover { opacity:0.88; }
+  .dbtn-informe:disabled { opacity:0.45; cursor:not-allowed; }
 
   /* ═══════════════════════════════════════
      RESPONSIVO MÓVIL  (max-width: 768px)
@@ -2314,6 +2318,33 @@ function detalleEliminar() {
   if (card) { cerrarDetalle(); eliminarDesdeResultados(_detalleId, card); }
 }
 
+async function detalleEnviarInforme() {
+  if (!_detalleId) return;
+  const card = document.querySelector(`.res-card[data-id="${_detalleId}"]`);
+  if (!card) return;
+  const btn = document.getElementById('detalleBtnInforme');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    const nombre   = card.dataset.nombre   || '';
+    const celular  = card.dataset.celular  || '';
+    const dni      = card.dataset.dni      || '';
+    const resp = await fetch('/api/enviar-informe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([{ nombre, celular, dni }])
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      showToast('✅ Informe enviado por WhatsApp');
+    } else {
+      showToast('❌ ' + (data.error || 'Error al enviar informe'));
+    }
+  } catch (err) {
+    showToast('❌ Error de conexión');
+  }
+  btn.disabled = false; btn.textContent = '📋 Enviar informe';
+}
+
 async function detalleEnviarWA() {
   if (!_detalleId) return;
   const card = document.querySelector(`.res-card[data-id="${_detalleId}"]`);
@@ -2348,9 +2379,12 @@ async function detalleEnviarWA() {
   </div>
   <div class="detalle-body" id="detalleSidebarContent"></div>
   <div class="detalle-footer">
-    <button class="dbtn-edit" onclick="detalleEditar()">✏️ Editar</button>
-    <button class="dbtn-del" onclick="detalleEliminar()">🗑</button>
-    <button class="dbtn-wa" id="detalleBtnWA" onclick="detalleEnviarWA()">📤 Enviar WhatsApp</button>
+    <div class="detalle-footer-row">
+      <button class="dbtn-edit" onclick="detalleEditar()">✏️ Editar</button>
+      <button class="dbtn-del" onclick="detalleEliminar()">🗑</button>
+      <button class="dbtn-wa" id="detalleBtnWA" onclick="detalleEnviarWA()">📤 Enviar estudios</button>
+    </div>
+    <button class="dbtn-informe" id="detalleBtnInforme" onclick="detalleEnviarInforme()">📋 Enviar informe</button>
   </div>
 </div>
 
