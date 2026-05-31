@@ -1468,13 +1468,13 @@ async function buscar() {
       <div class="res-card-top">
         <div class="res-card-top-row1">
           <input type="checkbox" class="check-resultado" value="${p.id}" onclick="event.stopPropagation()">
-          <span class="res-num">${p.numero_orden||'—'}</span>
+          <span class="res-num">${p.numero_orden||'—'}${p.obra_social ? `<span style="font-weight:400;color:#888;font-size:10px;margin-left:4px;">${p.obra_social}</span>` : ''}</span>
           <span class="res-badges">
             ${enviado ? '<span class="badge-enviado">ENV</span>' : '<span class="badge-pendiente">PEND</span>'}
             ${!p.orden_autorizada ? '<span class="badge-sin-orden">⚠</span>' : ''}
           </span>
         </div>
-        <span class="res-nombre">${p.nombre_completo}</span>
+        <span class="res-nombre">${p.nombre_completo}${p.dni ? `<span style="font-weight:400;color:#aaa;font-size:11px;margin-left:6px;">${p.dni}</span>` : ''}</span>
         <div class="res-estudios-mini">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
       </div>
       <div class="res-card-bottom">
