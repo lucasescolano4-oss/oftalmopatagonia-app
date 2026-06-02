@@ -1509,6 +1509,7 @@ async function buscar() {
       data-estudios="${p.estudios.join('|')}" data-obra_social="${(p.obra_social||'').replace(/"/g,'&quot;')}"
       data-numero_orden="${p.numero_orden||''}" data-enviado="${enviado?'1':'0'}"
       data-informe="${informeHecho?'1':'0'}" data-orden_aut="${p.orden_autorizada?'1':'0'}"
+      data-email="${(p.email||'').replace(/"/g,'&quot;')}"
       onclick="abrirDetalle(this)">
       <div class="res-card-top">
         <div class="res-card-top-row1">
@@ -2365,6 +2366,10 @@ async function abrirDetalle(cardEl) {
   document.getElementById('detalleNombre').textContent = d.nombre;
   document.getElementById('detalleSub').textContent = `DNI ${d.dni} · ${fechaStr}`;
 
+  // Mostrar botón email solo si el paciente tiene email
+  const btnEmail = document.getElementById('detalleBtnEmail');
+  if (btnEmail) btnEmail.style.display = d.email ? '' : 'none';
+
   document.getElementById('detalleOverlay').classList.add('show');
   document.getElementById('detalleSidebar').classList.add('show');
 
@@ -2420,6 +2425,24 @@ async function detalleEnviarInforme() {
   btn.disabled = false; btn.textContent = '📋 Enviar informe';
 }
 
+async function detalleEnviarEmail() {
+  if (!_detalleId) return;
+  const card = document.querySelector(`.res-card[data-id="${_detalleId}"]`);
+  if (!card) return;
+  const btn = document.getElementById('detalleBtnEmail');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    const resp = await fetch('/api/enviar-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([{ nombre: card.dataset.nombre, email: card.dataset.email, dni: card.dataset.dni }])
+    });
+    const data = await resp.json();
+    showToast(data.ok ? '📧 Email enviado correctamente' : '❌ ' + (data.error || 'Error al enviar email'));
+  } catch(e) { showToast('❌ Error de conexión'); }
+  btn.disabled = false; btn.textContent = '📧 Enviar estudios por email';
+}
+
 async function detalleMarcarEnviado() {
   if (!_detalleId) return;
   const card = document.querySelector(`.res-card[data-id="${_detalleId}"]`);
@@ -2460,11 +2483,31 @@ async function detalleEnviarWA() {
     });
     const data = await resp.json();
     if (data.ok) {
-      showToast('📤 Enviando WhatsApp...');
+      showToast('📤 Enviando por WhatsApp...');
       await sb.from('pacientes').update({ enviado: true }).eq('id', _detalleId);
       card.classList.add('res-enviada'); card.dataset.enviado = '1';
+    } else {
+      // Fallback automático por email si tiene email
+      if (card.dataset.email) {
+        showToast('⚠️ WhatsApp falló — intentando por email...');
+        const respEmail = await fetch('/api/enviar-email', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([{ nombre: card.dataset.nombre, email: card.dataset.email, dni: card.dataset.dni }])
+        });
+        const dataEmail = await respEmail.json();
+        showToast(dataEmail.ok ? '📧 Enviado por email (WhatsApp no disponible)' : '❌ Falló WhatsApp y email');
+      } else {
+        showToast('❌ Error al enviar — el bot puede estar desconectado');
+      }
     }
-  } catch(e) { alert('Error: ' + e.message); }
+  } catch(e) {
+    if (card.dataset.email) {
+      showToast('⚠️ Bot caído — enviando por email...');
+      fetch('/api/enviar-email', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify([{ nombre: card.dataset.nombre, email: card.dataset.email, dni: card.dataset.dni }]) });
+    } else {
+      showToast('❌ Bot desconectado y sin email configurado');
+    }
+  }
   btn.disabled = false; btn.textContent = '📤 Enviar estudios';
 }
 </script>
@@ -2487,6 +2530,7 @@ async function detalleEnviarWA() {
       <button class="dbtn-wa" id="detalleBtnWA" onclick="detalleEnviarWA()">📤 Enviar estudios</button>
     </div>
     <button class="dbtn-informe" id="detalleBtnInforme" onclick="detalleEnviarInforme()">📋 Enviar informe</button>
+    <button class="dbtn-informe" id="detalleBtnEmail" onclick="detalleEnviarEmail()" style="display:none;background:#6c5ce7;">📧 Enviar estudios por email</button>
     <button class="dbtn-marcar" id="detalleBtnMarcar" onclick="detalleMarcarEnviado()">✓ Marcar estudios como enviado</button>
   </div>
 </div>
