@@ -716,6 +716,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <button id="btnTestBot" onclick="testearBot()" title="Verificar que el bot de WhatsApp está funcionando" style="display:none;padding:5px 11px;font-size:12px;border:1px solid #ddd;border-radius:8px;background:white;color:#555;cursor:pointer;transition:all 0.15s;">🤖 Test bot</button>
+      <button id="btnConfig" onclick="abrirConfig()" title="Configuración" style="display:none;padding:5px 9px;font-size:16px;border:1px solid #ddd;border-radius:8px;background:white;color:#555;cursor:pointer;transition:all 0.15s;">⚙️</button>
       <button class="btn-theme" id="btnTheme" onclick="toggleTheme()" title="Cambiar tema"></button>
       <span class="medico-badge" id="medicoBadge"></span>
       <button class="btn-logout" id="btnLogout" onclick="doLogout()" style="display:none;">Salir</button>
@@ -1000,6 +1001,7 @@ function seleccionarMedico(nombre) {
   document.getElementById('medicoScreen').classList.add('hidden');
   document.getElementById('medicoBadge').textContent = '👤 ' + nombre;
   document.getElementById('btnTestBot').style.display = nombre.includes('Escolano') ? '' : 'none';
+  document.getElementById('btnConfig').style.display = '';
   cargarPacientesHoy();
   cargarProximoNumero();
 }
@@ -1946,6 +1948,10 @@ async function generarYSubirInforme() {
     NUMERO_ORDEN: p.numero_orden || ''
   };
 
+  // Agregar firma del médico si existe
+  const firmaBase64 = await obtenerFirmaBase64();
+  if (firmaBase64) payload.FIRMA_BASE64 = firmaBase64;
+
   const SHEET_URL = medicoActual.includes('Escolano')
     ? 'https://script.google.com/macros/s/AKfycbwlT8Pwx_wSecUvfJKL5MYv0v52072r1rm_lb6dG-sCEnuDkPjAJ8V5dVaBeaEuWv4g/exec'
     : 'https://script.google.com/macros/s/AKfycbwJAKKna3APwSQmrnHAkZrCQAjEgVD6l5DwNZMSZT0dl2X9ptvED7Q6D_LZPpe86Un1/exec';
@@ -1995,6 +2001,82 @@ async function generarYSubirInforme() {
 
 init();
 checkAuth();
+
+// ── CONFIGURACIÓN ─────────────────────────────────────────────────────────────
+let _firmaBase64Nueva = null;
+
+async function abrirConfig() {
+  document.getElementById('configMedicoNombre').textContent = medicoActual;
+  document.getElementById('configFirmaConfirm').style.display = 'none';
+  document.getElementById('inputFirma').value = '';
+  _firmaBase64Nueva = null;
+
+  // Cargar firma existente
+  const { data } = await sb.from('firmas_medicos').select('firma_base64').eq('medico', medicoActual).single();
+  if (data && data.firma_base64) {
+    document.getElementById('configFirmaImg').src = data.firma_base64;
+    document.getElementById('configFirmaPreview').style.display = '';
+    document.getElementById('configFirmaVacia').style.display = 'none';
+  } else {
+    document.getElementById('configFirmaPreview').style.display = 'none';
+    document.getElementById('configFirmaVacia').style.display = '';
+  }
+
+  const modal = document.getElementById('modalConfig');
+  modal.style.display = 'flex';
+  modal.classList.add('show');
+}
+
+function cerrarConfig() {
+  const modal = document.getElementById('modalConfig');
+  modal.style.display = 'none';
+  modal.classList.remove('show');
+}
+
+function previewFirma(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 512000) { showToast('⚠️ La imagen supera los 500KB'); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    _firmaBase64Nueva = e.target.result;
+    document.getElementById('configFirmaPreviewNew').src = _firmaBase64Nueva;
+    document.getElementById('configFirmaConfirm').style.display = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+function cancelarFirma() {
+  _firmaBase64Nueva = null;
+  document.getElementById('configFirmaConfirm').style.display = 'none';
+  document.getElementById('inputFirma').value = '';
+}
+
+async function guardarFirma() {
+  if (!_firmaBase64Nueva) return;
+  const { error } = await sb.from('firmas_medicos').upsert({ medico: medicoActual, firma_base64: _firmaBase64Nueva, updated_at: new Date().toISOString() });
+  if (error) { showToast('❌ Error al guardar firma'); return; }
+  document.getElementById('configFirmaImg').src = _firmaBase64Nueva;
+  document.getElementById('configFirmaPreview').style.display = '';
+  document.getElementById('configFirmaVacia').style.display = 'none';
+  document.getElementById('configFirmaConfirm').style.display = 'none';
+  _firmaBase64Nueva = null;
+  showToast('✅ Firma guardada correctamente');
+}
+
+async function eliminarFirma() {
+  if (!confirm('¿Eliminar la firma? El informe quedará en blanco para firmar a mano.')) return;
+  await sb.from('firmas_medicos').delete().eq('medico', medicoActual);
+  document.getElementById('configFirmaPreview').style.display = 'none';
+  document.getElementById('configFirmaVacia').style.display = '';
+  showToast('✓ Firma eliminada');
+}
+
+// Obtiene la firma del médico actual (para el PDF)
+async function obtenerFirmaBase64() {
+  const { data } = await sb.from('firmas_medicos').select('firma_base64').eq('medico', medicoActual).single();
+  return data ? data.firma_base64 : null;
+}
 
 // ── TEST BOT ──────────────────────────────────────────────────────────────────
 async function testearBot() {
@@ -2519,6 +2601,53 @@ async function detalleEnviarWA() {
   btn.disabled = false; btn.textContent = '📤 Enviar estudios';
 }
 </script>
+
+<!-- Modal Configuración -->
+<div class="modal-overlay" id="modalConfig" style="display:none;align-items:center;justify-content:center;">
+  <div class="modal-box" style="max-width:420px;width:100%;">
+    <button class="modal-close-btn" onclick="cerrarConfig()">×</button>
+    <div class="modal-header">
+      <div class="modal-title">⚙️ Configuración</div>
+      <div class="modal-sub" id="configMedicoNombre"></div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px;">Firma digital</div>
+      <div style="font-size:12px;color:#888;margin-bottom:14px;">
+        Esta firma se inserta automáticamente en los informes PDF. Si no cargás ninguna, el espacio queda en blanco para firma a mano.
+      </div>
+
+      <!-- Preview de la firma actual -->
+      <div id="configFirmaPreview" style="display:none;margin-bottom:14px;text-align:center;padding:12px;border:1px solid #e0e0e0;border-radius:8px;background:#f9f9f7;">
+        <img id="configFirmaImg" src="" style="max-height:80px;max-width:280px;">
+        <div style="margin-top:8px;">
+          <button onclick="eliminarFirma()" style="font-size:12px;color:#e24b4a;border:1px solid #fcc;background:white;border-radius:6px;padding:4px 10px;cursor:pointer;">🗑 Eliminar firma</button>
+        </div>
+      </div>
+      <div id="configFirmaVacia" style="margin-bottom:14px;padding:16px;border:2px dashed #ddd;border-radius:8px;text-align:center;color:#aaa;font-size:13px;">
+        Sin firma configurada — se firmará a mano
+      </div>
+
+      <!-- Upload -->
+      <label style="display:block;width:100%;padding:10px;background:#185fa5;color:white;border-radius:8px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;">
+        📷 Subir imagen de firma
+        <input type="file" id="inputFirma" accept="image/*" onchange="previewFirma(this)" style="display:none;">
+      </label>
+      <div style="font-size:11px;color:#aaa;margin-top:6px;text-align:center;">PNG o JPG · Fondo blanco recomendado · Máx 500KB</div>
+
+      <!-- Confirmar subida -->
+      <div id="configFirmaConfirm" style="display:none;margin-top:14px;">
+        <div style="margin-bottom:10px;text-align:center;padding:10px;border:1px solid #378add;border-radius:8px;background:#f0f7ff;">
+          <img id="configFirmaPreviewNew" src="" style="max-height:70px;max-width:260px;">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="cancelarFirma()" style="flex:1;padding:9px;border:1px solid #ddd;border-radius:8px;background:#f5f5f3;cursor:pointer;font-size:13px;">Cancelar</button>
+          <button onclick="guardarFirma()" style="flex:1;padding:9px;background:#25D366;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">✓ Guardar firma</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Panel lateral detalle paciente -->
 <div class="detalle-overlay" id="detalleOverlay" onclick="cerrarDetalle()"></div>
