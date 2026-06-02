@@ -2022,15 +2022,11 @@ async function abrirConfig() {
     document.getElementById('configFirmaVacia').style.display = '';
   }
 
-  const modal = document.getElementById('modalConfig');
-  modal.style.display = 'flex';
-  modal.classList.add('show');
+  document.getElementById('modalConfig').classList.add('show');
 }
 
 function cerrarConfig() {
-  const modal = document.getElementById('modalConfig');
-  modal.style.display = 'none';
-  modal.classList.remove('show');
+  document.getElementById('modalConfig').classList.remove('show');
 }
 
 function previewFirma(input) {
@@ -2076,6 +2072,45 @@ async function eliminarFirma() {
 async function obtenerFirmaBase64() {
   const { data } = await sb.from('firmas_medicos').select('firma_base64').eq('medico', medicoActual).single();
   return data ? data.firma_base64 : null;
+}
+
+async function testPDFConFirma() {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '⏳ Generando...';
+
+  const firmaBase64 = await obtenerFirmaBase64();
+
+  const SHEET_URL = medicoActual.includes('Escolano')
+    ? 'https://script.google.com/macros/s/AKfycbwlT8Pwx_wSecUvfJKL5MYv0v52072r1rm_lb6dG-sCEnuDkPjAJ8V5dVaBeaEuWv4g/exec'
+    : 'https://script.google.com/macros/s/AKfycbwJAKKna3APwSQmrnHAkZrCQAjEgVD6l5DwNZMSZT0dl2X9ptvED7Q6D_LZPpe86Un1/exec';
+
+  const payload = {
+    FECHA: fechaLocalStr(), NOMBRE: 'García Juan Carlos Test', DNI: '28123456',
+    OBRA_SOCIAL: 'OSDE', NUMERO_ORDEN: '99',
+    ESTUDIOS: 'OCT,Campimetría',
+    OCTOD: 'Espesor retinal sin alteraciones en todos los cortes observados, depresión foveal conservada.',
+    OCTOI: 'Espesor retinal sin alteraciones en todos los cortes observados, depresión foveal conservada.',
+    OCTCFNOD: 'Dentro de los valores normales en los 4 cuadrantes.',
+    OCTCFNOI: 'Dentro de los valores normales en los 4 cuadrantes.',
+    OCTCGOD: 'Capa de células ganglionares dentro de los parámetros normales para la edad.',
+    OCTCGOI: 'Capa de células ganglionares dentro de los parámetros normales para la edad.',
+    CVCOD: 'No se observan escotomas. Sin alteraciones de la sensibilidad.',
+    CVCOI: 'No se observan escotomas. Sin alteraciones de la sensibilidad.',
+  };
+
+  if (firmaBase64) payload.FIRMA_BASE64 = firmaBase64;
+
+  try {
+    const formData = new URLSearchParams();
+    Object.entries(payload).forEach(([k,v]) => formData.append(k, String(v||'')));
+    await fetch(SHEET_URL, { method:'POST', mode:'no-cors', body: formData });
+    showToast('✅ PDF de prueba generado — revisá la carpeta de Drive');
+    cerrarConfig();
+  } catch(e) {
+    showToast('❌ Error: ' + e.message);
+  }
+
+  btn.disabled = false; btn.textContent = '📄 Generar PDF de prueba';
 }
 
 // ── TEST BOT ──────────────────────────────────────────────────────────────────
@@ -2603,7 +2638,7 @@ async function detalleEnviarWA() {
 </script>
 
 <!-- Modal Configuración -->
-<div class="modal-overlay" id="modalConfig" style="display:none;align-items:center;justify-content:center;">
+<div class="modal-overlay" id="modalConfig">
   <div class="modal-box" style="max-width:420px;width:100%;">
     <button class="modal-close-btn" onclick="cerrarConfig()">×</button>
     <div class="modal-header">
@@ -2634,6 +2669,13 @@ async function detalleEnviarWA() {
         <input type="file" id="inputFirma" accept="image/*" onchange="previewFirma(this)" style="display:none;">
       </label>
       <div style="font-size:11px;color:#aaa;margin-top:6px;text-align:center;">PNG o JPG · Fondo blanco recomendado · Máx 500KB</div>
+
+      <!-- Test PDF con firma -->
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;">
+        <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:8px;">Probar PDF con firma</div>
+        <button onclick="testPDFConFirma()" style="width:100%;padding:10px;background:#f0f0ee;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-size:13px;color:#333;">📄 Generar PDF de prueba</button>
+        <div style="font-size:11px;color:#aaa;margin-top:5px;text-align:center;">Genera un PDF de prueba usando la firma guardada</div>
+      </div>
 
       <!-- Confirmar subida -->
       <div id="configFirmaConfirm" style="display:none;margin-top:14px;">
