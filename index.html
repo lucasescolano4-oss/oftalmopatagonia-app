@@ -745,8 +745,11 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Fecha</label>
-        <input type="date" id="fecha">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <label class="form-label" style="margin:0;">Fecha</label>
+          <button type="button" id="btnEditarFecha" onclick="habilitarFecha()" style="font-size:11px;padding:2px 8px;border:1px solid #ddd;border-radius:6px;background:#f5f5f3;color:#666;cursor:pointer;">✏️ Editar</button>
+        </div>
+        <input type="date" id="fecha" readonly style="background:#f9f9f7;color:#888;cursor:default;">
       </div>
 
       <div class="form-group">
@@ -777,6 +780,10 @@
       <div class="form-group">
         <label class="form-label">Obra social</label>
         <input type="text" id="obraSocial" placeholder="Ej: PAMI, OSDE, Particular...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email <span style="font-size:11px;color:#aaa;">(opcional)</span></label>
+        <input type="email" id="emailPaciente" placeholder="ejemplo@mail.com">
       </div>
       <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #ddd;border-radius:8px;cursor:pointer;" onclick="toggleOrden()">
         <div id="ordenCheck" style="width:20px;height:20px;border:1.5px solid #ddd;border-radius:5px;display:flex;align-items:center;justify-content:center;background:white;flex-shrink:0;"></div>
@@ -1083,13 +1090,14 @@ async function guardarPaciente() {
   setSyncStatus('saving');
 
   const obraSocial = document.getElementById('obraSocial').value.trim();
+  const emailPaciente = document.getElementById('emailPaciente').value.trim();
 
   // Calcular próximo número de orden para este médico
   const { data: ultimoData } = await sb.from('pacientes').select('numero_orden').eq('medico', medicoActual).order('numero_orden', { ascending: false }).limit(1);
   const proximoNumero = (ultimoData && ultimoData.length > 0 ? (ultimoData[0].numero_orden || 0) : 0) + 1;
 
   const { data, error } = await sb.from('pacientes')
-    .insert([{ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, enviado: false, obra_social: obraSocial, orden_autorizada: ordenAutorizada, medico: medicoActual, numero_orden: proximoNumero }])
+    .insert([{ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, email: emailPaciente||null, fecha, estudios, enviado: false, obra_social: obraSocial, orden_autorizada: ordenAutorizada, medico: medicoActual, numero_orden: proximoNumero }])
     .select();
 
   btn.disabled = false; btn.textContent = '+ Agregar paciente';
@@ -1128,6 +1136,7 @@ function editarPaciente(id) {
   document.getElementById('dni').value = p.dni;
   document.getElementById('fecha').value = p.fecha;
   document.getElementById('obraSocial').value = p.obra_social || '';
+  document.getElementById('emailPaciente').value = p.email || '';
 
   // Orden autorizada
   ordenAutorizada = p.orden_autorizada || false;
@@ -1188,7 +1197,7 @@ async function actualizarPaciente() {
   setSyncStatus('saving');
 
   const { error } = await sb.from('pacientes')
-    .update({ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, obra_social: obraSocial, orden_autorizada: ordenAutorizada, medico: medicoActual })
+    .update({ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, email: emailPaciente||null, fecha, estudios, obra_social: obraSocial, orden_autorizada: ordenAutorizada, medico: medicoActual })
     .eq('id', editandoId);
 
   btn.disabled = false;
@@ -1196,7 +1205,7 @@ async function actualizarPaciente() {
 
   // Actualizar localmente
   const idx = pacientesHoy.findIndex(p => p.id === editandoId);
-  if (idx !== -1) Object.assign(pacientesHoy[idx], { nombre_completo: nombreCompleto, dni, celular: pais+telNumero, fecha, estudios, obra_social: obraSocial, orden_autorizada: ordenAutorizada });
+  if (idx !== -1) Object.assign(pacientesHoy[idx], { nombre_completo: nombreCompleto, dni, celular: pais+telNumero, email: emailPaciente||null, fecha, estudios, obra_social: obraSocial, orden_autorizada: ordenAutorizada });
 
   setSyncStatus('ok');
   cancelarEdicion();
@@ -1212,7 +1221,7 @@ function cancelarEdicion() {
 }
 
 function resetForm() {
-  ['nombreCompleto','dni','otrosEstudio','obraSocial'].forEach(id => document.getElementById(id).value='');
+  ['nombreCompleto','dni','otrosEstudio','obraSocial','emailPaciente'].forEach(id => document.getElementById(id).value='');
   ordenAutorizada = false;
   const check = document.getElementById('ordenCheck');
   check.innerHTML=''; check.style.background='white'; check.style.borderColor='#ddd';
@@ -1222,8 +1231,32 @@ function resetForm() {
   actualizarPrefijo();
   estudiosSeleccionados.clear();
   document.querySelectorAll('.estudio-chip').forEach(c=>c.classList.remove('active'));
-  document.getElementById('fecha').value=new Date().toISOString().split('T')[0];
+  document.getElementById('fecha').value = fechaLocalStr();
+  bloquearFecha();
   document.getElementById('nombreCompleto').focus();
+}
+
+function habilitarFecha() {
+  const input = document.getElementById('fecha');
+  const btn = document.getElementById('btnEditarFecha');
+  input.removeAttribute('readonly');
+  input.style.background = '';
+  input.style.color = '';
+  input.style.cursor = '';
+  input.focus();
+  btn.textContent = '🔒 Bloquear';
+  btn.onclick = bloquearFecha;
+}
+
+function bloquearFecha() {
+  const input = document.getElementById('fecha');
+  const btn = document.getElementById('btnEditarFecha');
+  input.setAttribute('readonly', true);
+  input.style.background = '#f9f9f7';
+  input.style.color = '#888';
+  input.style.cursor = 'default';
+  btn.textContent = '✏️ Editar';
+  btn.onclick = habilitarFecha;
 }
 
 function toggleCheckbox(id) {
@@ -2312,6 +2345,7 @@ async function abrirDetalle(cardEl) {
     <div class="detalle-row"><span class="detalle-row-lbl">Nombre</span><span class="detalle-row-val">${d.nombre}</span></div>
     <div class="detalle-row"><span class="detalle-row-lbl">DNI</span><span class="detalle-row-val">${d.dni}</span></div>
     <div class="detalle-row"><span class="detalle-row-lbl">Celular</span><span class="detalle-row-val">+${d.celular}</span></div>
+    ${d.email ? `<div class="detalle-row"><span class="detalle-row-lbl">Email</span><span class="detalle-row-val" style="font-size:12px;">${d.email}</span></div>` : ''}
     <div class="detalle-row"><span class="detalle-row-lbl">Obra social</span><span class="detalle-row-val">${d.obra_social||'Particular'}</span></div>
     <div class="detalle-section-label">Turno</div>
     <div class="detalle-row"><span class="detalle-row-lbl">Fecha</span><span class="detalle-row-val">${fechaStr}</span></div>
