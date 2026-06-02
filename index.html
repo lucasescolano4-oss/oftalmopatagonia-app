@@ -1919,12 +1919,18 @@ async function generarYSubirInforme() {
     NOMBRE:      p.nombre_completo,
     DNI:         p.dni,
     OBRA_SOCIAL: p.obra_social || 'Particular',
+    ESTUDIOS:    (p.estudios || []).join(','),
+    // Campos individuales OD/OI para el informe dinámico
     FOOD:        val('FOOD'),
     FOOI:        val('FOOI'),
     OCTOD:       val('OCTOD'),
     OCTOI:       val('OCTOI'),
-    OCTCFN:      join('OCTCFNOD','OCTCFNOI'),
-    OCTCG:       join('OCTCGOD','OCTCGOI'),
+    OCTCFN:      join('OCTCFNOD','OCTCFNOI'),   // para el sheet
+    OCTCG:       join('OCTCGOD','OCTCGOI'),      // para el sheet
+    OCTCFNOD:    val('OCTCFNOD'),
+    OCTCFNOI:    val('OCTCFNOI'),
+    OCTCGOD:     val('OCTCGOD'),
+    OCTCGOI:     val('OCTCGOI'),
     PAQOD:       val('PAQOD'),
     PAQOI:       val('PAQOI'),
     CPIOOD:      val('CPIOOD'),
@@ -1935,6 +1941,8 @@ async function generarYSubirInforme() {
     UBMOI:       val('UBMOI'),
     LIOOD:       val('LIOOD'),
     LIOOI:       val('LIOOI'),
+    TOPOD:       val('TOPOD'),
+    TOPOI:       val('TOPOI'),
     NUMERO_ORDEN: p.numero_orden || ''
   };
 
