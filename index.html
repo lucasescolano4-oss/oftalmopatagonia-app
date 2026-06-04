@@ -2119,6 +2119,10 @@ async function testPDFConFirma() {
 
   if (firmaBase64) payload.FIRMA_BASE64 = firmaBase64;
 
+  // DEBUG — verificar que la firma llega al payload
+  console.log('[TEST PDF] firmaBase64 presente:', !!firmaBase64, firmaBase64 ? '(' + firmaBase64.length + ' chars)' : '(null)');
+  console.log('[TEST PDF] payload.FIRMA_BASE64 presente:', !!payload.FIRMA_BASE64);
+
   try {
     await fetch(SHEET_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
     showToast('✅ PDF de prueba generado — revisá la carpeta de Drive');
