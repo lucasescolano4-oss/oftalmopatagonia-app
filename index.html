@@ -46,11 +46,11 @@
   .form-group { margin-bottom: 11px; }
   .form-label { font-size: 13px; color: #555; margin-bottom: 4px; display: block; }
 
-  input[type=text], input[type=date], input[type=tel], input[type=search], select {
+  input[type=text], input[type=date], input[type=tel], input[type=search], input[type=email], select {
     padding: 8px 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 8px;
     background: white; color: #1a1a1a; transition: border-color 0.15s;
   }
-  input[type=text], input[type=date], input[type=search] { width: 100%; }
+  input[type=text], input[type=date], input[type=search], input[type=email] { width: 100%; }
   input:focus, select:focus { outline: none; border-color: #378add; }
 
   .tel-wrap { display: flex; gap: 6px; align-items: stretch; }
@@ -348,7 +348,7 @@
     }
 
     /* Inputs más cómodos para dedo */
-    input[type=text], input[type=date], input[type=tel], input[type=search], select {
+    input[type=text], input[type=date], input[type=tel], input[type=search], input[type=email], select {
       padding: 12px 14px !important;
       font-size: 16px !important; /* evita el zoom automático de iOS */
     }
@@ -1957,9 +1957,7 @@ async function generarYSubirInforme() {
     : 'https://script.google.com/macros/s/AKfycbwJAKKna3APwSQmrnHAkZrCQAjEgVD6l5DwNZMSZT0dl2X9ptvED7Q6D_LZPpe86Un1/exec';
 
   try {
-    const formData = new URLSearchParams();
-    Object.entries(payload).forEach(([k,v]) => formData.append(k, String(v||'')));
-    await fetch(SHEET_URL, { method:'POST', mode:'no-cors', body: formData });
+    await fetch(SHEET_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
 
     // Guardar datos del informe para mostrar en la sidebar
     const informeDataToSave = {
@@ -2029,13 +2027,34 @@ function cerrarConfig() {
   document.getElementById('modalConfig').classList.remove('show');
 }
 
+function comprimirFirma(dataURL) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      // Máximo 350x120px para que el base64 quede pequeño
+      const maxW = 350, maxH = 120;
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.75));
+    };
+    img.src = dataURL;
+  });
+}
+
 function previewFirma(input) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
-  if (file.size > 512000) { showToast('⚠️ La imagen supera los 500KB'); return; }
+  if (file.size > 2000000) { showToast('⚠️ La imagen supera los 2MB'); return; }
   const reader = new FileReader();
-  reader.onload = (e) => {
-    _firmaBase64Nueva = e.target.result;
+  reader.onload = async (e) => {
+    _firmaBase64Nueva = await comprimirFirma(e.target.result);
     document.getElementById('configFirmaPreviewNew').src = _firmaBase64Nueva;
     document.getElementById('configFirmaConfirm').style.display = '';
   };
@@ -2101,9 +2120,7 @@ async function testPDFConFirma() {
   if (firmaBase64) payload.FIRMA_BASE64 = firmaBase64;
 
   try {
-    const formData = new URLSearchParams();
-    Object.entries(payload).forEach(([k,v]) => formData.append(k, String(v||'')));
-    await fetch(SHEET_URL, { method:'POST', mode:'no-cors', body: formData });
+    await fetch(SHEET_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
     showToast('✅ PDF de prueba generado — revisá la carpeta de Drive');
     cerrarConfig();
   } catch(e) {
