@@ -758,7 +758,8 @@
       </div>
       <div class="form-group">
         <label class="form-label">DNI</label>
-        <input type="text" id="dni" placeholder="12345678" maxlength="8">
+        <input type="text" id="dni" placeholder="12345678" maxlength="8" oninput="onDniInput(this.value)">
+        <div id="dniSugerencia" style="display:none;margin-top:8px;padding:12px;border:1.5px solid #378add;border-radius:10px;background:#f0f7ff;font-size:13px;"></div>
       </div>
       <div class="form-group">
         <label class="form-label">Celular</label>
@@ -1221,8 +1222,79 @@ function cancelarEdicion() {
   resetForm();
 }
 
+// ── AUTOFILL POR DNI ──────────────────────────────────────────────────────────
+let _dniTimer = null;
+
+function onDniInput(valor) {
+  clearTimeout(_dniTimer);
+  document.getElementById('dniSugerencia').style.display = 'none';
+  if (editandoId) return; // no buscar si está editando
+  const dni = valor.replace(/\D/g, '');
+  if (dni.length < 7) return;
+  _dniTimer = setTimeout(() => buscarPacientePorDni(dni), 500);
+}
+
+async function buscarPacientePorDni(dni) {
+  const { data } = await sb.from('pacientes')
+    .select('nombre_completo, celular, obra_social, email, fecha')
+    .eq('dni', dni)
+    .order('fecha', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return;
+
+  const fechaFmt = data.fecha ? data.fecha.split('-').reverse().join('/') : '';
+  const box = document.getElementById('dniSugerencia');
+  box.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <div style="font-size:20px;margin-top:1px;">📋</div>
+      <div style="flex:1;">
+        <div style="font-weight:600;color:#1a1a1a;margin-bottom:2px;">${data.nombre_completo}</div>
+        <div style="color:#666;margin-bottom:8px;">Última visita: ${fechaFmt} · ${data.obra_social || 'Sin obra social'}</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="cargarDatosPaciente()" style="flex:1;padding:7px;background:#185fa5;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">✓ Cargar datos</button>
+          <button onclick="document.getElementById('dniSugerencia').style.display='none'" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;color:#555;">✗</button>
+        </div>
+      </div>
+    </div>`;
+  box._data = data;
+  box.style.display = '';
+}
+
+function cargarDatosPaciente() {
+  const box = document.getElementById('dniSugerencia');
+  const data = box._data;
+  if (!data) return;
+
+  document.getElementById('nombreCompleto').value = data.nombre_completo || '';
+  document.getElementById('obraSocial').value = data.obra_social || '';
+  document.getElementById('emailPaciente').value = data.email || '';
+
+  // Parsear celular → prefijo + número
+  if (data.celular) {
+    const cel = data.celular;
+    const prefijos = ['549','598','595','591','55','56','34','1'];
+    let prefijo = '549', numero = cel;
+    for (const p of prefijos) {
+      if (cel.startsWith(p)) { prefijo = p; numero = cel.slice(p.length); break; }
+    }
+    document.getElementById('paisCodigo').value = prefijo;
+    document.getElementById('telNumero').value = numero;
+    actualizarPrefijo();
+  }
+
+  // Indicador visual — campos cargados
+  box.innerHTML = `<div style="color:#1a7a45;font-weight:600;">✅ Datos cargados — revisá el teléfono y confirmá</div>`;
+  // Resaltar campo celular para que lo verifique
+  document.getElementById('telNumero').style.outline = '2px solid #378add';
+  document.getElementById('telNumero').focus();
+  setTimeout(() => document.getElementById('telNumero').style.outline = '', 3000);
+}
+
 function resetForm() {
   ['nombreCompleto','dni','otrosEstudio','obraSocial','emailPaciente'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('dniSugerencia').style.display = 'none';
   ordenAutorizada = false;
   const check = document.getElementById('ordenCheck');
   check.innerHTML=''; check.style.background='white'; check.style.borderColor='#ddd';
