@@ -1948,9 +1948,9 @@ async function generarYSubirInforme() {
     NUMERO_ORDEN: p.numero_orden || ''
   };
 
-  // Agregar firma del médico si existe
-  const firmaBase64 = await obtenerFirmaBase64();
-  if (firmaBase64) payload.FIRMA_BASE64 = firmaBase64;
+  // Agregar URL de firma del médico si existe
+  const firmaUrl = await obtenerFirmaBase64();
+  if (firmaUrl) payload.FIRMA_URL = firmaUrl;
 
   const SHEET_URL = medicoActual.includes('Escolano')
     ? 'https://script.google.com/macros/s/AKfycbwlT8Pwx_wSecUvfJKL5MYv0v52072r1rm_lb6dG-sCEnuDkPjAJ8V5dVaBeaEuWv4g/exec'
@@ -2002,6 +2002,7 @@ checkAuth();
 
 // ── CONFIGURACIÓN ─────────────────────────────────────────────────────────────
 let _firmaBase64Nueva = null;
+let _firmaFileNuevo = null;
 
 async function abrirConfig() {
   document.getElementById('configMedicoNombre').textContent = medicoActual;
@@ -2009,10 +2010,11 @@ async function abrirConfig() {
   document.getElementById('inputFirma').value = '';
   _firmaBase64Nueva = null;
 
-  // Cargar firma existente
-  const { data } = await sb.from('firmas_medicos').select('firma_base64').eq('medico', medicoActual).single();
-  if (data && data.firma_base64) {
-    document.getElementById('configFirmaImg').src = data.firma_base64;
+  // Cargar firma existente (preferir URL de Storage, fallback a base64 legacy)
+  const { data } = await sb.from('firmas_medicos').select('firma_url, firma_base64').eq('medico', medicoActual).single();
+  const firmaExistente = data ? (data.firma_url || data.firma_base64) : null;
+  if (firmaExistente) {
+    document.getElementById('configFirmaImg').src = firmaExistente;
     document.getElementById('configFirmaPreview').style.display = '';
     document.getElementById('configFirmaVacia').style.display = 'none';
   } else {
@@ -2052,6 +2054,8 @@ function previewFirma(input) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
   if (file.size > 2000000) { showToast('⚠️ La imagen supera los 2MB'); return; }
+  // Guardar el File original comprimido para subir a Storage
+  _firmaFileNuevo = file;
   const reader = new FileReader();
   reader.onload = async (e) => {
     _firmaBase64Nueva = await comprimirFirma(e.target.result);
@@ -2063,41 +2067,83 @@ function previewFirma(input) {
 
 function cancelarFirma() {
   _firmaBase64Nueva = null;
+  _firmaFileNuevo = null;
   document.getElementById('configFirmaConfirm').style.display = 'none';
   document.getElementById('inputFirma').value = '';
 }
 
 async function guardarFirma() {
   if (!_firmaBase64Nueva) return;
-  const { error } = await sb.from('firmas_medicos').upsert({ medico: medicoActual, firma_base64: _firmaBase64Nueva, updated_at: new Date().toISOString() });
-  if (error) { showToast('❌ Error al guardar firma'); return; }
-  document.getElementById('configFirmaImg').src = _firmaBase64Nueva;
-  document.getElementById('configFirmaPreview').style.display = '';
-  document.getElementById('configFirmaVacia').style.display = 'none';
-  document.getElementById('configFirmaConfirm').style.display = 'none';
-  _firmaBase64Nueva = null;
-  showToast('✅ Firma guardada correctamente');
+  const btn = document.querySelector('#configFirmaConfirm button:last-child');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Guardando...'; }
+
+  try {
+    // Convertir base64 comprimido a Blob para subir a Storage
+    const base64puro = _firmaBase64Nueva.split(',')[1];
+    const byteArr = Uint8Array.from(atob(base64puro), c => c.charCodeAt(0));
+    const blob = new Blob([byteArr], { type: 'image/jpeg' });
+
+    // Nombre del archivo: medico normalizado
+    const nombreArchivo = medicoActual.toLowerCase().replace(/\s+/g, '_').replace(/\./g, '') + '.jpg';
+    const path = nombreArchivo;
+
+    // Subir a Supabase Storage (upsert: sobreescribe si ya existe)
+    const { error: uploadError } = await sb.storage.from('firmas').upload(path, blob, {
+      contentType: 'image/jpeg', upsert: true
+    });
+    if (uploadError) throw new Error('Storage: ' + uploadError.message);
+
+    // Obtener URL pública
+    const { data: urlData } = sb.storage.from('firmas').getPublicUrl(path);
+    const firmaUrl = urlData.publicUrl + '?t=' + Date.now(); // cache busting
+
+    // Guardar URL en Supabase
+    const { error: dbError } = await sb.from('firmas_medicos').upsert({
+      medico: medicoActual,
+      firma_url: urlData.publicUrl,
+      firma_base64: null,   // limpiar el legacy
+      updated_at: new Date().toISOString()
+    });
+    if (dbError) throw new Error('DB: ' + dbError.message);
+
+    document.getElementById('configFirmaImg').src = firmaUrl;
+    document.getElementById('configFirmaPreview').style.display = '';
+    document.getElementById('configFirmaVacia').style.display = 'none';
+    document.getElementById('configFirmaConfirm').style.display = 'none';
+    _firmaBase64Nueva = null;
+    _firmaFileNuevo = null;
+    showToast('✅ Firma guardada en Drive');
+  } catch(e) {
+    showToast('❌ Error al guardar firma: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✓ Guardar firma'; }
+  }
 }
 
 async function eliminarFirma() {
   if (!confirm('¿Eliminar la firma? El informe quedará en blanco para firmar a mano.')) return;
+  // Eliminar archivo de Storage
+  const nombreArchivo = medicoActual.toLowerCase().replace(/\s+/g, '_').replace(/\./g, '') + '.jpg';
+  await sb.storage.from('firmas').remove([nombreArchivo]);
+  // Eliminar registro de DB
   await sb.from('firmas_medicos').delete().eq('medico', medicoActual);
   document.getElementById('configFirmaPreview').style.display = 'none';
   document.getElementById('configFirmaVacia').style.display = '';
   showToast('✓ Firma eliminada');
 }
 
-// Obtiene la firma del médico actual (para el PDF)
+// Obtiene la URL pública de la firma del médico actual (para el PDF)
 async function obtenerFirmaBase64() {
-  const { data } = await sb.from('firmas_medicos').select('firma_base64').eq('medico', medicoActual).single();
-  return data ? data.firma_base64 : null;
+  const { data } = await sb.from('firmas_medicos').select('firma_url, firma_base64').eq('medico', medicoActual).single();
+  if (!data) return null;
+  return data.firma_url || data.firma_base64 || null;
 }
 
 async function testPDFConFirma() {
   const btn = event.target;
   btn.disabled = true; btn.textContent = '⏳ Generando...';
 
-  const firmaBase64 = await obtenerFirmaBase64();
+  const firmaUrl = await obtenerFirmaBase64();
 
   const SHEET_URL = medicoActual.includes('Escolano')
     ? 'https://script.google.com/macros/s/AKfycbwlT8Pwx_wSecUvfJKL5MYv0v52072r1rm_lb6dG-sCEnuDkPjAJ8V5dVaBeaEuWv4g/exec'
@@ -2117,11 +2163,9 @@ async function testPDFConFirma() {
     CVCOI: 'No se observan escotomas. Sin alteraciones de la sensibilidad.',
   };
 
-  if (firmaBase64) payload.FIRMA_BASE64 = firmaBase64;
+  if (firmaUrl) payload.FIRMA_URL = firmaUrl;
 
-  // DEBUG — verificar que la firma llega al payload
-  console.log('[TEST PDF] firmaBase64 presente:', !!firmaBase64, firmaBase64 ? '(' + firmaBase64.length + ' chars)' : '(null)');
-  console.log('[TEST PDF] payload.FIRMA_BASE64 presente:', !!payload.FIRMA_BASE64);
+  console.log('[TEST PDF] firmaUrl presente:', !!firmaUrl, firmaUrl ? firmaUrl.substring(0,60)+'...' : '(null)');
 
   try {
     await fetch(SHEET_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
