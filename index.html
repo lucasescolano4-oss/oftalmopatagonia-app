@@ -1000,7 +1000,7 @@ function seleccionarMedico(nombre) {
   medicoActual = nombre;
   document.getElementById('medicoScreen').classList.add('hidden');
   document.getElementById('medicoBadge').textContent = '👤 ' + nombre;
-  document.getElementById('btnTestBot').style.display = nombre.includes('Escolano') ? '' : 'none';
+
   document.getElementById('btnConfig').style.display = '';
   cargarPacientesHoy();
   cargarProximoNumero();
