@@ -2075,24 +2075,8 @@ checkAuth();
 let _firmaBase64Nueva = null;
 let _firmaFileNuevo = null;
 
-async function abrirConfig() {
+function abrirConfig() {
   document.getElementById('configMedicoNombre').textContent = medicoActual;
-  document.getElementById('configFirmaConfirm').style.display = 'none';
-  document.getElementById('inputFirma').value = '';
-  _firmaBase64Nueva = null;
-
-  // Cargar firma existente (preferir URL de Storage, fallback a base64 legacy)
-  const { data } = await sb.from('firmas_medicos').select('firma_url, firma_base64').eq('medico', medicoActual).single();
-  const firmaExistente = data ? (data.firma_url || data.firma_base64) : null;
-  if (firmaExistente) {
-    document.getElementById('configFirmaImg').src = firmaExistente;
-    document.getElementById('configFirmaPreview').style.display = '';
-    document.getElementById('configFirmaVacia').style.display = 'none';
-  } else {
-    document.getElementById('configFirmaPreview').style.display = 'none';
-    document.getElementById('configFirmaVacia').style.display = '';
-  }
-
   document.getElementById('modalConfig').classList.add('show');
 }
 
