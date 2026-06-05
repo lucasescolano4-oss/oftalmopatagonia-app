@@ -2601,12 +2601,9 @@ function renderInformeResumen(informeData, estudios) {
   const shortOjo = s => s.split(':')[0].trim();
   const renderCampoRow = (campo) => {
     const val = campos[campo.id];
-    if (val === undefined || val === null || val === '') return '';
-    const isNormal = campo.normal && val === campo.normal;
-    const display = isNormal
-      ? `<span style="color:#1a7a45;font-weight:500">Normal</span>`
-      : `<span style="color:#1a1a1a">${val.length > 50 ? val.substring(0,50)+'…' : val}</span>`;
-    return `<div class="inf-res-row"><span class="inf-res-ojo">${shortOjo(campo.ojo)}</span>${display}</div>`;
+    if (!val || val === 'Estudio no solicitado') return '';  // ocultar vacíos y no solicitados
+    if (campo.normal && val === campo.normal) return '';      // ocultar chip "normal"
+    return `<div class="inf-res-row"><span class="inf-res-ojo">${shortOjo(campo.ojo)}</span><span style="color:#1a1a1a">${val.length > 55 ? val.substring(0,55)+'…' : val}</span></div>`;
   };
   let html = '';
   for (const estudio of estudios) {
