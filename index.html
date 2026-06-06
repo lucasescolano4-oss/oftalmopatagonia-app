@@ -1414,9 +1414,15 @@ async function eliminar(id, i) {
 }
 
 // Marca como enviados en Supabase
-async function marcarComoEnviados(ids) {
-  await sb.from('pacientes').update({ enviado: true }).in('id', ids);
-  pacientesHoy.forEach(p => { if (ids.includes(p.id)) p.enviado = true; });
+async function marcarComoEnviados(ids, marcarInforme = true) {
+  const upd = marcarInforme ? { enviado: true, informe_realizado: true } : { enviado: true };
+  await sb.from('pacientes').update(upd).in('id', ids);
+  pacientesHoy.forEach(p => {
+    if (ids.includes(p.id)) {
+      p.enviado = true;
+      if (marcarInforme) p.informe_realizado = true;
+    }
+  });
   renderLista();
 }
 
@@ -2784,8 +2790,13 @@ async function detalleEnviarWA() {
     const data = await resp.json();
     if (data.ok) {
       showToast('📤 Enviando por WhatsApp...');
-      await sb.from('pacientes').update({ enviado: true }).eq('id', _detalleId);
-      card.classList.add('res-enviada'); card.dataset.enviado = '1';
+      await sb.from('pacientes').update({ enviado: true, informe_realizado: true }).eq('id', _detalleId);
+      card.classList.add('res-enviada');
+      card.dataset.enviado = '1';
+      card.dataset.informe = '1';
+      // Actualizar chips visuales en la tarjeta
+      const informeVal = card.querySelector('.res-card-informe-val');
+      if (informeVal) { informeVal.textContent = '✓ Hecho'; informeVal.className = 'res-card-informe-val hecho'; }
     } else {
       // Fallback automático por email si tiene email
       if (card.dataset.email) {
