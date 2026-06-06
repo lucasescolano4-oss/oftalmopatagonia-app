@@ -254,10 +254,16 @@
   .res-card-bottom { display:grid; grid-template-columns:auto 1fr 1fr 1fr; border-top:1px solid #f0f0ee; }
   .res-card-hist-btn { padding:7px 10px; display:flex; align-items:center; justify-content:center; border-right:1px solid #f0f0ee; cursor:pointer; color:#378add; font-size:15px; transition:background 0.15s; }
   .res-card-hist-btn:hover { background:#e8f3ff; }
-  .res-card-informe { padding:8px 11px; display:flex; align-items:center; justify-content:center; border-right:1px solid #f0f0ee; cursor:pointer; transition:background 0.15s; }
+  .res-card-informe { padding:7px 11px; display:flex; flex-direction:column; gap:2px; border-right:1px solid #f0f0ee; cursor:pointer; transition:background 0.15s; }
   .res-card-informe:hover { background:#f0f7ff; }
-  .res-card-estado { padding:8px 11px; display:flex; align-items:center; justify-content:center; }
+  .res-card-informe-lbl { font-size:9px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#bbb; }
+  .res-card-informe-val { font-size:11px; font-weight:600; }
+  .res-card-informe-val.hecho { color:#1a7a45; }
+  .res-card-informe-val.pendiente { color:#aaa; }
+  .res-card-estado { padding:7px 11px; display:flex; flex-direction:column; gap:2px; }
   .res-card-estado.sep { border-right:1px solid #f0f0ee; }
+  .res-card-estado-lbl { font-size:9px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#bbb; }
+  .res-card-estado-val { font-size:11px; font-weight:600; }
 
   /* ── Cards de cirugía ── */
   .cir-card { background:white; border:1px solid #e5e5e3; border-radius:10px; margin-bottom:7px; padding:11px 14px; display:flex; align-items:center; gap:10px; transition:box-shadow 0.18s, border-color 0.18s; }
@@ -1684,14 +1690,17 @@ async function buscar() {
       </div>
       <div class="res-card-bottom">
         <div class="res-card-hist-btn" title="Ver historial completo" onclick="event.stopPropagation(); abrirHistorial('${p.id}')"><img src="/assets/icono-ojo.png" style="width:30px;height:30px;object-fit:contain;" alt="historial"></div>
-        <div class="res-card-informe" title="Informe" onclick="event.stopPropagation(); toggleInformeResultado('${p.id}', this)">
-          <img src="/assets/${informeHecho ? 'icono-informe-hecho' : 'icono-informe-pendiente'}.png" style="width:32px;height:32px;object-fit:contain;" alt="${informeHecho ? 'Hecho' : 'Pendiente'}">
+        <div class="res-card-informe" onclick="event.stopPropagation(); toggleInformeResultado('${p.id}', this)">
+          <span class="res-card-informe-lbl">Informe</span>
+          <span class="res-card-informe-val ${informeHecho?'hecho':'pendiente'}">${informeHecho ? '✓ Hecho' : '· Pend.'}</span>
         </div>
-        <div class="res-card-estado sep" title="Envío informe">
-          <img src="/assets/${informeEnviado ? 'icono-envio-hecho' : 'icono-envio-pendiente'}.png" style="width:32px;height:32px;object-fit:contain;" alt="${informeEnviado ? 'Enviado' : 'Pendiente'}">
+        <div class="res-card-estado sep">
+          <span class="res-card-estado-lbl">Env. informe</span>
+          <span class="res-card-estado-val" style="color:${informeEnviado?'#1a7a45':'#aaa'}">${informeEnviado?'✓ Env.':'· Pend.'}</span>
         </div>
-        <div class="res-card-estado" title="Estudios enviados">
-          <img src="/assets/${enviado ? 'icono-envio-hecho' : 'icono-envio-pendiente'}.png" style="width:32px;height:32px;object-fit:contain;" alt="${enviado ? 'Enviado' : 'Pendiente'}">
+        <div class="res-card-estado">
+          <span class="res-card-estado-lbl">Estudios</span>
+          <span class="res-card-estado-val" style="color:${enviado?'#1a7a45':envioProg?'#e09c20':'#aaa'}">${enviado?'✓ Env.':envioProg?'Pend. env.':'· Pend.'}</span>
         </div>
       </div>
     </div>`;
@@ -1759,7 +1768,7 @@ async function toggleInformeResultado(id, el) {
     const { error } = await sb.from('pacientes').update({ informe_realizado: false }).eq('id', id);
     if (error) { showToast('Error al actualizar'); return; }
     // Actualizar visual en card
-    if (card) { card.dataset.informe = '0'; const img = el.querySelector('img'); if(img){ img.src='/assets/icono-informe-pendiente.png'; img.alt='Pendiente'; } }
+    if (card) { card.dataset.informe = '0'; const val = el.querySelector('.res-card-informe-val'); if(val){ val.textContent='· Pend.'; val.className='res-card-informe-val pendiente'; } }
     const p = pacientesHoy.find(x => x.id === id);
     if (p) { p.informe_realizado = false; renderLista(); }
     showToast('Informe desmarcado');
@@ -2141,8 +2150,8 @@ async function generarYSubirInforme() {
     if (!error) {
       if (_informeIdx >= 0) pacientesHoy[_informeIdx].informe_realizado = true;
       if (_informeResultadoEl) {
-        const img = _informeResultadoEl.querySelector('img');
-        if (img) { img.src = '/assets/icono-informe-hecho.png'; img.alt = 'Hecho'; }
+        const val = _informeResultadoEl.querySelector('.res-card-informe-val');
+        if (val) { val.textContent = '✓ Hecho'; val.className = 'res-card-informe-val hecho'; }
         const card = _informeResultadoEl.closest('.res-card');
         if (card) card.dataset.informe = '1';
       }
@@ -2796,8 +2805,8 @@ async function detalleEnviarInforme() {
       showToast('✅ Informe enviado por WhatsApp');
       await sb.from('pacientes').update({ informe_enviado: true }).eq('id', _detalleId);
       card.dataset.informe_env = '1';
-      const imgs = card.querySelectorAll('.res-card-estado img');
-      if (imgs[0]) { imgs[0].src = '/assets/icono-envio-hecho.png'; imgs[0].alt = 'Enviado'; }
+      const envInfVal = card.querySelector('.res-card-estado-val');
+      if (envInfVal) { envInfVal.textContent = '✓ Env.'; envInfVal.style.color = '#1a7a45'; }
     } else {
       showToast('❌ ' + (data.error || 'Error al enviar informe'));
     }
@@ -2871,12 +2880,12 @@ async function detalleEnviarWA() {
       await sb.from('pacientes').update(updData).eq('id', _detalleId);
       card.classList.add('res-enviada');
       card.dataset.enviado = '1';
-      const estadoImgs = card.querySelectorAll('.res-card-estado img');
+      const estadoVals = card.querySelectorAll('.res-card-estado-val');
       if (informeYaHecho) {
         card.dataset.informe_env = '1';
-        if (estadoImgs[0]) { estadoImgs[0].src = '/assets/icono-envio-hecho.png'; estadoImgs[0].alt = 'Enviado'; } // Env. informe
+        if (estadoVals[0]) { estadoVals[0].textContent = '✓ Env.'; estadoVals[0].style.color = '#1a7a45'; } // Env. informe
       }
-      if (estadoImgs[1]) { estadoImgs[1].src = '/assets/icono-envio-hecho.png'; estadoImgs[1].alt = 'Enviado'; } // Estudios
+      if (estadoVals[1]) { estadoVals[1].textContent = '✓ Env.'; estadoVals[1].style.color = '#1a7a45'; } // Estudios
     } else {
       // Fallback automático por email si tiene email
       if (card.dataset.email) {
