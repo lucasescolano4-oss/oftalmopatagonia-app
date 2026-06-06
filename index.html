@@ -1689,7 +1689,7 @@ async function buscar() {
         <div class="res-estudios-mini">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
       </div>
       <div class="res-card-bottom">
-        <div class="res-card-hist-btn" title="Ver historial completo" onclick="event.stopPropagation(); abrirHistorial('${p.id}')">📁</div>
+        <div class="res-card-hist-btn" title="Ver historial completo" onclick="event.stopPropagation(); abrirHistorial('${p.id}')"><img src="/assets/icono-ojo.png" style="width:22px;height:22px;object-fit:contain;" alt="historial"></div>
         <div class="res-card-informe" onclick="event.stopPropagation(); toggleInformeResultado('${p.id}', this)">
           <span class="res-card-informe-lbl">Informe</span>
           <span class="res-card-informe-val ${informeHecho?'hecho':'pendiente'}">${informeHecho ? '✓ Hecho' : '· Pend.'}</span>
