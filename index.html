@@ -1696,11 +1696,11 @@ async function buscar() {
         </div>
         <div class="res-card-estado sep">
           <span class="res-card-estado-lbl">Env. informe</span>
-          <span class="res-card-estado-val" style="color:${informeEnviado?'#1a7a45':'#aaa'}">${informeEnviado?'✓ Env.':'· Pend.'}</span>
+          <img src="/assets/${informeEnviado ? 'icono-envio-hecho' : 'icono-envio-pendiente'}.png" style="width:24px;height:24px;object-fit:contain;margin-top:2px;" alt="${informeEnviado ? 'Enviado' : 'Pendiente'}">
         </div>
         <div class="res-card-estado">
           <span class="res-card-estado-lbl">Estudios</span>
-          <span class="res-card-estado-val" style="color:${enviado?'#1a7a45':envioProg?'#e09c20':'#aaa'}">${enviado?'✓ Env.':envioProg?'Pend. env.':'· Pend.'}</span>
+          <img src="/assets/${enviado ? 'icono-envio-hecho' : 'icono-envio-pendiente'}.png" style="width:24px;height:24px;object-fit:contain;margin-top:2px;" alt="${enviado ? 'Enviado' : 'Pendiente'}">
         </div>
       </div>
     </div>`;
@@ -2805,9 +2805,8 @@ async function detalleEnviarInforme() {
       showToast('✅ Informe enviado por WhatsApp');
       await sb.from('pacientes').update({ informe_enviado: true }).eq('id', _detalleId);
       card.dataset.informe_env = '1';
-      // Actualizar chip Env. informe en la tarjeta
-      const estadoVals = card.querySelectorAll('.res-card-estado-val');
-      if (estadoVals[0]) { estadoVals[0].textContent = '✓ Env.'; estadoVals[0].style.color = '#1a7a45'; }
+      const imgs = card.querySelectorAll('.res-card-estado img');
+      if (imgs[0]) { imgs[0].src = '/assets/icono-envio-hecho.png'; imgs[0].alt = 'Enviado'; }
     } else {
       showToast('❌ ' + (data.error || 'Error al enviar informe'));
     }
@@ -2881,12 +2880,12 @@ async function detalleEnviarWA() {
       await sb.from('pacientes').update(updData).eq('id', _detalleId);
       card.classList.add('res-enviada');
       card.dataset.enviado = '1';
-      const estadoVals = card.querySelectorAll('.res-card-estado-val');
+      const estadoImgs = card.querySelectorAll('.res-card-estado img');
       if (informeYaHecho) {
         card.dataset.informe_env = '1';
-        if (estadoVals[0]) { estadoVals[0].textContent = '✓ Env.'; estadoVals[0].style.color = '#1a7a45'; } // Env. informe
+        if (estadoImgs[0]) { estadoImgs[0].src = '/assets/icono-envio-hecho.png'; estadoImgs[0].alt = 'Enviado'; } // Env. informe
       }
-      if (estadoVals[1]) { estadoVals[1].textContent = '✓ Env.'; estadoVals[1].style.color = '#1a7a45'; } // Estudios
+      if (estadoImgs[1]) { estadoImgs[1].src = '/assets/icono-envio-hecho.png'; estadoImgs[1].alt = 'Enviado'; } // Estudios
     } else {
       // Fallback automático por email si tiene email
       if (card.dataset.email) {
