@@ -2912,6 +2912,122 @@ async function detalleEnviarWA() {
 }
 
 // ══════════════════════════════════════════
+//  DEMO: historial con datos de prueba
+// ══════════════════════════════════════════
+function testHistorialDemo() {
+  _histDni       = '12345678';
+  _histNombreStr = 'GARCIA MARIA ELENA';
+  _histCelular   = '5492945000000';
+
+  document.getElementById('histNombre').textContent = _histNombreStr;
+  document.getElementById('histDni').textContent    = 'DNI ' + _histDni;
+  document.getElementById('modalHistorial').classList.add('show');
+  _histSetViewer(null);
+
+  // ── Visitas demo ──
+  document.getElementById('histLoadingVisitas').style.display = 'none';
+  document.getElementById('histVisitasLista').innerHTML = `
+    <div class="hist-visita">
+      <div class="hist-visita-fecha">🟢 Última visita — Jue 4 jun 2026</div>
+      <div class="hist-visita-estudios">
+        <span class="estudio-tag">OCT</span>
+        <span class="estudio-tag">Campimetría</span>
+        <span class="estudio-tag">Retinografía</span>
+      </div>
+      <div class="hist-visita-medico">Dr. Escolano Lucas · <span style="color:#1a7a45;font-weight:600;">Informe hecho</span> · <span style="color:#1a7a45;font-weight:600;">Enviado</span></div>
+    </div>
+    <div class="hist-visita">
+      <div class="hist-visita-fecha">Mar 12 mar 2026</div>
+      <div class="hist-visita-estudios">
+        <span class="estudio-tag">Paquimetría</span>
+        <span class="estudio-tag">Biometría</span>
+      </div>
+      <div class="hist-visita-medico">Dr. Escolano Lucas · <span style="color:#1a7a45;font-weight:600;">Enviado</span></div>
+    </div>
+    <div class="hist-visita">
+      <div class="hist-visita-fecha">Lun 8 oct 2025</div>
+      <div class="hist-visita-estudios">
+        <span class="estudio-tag">OCT</span>
+        <span class="estudio-tag">UBM</span>
+      </div>
+      <div class="hist-visita-medico">Dr. Polzonetti Ricardo · <span style="color:#1a7a45;font-weight:600;">Informe hecho</span></div>
+    </div>
+    <div class="hist-visita">
+      <div class="hist-visita-fecha">Vie 14 mar 2025</div>
+      <div class="hist-visita-estudios">
+        <span class="estudio-tag">Campimetría</span>
+      </div>
+      <div class="hist-visita-medico">Dr. Escolano Lucas</div>
+    </div>
+  `;
+
+  // ── Archivos demo ──
+  document.getElementById('histArchivosCargando').style.display = 'none';
+
+  // PDFs públicos de muestra usando Google Docs viewer
+  const pdfViewer = (url) => `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+  const pdf1 = pdfViewer('https://www.w3.org/WAI/WCAG21/wcag21.pdf');
+  const pdf2 = pdfViewer('https://www.africau.edu/images/default/sample.pdf');
+  const pdf3 = pdfViewer('https://www.africau.edu/images/default/sample.pdf');
+
+  document.getElementById('histInformesLista').innerHTML = `
+    <div style="font-size:10px;font-weight:700;color:#bbb;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px;">📋 Informes</div>
+    <div class="hist-archivo" id="hf-demo1" onclick="_abrirArchivoVisor('demo1','Informe OCT — 04-06-2026 — GARCIA MARIA ELENA.pdf','#','${pdf1}')">
+      <div class="hist-archivo-icon">📄</div>
+      <div class="hist-archivo-info">
+        <div class="hist-archivo-nombre">Informe OCT — 04-06-2026.pdf</div>
+        <div class="hist-archivo-meta">04/06/2026</div>
+      </div>
+      <a href="#" class="hist-archivo-abrir" onclick="event.stopPropagation()">↗</a>
+    </div>
+    <div class="hist-archivo" id="hf-demo2" onclick="_abrirArchivoVisor('demo2','Informe Campimetría — 08-10-2025 — GARCIA MARIA ELENA.pdf','#','${pdf2}')">
+      <div class="hist-archivo-icon">📄</div>
+      <div class="hist-archivo-info">
+        <div class="hist-archivo-nombre">Informe Campimetría — 08-10-2025.pdf</div>
+        <div class="hist-archivo-meta">08/10/2025</div>
+      </div>
+      <a href="#" class="hist-archivo-abrir" onclick="event.stopPropagation()">↗</a>
+    </div>
+  `;
+
+  document.getElementById('histEstudiosLista').innerHTML = `
+    <div style="font-size:10px;font-weight:700;color:#bbb;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px;margin-top:8px;">📂 Estudios</div>
+    <div class="hist-archivo" id="hf-demo3" onclick="_abrirArchivoVisor('demo3','12345678_OCT_ojo_derecho.pdf','#','${pdf3}')">
+      <div class="hist-archivo-icon">📄</div>
+      <div class="hist-archivo-info">
+        <div class="hist-archivo-nombre">12345678_OCT_ojo_derecho.pdf</div>
+        <div class="hist-archivo-meta">04/06/2026</div>
+      </div>
+      <a href="#" class="hist-archivo-abrir" onclick="event.stopPropagation()">↗</a>
+    </div>
+    <div class="hist-archivo" id="hf-demo4" onclick="_abrirArchivoVisor('demo4','12345678_Campimetria_OD.pdf','#','${pdf3}')">
+      <div class="hist-archivo-icon">📄</div>
+      <div class="hist-archivo-info">
+        <div class="hist-archivo-nombre">12345678_Campimetria_OD.pdf</div>
+        <div class="hist-archivo-meta">04/06/2026</div>
+      </div>
+      <a href="#" class="hist-archivo-abrir" onclick="event.stopPropagation()">↗</a>
+    </div>
+    <div class="hist-archivo" id="hf-demo5" onclick="_abrirArchivoVisor('demo5','12345678_Paquimetria.pdf','#','${pdf2}')">
+      <div class="hist-archivo-icon">📄</div>
+      <div class="hist-archivo-info">
+        <div class="hist-archivo-nombre">12345678_Paquimetria.pdf</div>
+        <div class="hist-archivo-meta">12/03/2026</div>
+      </div>
+      <a href="#" class="hist-archivo-abrir" onclick="event.stopPropagation()">↗</a>
+    </div>
+    <div class="hist-archivo" id="hf-demo6" onclick="_abrirArchivoVisor('demo6','12345678_UBM.pdf','#','${pdf1}')">
+      <div class="hist-archivo-icon">📄</div>
+      <div class="hist-archivo-info">
+        <div class="hist-archivo-nombre">12345678_UBM.pdf</div>
+        <div class="hist-archivo-meta">08/10/2025</div>
+      </div>
+      <a href="#" class="hist-archivo-abrir" onclick="event.stopPropagation()">↗</a>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════
 //  HISTORIAL PACIENTE
 // ══════════════════════════════════════════
 let _histDni = '';
@@ -3178,6 +3294,11 @@ async function histEnviarInforme() {
       <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:8px;">Bot de WhatsApp</div>
       <button id="btnTestBotConfig" onclick="testearBotConfig()" style="width:100%;padding:10px;background:#f0f0ee;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-size:13px;color:#333;">🤖 Verificar que el bot está activo</button>
       <div style="font-size:11px;color:#aaa;margin-top:5px;text-align:center;">Envía un mensaje de prueba al celular del Dr. Escolano</div>
+    </div>
+    <div style="margin-top:12px;padding:14px;background:#f0f7ff;border:1px solid #c5d9f0;border-radius:10px;">
+      <div style="font-size:12px;font-weight:600;color:#378add;margin-bottom:8px;">🧪 Modo demo</div>
+      <button onclick="cerrarConfig(); testHistorialDemo()" style="width:100%;padding:10px;background:#378add;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">Ver historial de ejemplo</button>
+      <div style="font-size:11px;color:#888;margin-top:5px;text-align:center;">Abre el historial con datos de prueba para ver cómo funciona</div>
     </div>
   </div>
 </div>
