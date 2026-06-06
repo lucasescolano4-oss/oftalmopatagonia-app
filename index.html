@@ -254,16 +254,10 @@
   .res-card-bottom { display:grid; grid-template-columns:auto 1fr 1fr 1fr; border-top:1px solid #f0f0ee; }
   .res-card-hist-btn { padding:7px 10px; display:flex; align-items:center; justify-content:center; border-right:1px solid #f0f0ee; cursor:pointer; color:#378add; font-size:15px; transition:background 0.15s; }
   .res-card-hist-btn:hover { background:#e8f3ff; }
-  .res-card-informe { padding:7px 11px; display:flex; flex-direction:column; gap:2px; border-right:1px solid #f0f0ee; cursor:pointer; transition:background 0.15s; }
+  .res-card-informe { padding:8px 11px; display:flex; align-items:center; justify-content:center; border-right:1px solid #f0f0ee; cursor:pointer; transition:background 0.15s; }
   .res-card-informe:hover { background:#f0f7ff; }
-  .res-card-informe-lbl { font-size:9px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#bbb; }
-  .res-card-informe-val { font-size:11px; font-weight:600; }
-  .res-card-informe-val.hecho { color:#1a7a45; }
-  .res-card-informe-val.pendiente { color:#aaa; }
-  .res-card-estado { padding:7px 11px; display:flex; flex-direction:column; gap:2px; }
+  .res-card-estado { padding:8px 11px; display:flex; align-items:center; justify-content:center; }
   .res-card-estado.sep { border-right:1px solid #f0f0ee; }
-  .res-card-estado-lbl { font-size:9px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#bbb; }
-  .res-card-estado-val { font-size:11px; font-weight:600; }
 
   /* ── Cards de cirugía ── */
   .cir-card { background:white; border:1px solid #e5e5e3; border-radius:10px; margin-bottom:7px; padding:11px 14px; display:flex; align-items:center; gap:10px; transition:box-shadow 0.18s, border-color 0.18s; }
@@ -1689,18 +1683,15 @@ async function buscar() {
         <div class="res-estudios-mini">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
       </div>
       <div class="res-card-bottom">
-        <div class="res-card-hist-btn" title="Ver historial completo" onclick="event.stopPropagation(); abrirHistorial('${p.id}')"><img src="/assets/icono-ojo.png" style="width:22px;height:22px;object-fit:contain;" alt="historial"></div>
-        <div class="res-card-informe" onclick="event.stopPropagation(); toggleInformeResultado('${p.id}', this)">
-          <span class="res-card-informe-lbl">Informe</span>
-          <img src="/assets/${informeHecho ? 'icono-informe-hecho' : 'icono-informe-pendiente'}.png" style="width:24px;height:24px;object-fit:contain;margin-top:2px;" alt="${informeHecho ? 'Hecho' : 'Pendiente'}">
+        <div class="res-card-hist-btn" title="Ver historial completo" onclick="event.stopPropagation(); abrirHistorial('${p.id}')"><img src="/assets/icono-ojo.png" style="width:30px;height:30px;object-fit:contain;" alt="historial"></div>
+        <div class="res-card-informe" title="Informe" onclick="event.stopPropagation(); toggleInformeResultado('${p.id}', this)">
+          <img src="/assets/${informeHecho ? 'icono-informe-hecho' : 'icono-informe-pendiente'}.png" style="width:32px;height:32px;object-fit:contain;" alt="${informeHecho ? 'Hecho' : 'Pendiente'}">
         </div>
-        <div class="res-card-estado sep">
-          <span class="res-card-estado-lbl">Env. informe</span>
-          <img src="/assets/${informeEnviado ? 'icono-envio-hecho' : 'icono-envio-pendiente'}.png" style="width:24px;height:24px;object-fit:contain;margin-top:2px;" alt="${informeEnviado ? 'Enviado' : 'Pendiente'}">
+        <div class="res-card-estado sep" title="Envío informe">
+          <img src="/assets/${informeEnviado ? 'icono-envio-hecho' : 'icono-envio-pendiente'}.png" style="width:32px;height:32px;object-fit:contain;" alt="${informeEnviado ? 'Enviado' : 'Pendiente'}">
         </div>
-        <div class="res-card-estado">
-          <span class="res-card-estado-lbl">Estudios</span>
-          <img src="/assets/${enviado ? 'icono-envio-hecho' : 'icono-envio-pendiente'}.png" style="width:24px;height:24px;object-fit:contain;margin-top:2px;" alt="${enviado ? 'Enviado' : 'Pendiente'}">
+        <div class="res-card-estado" title="Estudios enviados">
+          <img src="/assets/${enviado ? 'icono-envio-hecho' : 'icono-envio-pendiente'}.png" style="width:32px;height:32px;object-fit:contain;" alt="${enviado ? 'Enviado' : 'Pendiente'}">
         </div>
       </div>
     </div>`;
