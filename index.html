@@ -1692,7 +1692,7 @@ async function buscar() {
         <div class="res-card-hist-btn" title="Ver historial completo" onclick="event.stopPropagation(); abrirHistorial('${p.id}')"><img src="/assets/icono-ojo.png" style="width:22px;height:22px;object-fit:contain;" alt="historial"></div>
         <div class="res-card-informe" onclick="event.stopPropagation(); toggleInformeResultado('${p.id}', this)">
           <span class="res-card-informe-lbl">Informe</span>
-          <span class="res-card-informe-val ${informeHecho?'hecho':'pendiente'}">${informeHecho ? '✓ Hecho' : '· Pend.'}</span>
+          <img src="/assets/${informeHecho ? 'icono-informe-hecho' : 'icono-informe-pendiente'}.png" style="width:24px;height:24px;object-fit:contain;margin-top:2px;" alt="${informeHecho ? 'Hecho' : 'Pendiente'}">
         </div>
         <div class="res-card-estado sep">
           <span class="res-card-estado-lbl">Env. informe</span>
@@ -1768,7 +1768,7 @@ async function toggleInformeResultado(id, el) {
     const { error } = await sb.from('pacientes').update({ informe_realizado: false }).eq('id', id);
     if (error) { showToast('Error al actualizar'); return; }
     // Actualizar visual en card
-    if (card) { card.dataset.informe = '0'; el.className = 'res-card-informe-val pendiente'; el.textContent = '· Pendiente'; }
+    if (card) { card.dataset.informe = '0'; const img = el.querySelector('img'); if(img){ img.src='/assets/icono-informe-pendiente.png'; img.alt='Pendiente'; } }
     const p = pacientesHoy.find(x => x.id === id);
     if (p) { p.informe_realizado = false; renderLista(); }
     showToast('Informe desmarcado');
@@ -2150,9 +2150,10 @@ async function generarYSubirInforme() {
     if (!error) {
       if (_informeIdx >= 0) pacientesHoy[_informeIdx].informe_realizado = true;
       if (_informeResultadoEl) {
-        _informeResultadoEl.textContent = 'Hecho';
-        _informeResultadoEl.style.background = '#d4f5e2';
-        _informeResultadoEl.style.color = '#1a7a45';
+        const img = _informeResultadoEl.querySelector('img');
+        if (img) { img.src = '/assets/icono-informe-hecho.png'; img.alt = 'Hecho'; }
+        const card = _informeResultadoEl.closest('.res-card');
+        if (card) card.dataset.informe = '1';
       }
       renderLista();
     }
