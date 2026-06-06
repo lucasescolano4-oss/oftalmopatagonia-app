@@ -259,6 +259,7 @@
   .res-card-informe-val.hecho { color:#1a7a45; }
   .res-card-informe-val.pendiente { color:#aaa; }
   .res-card-estado { padding:7px 11px; display:flex; flex-direction:column; gap:2px; }
+  .res-card-estado.sep { border-right:1px solid #f0f0ee; }
   .res-card-estado-lbl { font-size:9px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#bbb; }
   .res-card-estado-val { font-size:11px; font-weight:600; }
 
@@ -581,6 +582,7 @@
   [data-theme="dark"] .res-card.res-seleccionada { background:#101820; border-color:#2a4060; }
   [data-theme="dark"] .res-card-bottom { border-color:#2c2c2e; }
   [data-theme="dark"] .res-card-informe { border-color:#2c2c2e; }
+  [data-theme="dark"] .res-card-estado.sep { border-color:#2c2c2e; }
   [data-theme="dark"] .res-card-informe:hover { background:#162030; }
   [data-theme="dark"] .res-card-informe-lbl,[data-theme="dark"] .res-card-estado-lbl { color:#555; }
   [data-theme="dark"] .res-card-informe-val.pendiente { color:#555; }
@@ -1414,13 +1416,12 @@ async function eliminar(id, i) {
 }
 
 // Marca como enviados en Supabase
-async function marcarComoEnviados(ids, marcarInforme = true) {
-  const upd = marcarInforme ? { enviado: true, informe_realizado: true } : { enviado: true };
-  await sb.from('pacientes').update(upd).in('id', ids);
+async function marcarComoEnviados(ids) {
+  await sb.from('pacientes').update({ enviado: true, informe_enviado: true }).in('id', ids);
   pacientesHoy.forEach(p => {
     if (ids.includes(p.id)) {
       p.enviado = true;
-      if (marcarInforme) p.informe_realizado = true;
+      p.informe_enviado = true;
     }
   });
   renderLista();
@@ -1590,6 +1591,7 @@ async function buscar() {
 
   function cardHTML(p) {
     const informeHecho = p.informe_realizado;
+    const informeEnviado = p.informe_enviado;
     const enviado = p.enviado;
     const envioProg = p.envio_programado;
     return `<div class="res-card${enviado?' res-enviada':''}"
@@ -1600,6 +1602,7 @@ async function buscar() {
       data-informe="${informeHecho?'1':'0'}" data-orden_aut="${p.orden_autorizada?'1':'0'}"
       data-email="${(p.email||'').replace(/"/g,'&quot;')}"
       data-envio_prog="${envioProg?'1':'0'}"
+      data-informe_env="${informeEnviado?'1':'0'}"
       onclick="abrirDetalle(this)">
       <div class="res-card-top">
         <div class="res-card-top-row1">
@@ -1618,12 +1621,12 @@ async function buscar() {
           <span class="res-card-informe-lbl">Informe</span>
           <span class="res-card-informe-val ${informeHecho?'hecho':'pendiente'}">${informeHecho ? '✓ Hecho' : '· Pend.'}</span>
         </div>
-        <div class="res-card-estado">
-          <span class="res-card-estado-lbl">WhatsApp</span>
-          <span class="res-card-estado-val" style="color:${enviado?'#1a7a45':'#aaa'}">${enviado?'✓ Env.':'· Pend.'}</span>
+        <div class="res-card-estado sep">
+          <span class="res-card-estado-lbl">Env. informe</span>
+          <span class="res-card-estado-val" style="color:${informeEnviado?'#1a7a45':'#aaa'}">${informeEnviado?'✓ Env.':'· Pend.'}</span>
         </div>
         <div class="res-card-estado">
-          <span class="res-card-estado-lbl">Envío</span>
+          <span class="res-card-estado-lbl">Estudios</span>
           <span class="res-card-estado-val" style="color:${enviado?'#1a7a45':envioProg?'#e09c20':'#aaa'}">${enviado?'✓ Env.':envioProg?'Pend. env.':'· Pend.'}</span>
         </div>
       </div>
@@ -2703,15 +2706,14 @@ async function detalleEnviarInforme() {
   const card = document.querySelector(`.res-card[data-id="${_detalleId}"]`);
   if (!card) return;
   const nombre = card.dataset.nombre || 'Este paciente';
-  // Confirmación si el informe ya fue enviado (informe_realizado = true)
-  if (card.dataset.informe === '1') {
-    const confirmar = confirm(`${nombre} ya tiene informe marcado como hecho.\n¿Querés enviar el informe nuevamente por WhatsApp?`);
+  // Confirmación si el informe ya fue enviado antes
+  if (card.dataset.informe_env === '1') {
+    const confirmar = confirm(`${nombre} ya tiene el informe enviado.\n¿Querés enviarlo nuevamente por WhatsApp?`);
     if (!confirmar) return;
   }
   const btn = document.getElementById('detalleBtnInforme');
   btn.disabled = true; btn.textContent = 'Enviando...';
   try {
-    const nombre   = card.dataset.nombre   || '';
     const celular  = card.dataset.celular  || '';
     const dni      = card.dataset.dni      || '';
     const resp = await fetch('/api/enviar-informe', {
@@ -2722,6 +2724,11 @@ async function detalleEnviarInforme() {
     const data = await resp.json();
     if (data.ok) {
       showToast('✅ Informe enviado por WhatsApp');
+      await sb.from('pacientes').update({ informe_enviado: true }).eq('id', _detalleId);
+      card.dataset.informe_env = '1';
+      // Actualizar chip Env. informe en la tarjeta
+      const estadoVals = card.querySelectorAll('.res-card-estado-val');
+      if (estadoVals[0]) { estadoVals[0].textContent = '✓ Env.'; estadoVals[0].style.color = '#1a7a45'; }
     } else {
       showToast('❌ ' + (data.error || 'Error al enviar informe'));
     }
@@ -2790,13 +2797,14 @@ async function detalleEnviarWA() {
     const data = await resp.json();
     if (data.ok) {
       showToast('📤 Enviando por WhatsApp...');
-      await sb.from('pacientes').update({ enviado: true, informe_realizado: true }).eq('id', _detalleId);
+      await sb.from('pacientes').update({ enviado: true, informe_enviado: true }).eq('id', _detalleId);
       card.classList.add('res-enviada');
       card.dataset.enviado = '1';
-      card.dataset.informe = '1';
+      card.dataset.informe_env = '1';
       // Actualizar chips visuales en la tarjeta
-      const informeVal = card.querySelector('.res-card-informe-val');
-      if (informeVal) { informeVal.textContent = '✓ Hecho'; informeVal.className = 'res-card-informe-val hecho'; }
+      const estadoVals = card.querySelectorAll('.res-card-estado-val');
+      if (estadoVals[0]) { estadoVals[0].textContent = '✓ Env.'; estadoVals[0].style.color = '#1a7a45'; } // Env. informe
+      if (estadoVals[1]) { estadoVals[1].textContent = '✓ Env.'; estadoVals[1].style.color = '#1a7a45'; } // Estudios
     } else {
       // Fallback automático por email si tiene email
       if (card.dataset.email) {
