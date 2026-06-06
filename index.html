@@ -1417,11 +1417,17 @@ async function eliminar(id, i) {
 
 // Marca como enviados en Supabase
 async function marcarComoEnviados(ids) {
-  await sb.from('pacientes').update({ enviado: true, informe_enviado: true }).in('id', ids);
+  // Marcar enviado a todos
+  await sb.from('pacientes').update({ enviado: true }).in('id', ids);
+  // Marcar informe_enviado solo a los que ya tienen informe hecho
+  const idsConInforme = pacientesHoy.filter(p => ids.includes(p.id) && p.informe_realizado).map(p => p.id);
+  if (idsConInforme.length > 0) {
+    await sb.from('pacientes').update({ informe_enviado: true }).in('id', idsConInforme);
+  }
   pacientesHoy.forEach(p => {
     if (ids.includes(p.id)) {
       p.enviado = true;
-      p.informe_enviado = true;
+      if (p.informe_realizado) p.informe_enviado = true;
     }
   });
   renderLista();
@@ -2706,6 +2712,11 @@ async function detalleEnviarInforme() {
   const card = document.querySelector(`.res-card[data-id="${_detalleId}"]`);
   if (!card) return;
   const nombre = card.dataset.nombre || 'Este paciente';
+  // Bloquear si el informe todavía no fue hecho
+  if (card.dataset.informe !== '1') {
+    showToast('⚠️ Primero completá el informe antes de enviarlo');
+    return;
+  }
   // Confirmación si el informe ya fue enviado antes
   if (card.dataset.informe_env === '1') {
     const confirmar = confirm(`${nombre} ya tiene el informe enviado.\n¿Querés enviarlo nuevamente por WhatsApp?`);
@@ -2797,13 +2808,16 @@ async function detalleEnviarWA() {
     const data = await resp.json();
     if (data.ok) {
       showToast('📤 Enviando por WhatsApp...');
-      await sb.from('pacientes').update({ enviado: true, informe_enviado: true }).eq('id', _detalleId);
+      const informeYaHecho = card.dataset.informe === '1';
+      const updData = informeYaHecho ? { enviado: true, informe_enviado: true } : { enviado: true };
+      await sb.from('pacientes').update(updData).eq('id', _detalleId);
       card.classList.add('res-enviada');
       card.dataset.enviado = '1';
-      card.dataset.informe_env = '1';
-      // Actualizar chips visuales en la tarjeta
       const estadoVals = card.querySelectorAll('.res-card-estado-val');
-      if (estadoVals[0]) { estadoVals[0].textContent = '✓ Env.'; estadoVals[0].style.color = '#1a7a45'; } // Env. informe
+      if (informeYaHecho) {
+        card.dataset.informe_env = '1';
+        if (estadoVals[0]) { estadoVals[0].textContent = '✓ Env.'; estadoVals[0].style.color = '#1a7a45'; } // Env. informe
+      }
       if (estadoVals[1]) { estadoVals[1].textContent = '✓ Env.'; estadoVals[1].style.color = '#1a7a45'; } // Estudios
     } else {
       // Fallback automático por email si tiene email
