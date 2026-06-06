@@ -2758,8 +2758,8 @@ async function abrirDetalle(cardEl) {
 }
 
 function cerrarDetalle() {
-  document.getElementById('detalleOverlay').classList.remove('show');
-  document.getElementById('detalleSidebar').classList.remove('show');
+  document.getElementById('detalleOverlay')?.classList.remove('show');
+  document.getElementById('detalleSidebar')?.classList.remove('show');
   _detalleId = null;
 }
 
@@ -2927,8 +2927,8 @@ async function abrirHistorial(id) {
   _histNombreStr  = card ? (card.dataset.nombre  || '') : '';
   _histCelular    = card ? (card.dataset.celular || '') : '';
 
-  document.getElementById('histNombre').textContent = nombre;
-  document.getElementById('histDni').textContent = 'DNI ' + dni;
+  document.getElementById('histNombre').textContent = _histNombreStr;
+  document.getElementById('histDni').textContent = 'DNI ' + _histDni;
   document.getElementById('modalHistorial').classList.add('show');
 
   // Reset viewer y listas
@@ -2944,7 +2944,7 @@ async function abrirHistorial(id) {
   const { data: visitas, error } = await sb
     .from('pacientes')
     .select('id,fecha,estudios,medico,informe_realizado,enviado,numero_orden')
-    .eq('dni', dni)
+    .eq('dni', _histDni)
     .order('fecha', { ascending: false });
 
   document.getElementById('histLoadingVisitas').style.display = 'none';
@@ -2977,7 +2977,7 @@ async function abrirHistorial(id) {
   }
 
   try {
-    const resp = await fetch(`/api/buscar-archivos?dni=${encodeURIComponent(dni)}`);
+    const resp = await fetch(`/api/buscar-archivos?dni=${encodeURIComponent(_histDni)}`);
     const data = await resp.json();
     document.getElementById('histArchivosCargando').style.display = 'none';
 
