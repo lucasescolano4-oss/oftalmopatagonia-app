@@ -589,59 +589,64 @@
   [data-theme="dark"] .res-card-hist-btn:hover { background:#162030; }
 
   /* ── Modal Historial ── */
-  .hist-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:1100; align-items:center; justify-content:center; padding:16px; }
-  .hist-modal.show { display:flex; }
-  .hist-box { background:white; border-radius:18px; width:100%; max-width:960px; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 24px 80px rgba(0,0,0,0.22); }
-  .hist-header { padding:18px 22px 14px; border-bottom:1px solid #f0f0ee; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-shrink:0; }
-  .hist-header-info { display:flex; flex-direction:column; gap:3px; }
-  .hist-header-nombre { font-size:17px; font-weight:700; color:#1a1a1a; }
-  .hist-header-dni { font-size:12px; color:#888; }
-  .hist-close { width:32px; height:32px; border-radius:50%; border:none; background:#f5f5f3; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#555; flex-shrink:0; }
-  .hist-body { display:flex; gap:0; flex:1; overflow:hidden; }
-  .hist-left { width:340px; flex-shrink:0; overflow-y:auto; border-right:1px solid #f0f0ee; display:flex; flex-direction:column; }
-  .hist-right { flex:1; display:flex; flex-direction:column; overflow:hidden; }
-  .hist-section { padding:14px 16px; }
+  /* ── Historial: pantalla completa que reemplaza el contenido ── */
+  .hist-page { display:none; position:fixed; inset:0; background:#f7f7f5; z-index:500; flex-direction:column; }
+  .hist-page.show { display:flex; }
+  .hist-topbar { padding:12px 20px; background:white; border-bottom:1px solid #e5e5e3; display:flex; align-items:center; gap:14px; flex-shrink:0; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+  .hist-back-btn { display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:8px; border:1px solid #e0e0de; background:white; font-size:13px; font-weight:600; cursor:pointer; color:#555; transition:background 0.15s; }
+  .hist-back-btn:hover { background:#f0f0ee; }
+  .hist-topbar-info { flex:1; min-width:0; }
+  .hist-topbar-nombre { font-size:16px; font-weight:700; color:#1a1a1a; }
+  .hist-topbar-dni { font-size:12px; color:#888; }
+  .hist-topbar-actions { display:flex; gap:8px; flex-shrink:0; }
+  .hist-body { display:flex; flex:1; overflow:hidden; }
+  .hist-left { width:320px; flex-shrink:0; overflow-y:auto; background:white; border-right:1px solid #e5e5e3; display:flex; flex-direction:column; gap:0; }
+  .hist-right { flex:1; display:flex; flex-direction:column; overflow:hidden; background:#f7f7f5; }
+  .hist-section { padding:16px; }
+  .hist-section + .hist-section { border-top:1px solid #f0f0ee; }
   .hist-section-title { font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#bbb; margin-bottom:10px; }
-  .hist-visita { padding:10px 12px; border:1px solid #ebebea; border-radius:10px; margin-bottom:8px; cursor:default; }
+  .hist-visita { padding:10px 12px; border:1px solid #ebebea; border-radius:10px; margin-bottom:8px; }
   .hist-visita-fecha { font-size:11px; font-weight:700; color:#378add; margin-bottom:4px; }
   .hist-visita-estudios { display:flex; flex-wrap:wrap; gap:3px; }
   .hist-visita-medico { font-size:10px; color:#aaa; margin-top:4px; }
-  .hist-archivo { display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; cursor:pointer; transition:background 0.15s; border:1px solid transparent; margin-bottom:5px; }
+  .hist-archivo { display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:9px; cursor:pointer; transition:background 0.15s; border:1px solid transparent; margin-bottom:5px; }
   .hist-archivo:hover { background:#f0f7ff; border-color:#c5d9f0; }
   .hist-archivo.activo { background:#e8f3ff; border-color:#378add; }
-  .hist-archivo-icon { font-size:20px; flex-shrink:0; }
+  .hist-archivo-icon { font-size:22px; flex-shrink:0; }
   .hist-archivo-info { flex:1; min-width:0; }
   .hist-archivo-nombre { font-size:12px; font-weight:600; color:#1a1a1a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .hist-archivo-meta { font-size:10px; color:#aaa; margin-top:1px; }
-  .hist-archivo-abrir { font-size:11px; color:#378add; font-weight:600; text-decoration:none; padding:3px 8px; border-radius:6px; border:1px solid #c5d9f0; white-space:nowrap; }
+  .hist-archivo-meta { font-size:10px; color:#aaa; margin-top:2px; }
+  .hist-archivo-abrir { font-size:11px; color:#378add; font-weight:600; text-decoration:none; padding:4px 9px; border-radius:6px; border:1px solid #c5d9f0; white-space:nowrap; flex-shrink:0; }
   .hist-archivo-abrir:hover { background:#378add; color:white; }
-  .hist-viewer { flex:1; display:flex; flex-direction:column; }
-  .hist-viewer-header { padding:12px 16px; border-bottom:1px solid #f0f0ee; display:flex; align-items:center; gap:10px; flex-shrink:0; }
+  .hist-viewer-empty { flex:1; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; color:#ccc; }
+  .hist-viewer-empty-icon { font-size:52px; }
+  .hist-viewer-panel { flex:1; display:flex; flex-direction:column; }
+  .hist-viewer-header { padding:12px 18px; background:white; border-bottom:1px solid #e5e5e3; display:flex; align-items:center; gap:10px; flex-shrink:0; }
   .hist-viewer-title { font-size:13px; font-weight:600; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .hist-viewer-empty { flex:1; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; color:#ccc; }
-  .hist-viewer-empty-icon { font-size:40px; }
-  .hist-actions { padding:14px 16px; border-top:1px solid #f0f0ee; display:flex; gap:8px; flex-shrink:0; }
-  .hist-btn { padding:8px 14px; border-radius:8px; border:none; font-size:13px; font-weight:600; cursor:pointer; transition:opacity 0.15s; }
+  .hist-loading { display:flex; align-items:center; justify-content:center; padding:20px; gap:8px; color:#aaa; font-size:13px; }
+  .hist-btn { padding:8px 16px; border-radius:8px; border:none; font-size:13px; font-weight:600; cursor:pointer; transition:opacity 0.15s; }
   .hist-btn:hover { opacity:0.85; }
   .hist-btn-wa  { background:#25D366; color:white; }
   .hist-btn-inf { background:#378add; color:white; }
-  .hist-btn-link { background:#f0f0ee; color:#333; text-decoration:none; display:inline-flex; align-items:center; }
-  .hist-loading { display:flex; align-items:center; justify-content:center; padding:24px; gap:8px; color:#aaa; font-size:13px; }
-  @media(max-width:640px){
+  .hist-btn-link { background:#f0f0ee; color:#333; text-decoration:none; display:inline-flex; align-items:center; gap:4px; }
+  .hist-btn-link:hover { background:#e5e5e3; }
+  @media(max-width:700px){
     .hist-body { flex-direction:column; }
-    .hist-left { width:100%; max-height:260px; border-right:none; border-bottom:1px solid #f0f0ee; }
+    .hist-left { width:100%; max-height:50vh; border-right:none; border-bottom:1px solid #e5e5e3; }
+    .hist-topbar-actions { display:none; }
   }
-  [data-theme="dark"] .hist-box { background:#1c1c1e; }
-  [data-theme="dark"] .hist-header { border-color:#2c2c2e; }
-  [data-theme="dark"] .hist-header-nombre { color:#f0f0f0; }
-  [data-theme="dark"] .hist-close { background:#2c2c2e; color:#ccc; }
-  [data-theme="dark"] .hist-left { border-color:#2c2c2e; }
+  [data-theme="dark"] .hist-page { background:#111; }
+  [data-theme="dark"] .hist-topbar { background:#1c1c1e; border-color:#2c2c2e; }
+  [data-theme="dark"] .hist-topbar-nombre { color:#f0f0f0; }
+  [data-theme="dark"] .hist-back-btn { background:#2c2c2e; border-color:#3c3c3e; color:#ccc; }
+  [data-theme="dark"] .hist-left { background:#1c1c1e; border-color:#2c2c2e; }
+  [data-theme="dark"] .hist-section + .hist-section { border-color:#2c2c2e; }
   [data-theme="dark"] .hist-visita { border-color:#2c2c2e; }
   [data-theme="dark"] .hist-archivo-nombre { color:#f0f0f0; }
-  [data-theme="dark"] .hist-archivo:hover { background:#162030; border-color:#2c5a8a; }
+  [data-theme="dark"] .hist-archivo:hover { background:#162030; }
   [data-theme="dark"] .hist-archivo.activo { background:#0d2a45; border-color:#378add; }
-  [data-theme="dark"] .hist-viewer-header { border-color:#2c2c2e; }
-  [data-theme="dark"] .hist-actions { border-color:#2c2c2e; }
+  [data-theme="dark"] .hist-viewer-header { background:#1c1c1e; border-color:#2c2c2e; }
+  [data-theme="dark"] .hist-right { background:#111; }
   [data-theme="dark"] .hist-btn-link { background:#2c2c2e; color:#f0f0f0; }
   [data-theme="dark"] .hist-section-title { color:#555; }
   [data-theme="dark"] .res-card-informe:hover { background:#162030; }
@@ -2914,6 +2919,9 @@ let _histNombreStr = '';
 let _histCelular = '';
 
 async function abrirHistorial(id, dni, nombre) {
+  // Cerrar panel de detalle si estaba abierto
+  cerrarDetalle();
+
   _histDni = dni;
   _histNombreStr = nombre;
 
@@ -2925,13 +2933,15 @@ async function abrirHistorial(id, dni, nombre) {
   document.getElementById('histDni').textContent = 'DNI ' + dni;
   document.getElementById('modalHistorial').classList.add('show');
 
-  // Reset viewer
+  // Reset viewer y listas
   _histSetViewer(null);
+  document.getElementById('histVisitasLista').innerHTML = '';
+  document.getElementById('histInformesLista').innerHTML = '';
+  document.getElementById('histEstudiosLista').innerHTML = '';
 
   // Cargar visitas desde Supabase
   document.getElementById('histLoadingVisitas').style.display = 'flex';
-  document.getElementById('histVisitas').style.display = 'none';
-  document.getElementById('histArchivos').style.display = 'none';
+  document.getElementById('histArchivosCargando').style.display = 'flex';
 
   const { data: visitas, error } = await sb
     .from('pacientes')
@@ -2940,7 +2950,6 @@ async function abrirHistorial(id, dni, nombre) {
     .order('fecha', { ascending: false });
 
   document.getElementById('histLoadingVisitas').style.display = 'none';
-
   if (!error && visitas && visitas.length > 0) {
     const diasES  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
     const mesesES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -2965,17 +2974,9 @@ async function abrirHistorial(id, dni, nombre) {
         </div>
       </div>
     `).join('');
-    document.getElementById('histVisitas').style.display = 'block';
   } else {
     document.getElementById('histVisitasLista').innerHTML = '<div style="font-size:12px;color:#aaa;padding:8px 0;">Sin visitas registradas</div>';
-    document.getElementById('histVisitas').style.display = 'block';
   }
-
-  // Cargar archivos de Drive
-  document.getElementById('histArchivos').style.display = 'block';
-  document.getElementById('histArchivosCargando').style.display = 'flex';
-  document.getElementById('histInformesLista').innerHTML = '';
-  document.getElementById('histEstudiosLista').innerHTML = '';
 
   try {
     const resp = await fetch(`/api/buscar-archivos?dni=${encodeURIComponent(dni)}`);
@@ -3057,6 +3058,8 @@ function _histSetViewer(archivo) {
   }
   empty.style.display = 'none';
   panel.style.display = 'flex';
+  panel.style.flex = '1';
+  panel.style.flexDirection = 'column';
   titulo.textContent = archivo.nombre;
   link.href = archivo.webViewLink;
   iframe.src = archivo.previewUrl;
@@ -3099,54 +3102,49 @@ async function histEnviarInforme() {
 }
 </script>
 
-<!-- Modal Historial Paciente -->
-<div class="hist-modal" id="modalHistorial">
-  <div class="hist-box">
-    <div class="hist-header">
-      <div class="hist-header-info">
-        <div class="hist-header-nombre" id="histNombre">—</div>
-        <div class="hist-header-dni" id="histDni">DNI —</div>
-      </div>
-      <button class="hist-close" onclick="cerrarHistorial()">×</button>
+<!-- Historial Paciente — pantalla completa -->
+<div class="hist-page" id="modalHistorial">
+  <!-- Barra superior -->
+  <div class="hist-topbar">
+    <button class="hist-back-btn" onclick="cerrarHistorial()">← Volver</button>
+    <div class="hist-topbar-info">
+      <div class="hist-topbar-nombre" id="histNombre">—</div>
+      <div class="hist-topbar-dni" id="histDni">DNI —</div>
     </div>
-    <div class="hist-body">
-      <!-- Panel izquierdo: visitas + archivos -->
-      <div class="hist-left" id="histLeft">
-        <div class="hist-loading" id="histLoadingVisitas">⏳ Cargando visitas...</div>
-        <div id="histVisitas" style="display:none;">
-          <div class="hist-section">
-            <div class="hist-section-title">Historial de visitas</div>
-            <div id="histVisitasLista"></div>
-          </div>
-        </div>
-        <div id="histArchivos" style="display:none;">
-          <div class="hist-section" style="border-top:1px solid #f0f0ee;">
-            <div class="hist-section-title">Archivos en Drive</div>
-            <div id="histArchivosCargando" class="hist-loading" style="display:none;">⏳ Buscando archivos...</div>
-            <div id="histInformesLista"></div>
-            <div id="histEstudiosLista"></div>
-          </div>
-        </div>
+    <div class="hist-topbar-actions">
+      <button class="hist-btn hist-btn-wa" onclick="histEnviarEstudios()">📤 Enviar estudios</button>
+      <button class="hist-btn hist-btn-inf" onclick="histEnviarInforme()">📋 Enviar informe</button>
+    </div>
+  </div>
+  <!-- Cuerpo -->
+  <div class="hist-body">
+    <!-- Izquierda: visitas + archivos -->
+    <div class="hist-left">
+      <div class="hist-section">
+        <div class="hist-section-title">Historial de visitas</div>
+        <div class="hist-loading" id="histLoadingVisitas">⏳ Cargando...</div>
+        <div id="histVisitasLista"></div>
       </div>
-      <!-- Panel derecho: visor PDF -->
-      <div class="hist-right">
-        <div class="hist-viewer" id="histViewer">
-          <div class="hist-viewer-empty" id="histViewerEmpty">
-            <div class="hist-viewer-empty-icon">📄</div>
-            <div style="font-size:13px;">Seleccioná un archivo para previsualizarlo</div>
-          </div>
-          <div id="histViewerPanel" style="display:none;flex:1;flex-direction:column;">
-            <div class="hist-viewer-header">
-              <span class="hist-viewer-title" id="histViewerTitulo"></span>
-              <a id="histViewerLink" href="#" target="_blank" class="hist-btn hist-btn-link">↗ Abrir en Drive</a>
-            </div>
-            <iframe id="histIframe" style="flex:1;border:none;width:100%;height:100%;" allowfullscreen></iframe>
-          </div>
+      <div class="hist-section" id="histArchivosSection">
+        <div class="hist-section-title">Archivos en Drive</div>
+        <div class="hist-loading" id="histArchivosCargando">⏳ Buscando archivos...</div>
+        <div id="histInformesLista"></div>
+        <div id="histEstudiosLista"></div>
+      </div>
+    </div>
+    <!-- Derecha: visor -->
+    <div class="hist-right">
+      <div class="hist-viewer-empty" id="histViewerEmpty">
+        <div class="hist-viewer-empty-icon">📄</div>
+        <div style="font-size:14px;color:#bbb;">Tocá un archivo para previsualizarlo</div>
+        <div style="font-size:12px;color:#ccc;margin-top:4px;">Los PDFs e imágenes se muestran aquí</div>
+      </div>
+      <div class="hist-viewer-panel" id="histViewerPanel" style="display:none;">
+        <div class="hist-viewer-header">
+          <span class="hist-viewer-title" id="histViewerTitulo"></span>
+          <a id="histViewerLink" href="#" target="_blank" class="hist-btn hist-btn-link">↗ Abrir en Drive</a>
         </div>
-        <div class="hist-actions" id="histActions">
-          <button class="hist-btn hist-btn-wa" onclick="histEnviarEstudios()">📤 Enviar estudios</button>
-          <button class="hist-btn hist-btn-inf" onclick="histEnviarInforme()">📋 Enviar informe</button>
-        </div>
+        <iframe id="histIframe" style="flex:1;border:none;width:100%;height:100%;" allowfullscreen></iframe>
       </div>
     </div>
   </div>
