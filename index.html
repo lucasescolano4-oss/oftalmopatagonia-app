@@ -1689,7 +1689,7 @@ async function buscar() {
         <div class="res-estudios-mini">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
       </div>
       <div class="res-card-bottom">
-        <div class="res-card-hist-btn" title="Ver historial completo" onclick="event.stopPropagation(); abrirHistorial('${p.id}','${p.dni}',${JSON.stringify(p.nombre_completo)})">📁</div>
+        <div class="res-card-hist-btn" title="Ver historial completo" onclick="event.stopPropagation(); abrirHistorial('${p.id}')">📁</div>
         <div class="res-card-informe" onclick="event.stopPropagation(); toggleInformeResultado('${p.id}', this)">
           <span class="res-card-informe-lbl">Informe</span>
           <span class="res-card-informe-val ${informeHecho?'hecho':'pendiente'}">${informeHecho ? '✓ Hecho' : '· Pend.'}</span>
@@ -2918,16 +2918,14 @@ let _histDni = '';
 let _histNombreStr = '';
 let _histCelular = '';
 
-async function abrirHistorial(id, dni, nombre) {
+async function abrirHistorial(id) {
   // Cerrar panel de detalle si estaba abierto
   cerrarDetalle();
 
-  _histDni = dni;
-  _histNombreStr = nombre;
-
-  // Intentar obtener celular desde la tarjeta
   const card = document.querySelector(`.res-card[data-id="${id}"]`);
-  _histCelular = card ? (card.dataset.celular || '') : '';
+  _histDni        = card ? (card.dataset.dni     || '') : '';
+  _histNombreStr  = card ? (card.dataset.nombre  || '') : '';
+  _histCelular    = card ? (card.dataset.celular || '') : '';
 
   document.getElementById('histNombre').textContent = nombre;
   document.getElementById('histDni').textContent = 'DNI ' + dni;
