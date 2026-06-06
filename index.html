@@ -251,7 +251,9 @@
   .res-estudios-mini { display:flex; flex-wrap:wrap; gap:3px; }
   .res-estudios-mini .estudio-tag { font-size:10px; padding:1px 6px; }
 
-  .res-card-bottom { display:grid; grid-template-columns:1fr 1fr 1fr; border-top:1px solid #f0f0ee; }
+  .res-card-bottom { display:grid; grid-template-columns:auto 1fr 1fr 1fr; border-top:1px solid #f0f0ee; }
+  .res-card-hist-btn { padding:7px 10px; display:flex; align-items:center; justify-content:center; border-right:1px solid #f0f0ee; cursor:pointer; color:#378add; font-size:15px; transition:background 0.15s; }
+  .res-card-hist-btn:hover { background:#e8f3ff; }
   .res-card-informe { padding:7px 11px; display:flex; flex-direction:column; gap:2px; border-right:1px solid #f0f0ee; cursor:pointer; transition:background 0.15s; }
   .res-card-informe:hover { background:#f0f7ff; }
   .res-card-informe-lbl { font-size:9px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#bbb; }
@@ -583,6 +585,65 @@
   [data-theme="dark"] .res-card-bottom { border-color:#2c2c2e; }
   [data-theme="dark"] .res-card-informe { border-color:#2c2c2e; }
   [data-theme="dark"] .res-card-estado.sep { border-color:#2c2c2e; }
+  [data-theme="dark"] .res-card-hist-btn { border-color:#2c2c2e; color:#5aabff; }
+  [data-theme="dark"] .res-card-hist-btn:hover { background:#162030; }
+
+  /* ── Modal Historial ── */
+  .hist-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:1100; align-items:center; justify-content:center; padding:16px; }
+  .hist-modal.show { display:flex; }
+  .hist-box { background:white; border-radius:18px; width:100%; max-width:960px; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 24px 80px rgba(0,0,0,0.22); }
+  .hist-header { padding:18px 22px 14px; border-bottom:1px solid #f0f0ee; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-shrink:0; }
+  .hist-header-info { display:flex; flex-direction:column; gap:3px; }
+  .hist-header-nombre { font-size:17px; font-weight:700; color:#1a1a1a; }
+  .hist-header-dni { font-size:12px; color:#888; }
+  .hist-close { width:32px; height:32px; border-radius:50%; border:none; background:#f5f5f3; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#555; flex-shrink:0; }
+  .hist-body { display:flex; gap:0; flex:1; overflow:hidden; }
+  .hist-left { width:340px; flex-shrink:0; overflow-y:auto; border-right:1px solid #f0f0ee; display:flex; flex-direction:column; }
+  .hist-right { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .hist-section { padding:14px 16px; }
+  .hist-section-title { font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#bbb; margin-bottom:10px; }
+  .hist-visita { padding:10px 12px; border:1px solid #ebebea; border-radius:10px; margin-bottom:8px; cursor:default; }
+  .hist-visita-fecha { font-size:11px; font-weight:700; color:#378add; margin-bottom:4px; }
+  .hist-visita-estudios { display:flex; flex-wrap:wrap; gap:3px; }
+  .hist-visita-medico { font-size:10px; color:#aaa; margin-top:4px; }
+  .hist-archivo { display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; cursor:pointer; transition:background 0.15s; border:1px solid transparent; margin-bottom:5px; }
+  .hist-archivo:hover { background:#f0f7ff; border-color:#c5d9f0; }
+  .hist-archivo.activo { background:#e8f3ff; border-color:#378add; }
+  .hist-archivo-icon { font-size:20px; flex-shrink:0; }
+  .hist-archivo-info { flex:1; min-width:0; }
+  .hist-archivo-nombre { font-size:12px; font-weight:600; color:#1a1a1a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hist-archivo-meta { font-size:10px; color:#aaa; margin-top:1px; }
+  .hist-archivo-abrir { font-size:11px; color:#378add; font-weight:600; text-decoration:none; padding:3px 8px; border-radius:6px; border:1px solid #c5d9f0; white-space:nowrap; }
+  .hist-archivo-abrir:hover { background:#378add; color:white; }
+  .hist-viewer { flex:1; display:flex; flex-direction:column; }
+  .hist-viewer-header { padding:12px 16px; border-bottom:1px solid #f0f0ee; display:flex; align-items:center; gap:10px; flex-shrink:0; }
+  .hist-viewer-title { font-size:13px; font-weight:600; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .hist-viewer-empty { flex:1; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; color:#ccc; }
+  .hist-viewer-empty-icon { font-size:40px; }
+  .hist-actions { padding:14px 16px; border-top:1px solid #f0f0ee; display:flex; gap:8px; flex-shrink:0; }
+  .hist-btn { padding:8px 14px; border-radius:8px; border:none; font-size:13px; font-weight:600; cursor:pointer; transition:opacity 0.15s; }
+  .hist-btn:hover { opacity:0.85; }
+  .hist-btn-wa  { background:#25D366; color:white; }
+  .hist-btn-inf { background:#378add; color:white; }
+  .hist-btn-link { background:#f0f0ee; color:#333; text-decoration:none; display:inline-flex; align-items:center; }
+  .hist-loading { display:flex; align-items:center; justify-content:center; padding:24px; gap:8px; color:#aaa; font-size:13px; }
+  @media(max-width:640px){
+    .hist-body { flex-direction:column; }
+    .hist-left { width:100%; max-height:260px; border-right:none; border-bottom:1px solid #f0f0ee; }
+  }
+  [data-theme="dark"] .hist-box { background:#1c1c1e; }
+  [data-theme="dark"] .hist-header { border-color:#2c2c2e; }
+  [data-theme="dark"] .hist-header-nombre { color:#f0f0f0; }
+  [data-theme="dark"] .hist-close { background:#2c2c2e; color:#ccc; }
+  [data-theme="dark"] .hist-left { border-color:#2c2c2e; }
+  [data-theme="dark"] .hist-visita { border-color:#2c2c2e; }
+  [data-theme="dark"] .hist-archivo-nombre { color:#f0f0f0; }
+  [data-theme="dark"] .hist-archivo:hover { background:#162030; border-color:#2c5a8a; }
+  [data-theme="dark"] .hist-archivo.activo { background:#0d2a45; border-color:#378add; }
+  [data-theme="dark"] .hist-viewer-header { border-color:#2c2c2e; }
+  [data-theme="dark"] .hist-actions { border-color:#2c2c2e; }
+  [data-theme="dark"] .hist-btn-link { background:#2c2c2e; color:#f0f0f0; }
+  [data-theme="dark"] .hist-section-title { color:#555; }
   [data-theme="dark"] .res-card-informe:hover { background:#162030; }
   [data-theme="dark"] .res-card-informe-lbl,[data-theme="dark"] .res-card-estado-lbl { color:#555; }
   [data-theme="dark"] .res-card-informe-val.pendiente { color:#555; }
@@ -1623,6 +1684,7 @@ async function buscar() {
         <div class="res-estudios-mini">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
       </div>
       <div class="res-card-bottom">
+        <div class="res-card-hist-btn" title="Ver historial completo" onclick="event.stopPropagation(); abrirHistorial('${p.id}','${p.dni}',${JSON.stringify(p.nombre_completo)})">📁</div>
         <div class="res-card-informe" onclick="event.stopPropagation(); toggleInformeResultado('${p.id}', this)">
           <span class="res-card-informe-lbl">Informe</span>
           <span class="res-card-informe-val ${informeHecho?'hecho':'pendiente'}">${informeHecho ? '✓ Hecho' : '· Pend.'}</span>
@@ -2843,7 +2905,252 @@ async function detalleEnviarWA() {
   }
   btn.disabled = false; btn.textContent = '📤 Enviar estudios';
 }
+
+// ══════════════════════════════════════════
+//  HISTORIAL PACIENTE
+// ══════════════════════════════════════════
+let _histDni = '';
+let _histNombreStr = '';
+let _histCelular = '';
+
+async function abrirHistorial(id, dni, nombre) {
+  _histDni = dni;
+  _histNombreStr = nombre;
+
+  // Intentar obtener celular desde la tarjeta
+  const card = document.querySelector(`.res-card[data-id="${id}"]`);
+  _histCelular = card ? (card.dataset.celular || '') : '';
+
+  document.getElementById('histNombre').textContent = nombre;
+  document.getElementById('histDni').textContent = 'DNI ' + dni;
+  document.getElementById('modalHistorial').classList.add('show');
+
+  // Reset viewer
+  _histSetViewer(null);
+
+  // Cargar visitas desde Supabase
+  document.getElementById('histLoadingVisitas').style.display = 'flex';
+  document.getElementById('histVisitas').style.display = 'none';
+  document.getElementById('histArchivos').style.display = 'none';
+
+  const { data: visitas, error } = await sb
+    .from('pacientes')
+    .select('id,fecha,estudios,medico,informe_realizado,enviado,numero_orden')
+    .eq('dni', dni)
+    .order('fecha', { ascending: false });
+
+  document.getElementById('histLoadingVisitas').style.display = 'none';
+
+  if (!error && visitas && visitas.length > 0) {
+    const diasES  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const mesesES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    function fmtFecha(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso + 'T12:00:00');
+      return `${diasES[d.getDay()]} ${d.getDate()} ${mesesES[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    document.getElementById('histVisitasLista').innerHTML = visitas.map((v, i) => `
+      <div class="hist-visita">
+        <div class="hist-visita-fecha">
+          ${i === 0 ? '🟢 Última visita — ' : ''}${fmtFecha(v.fecha)}
+        </div>
+        <div class="hist-visita-estudios">
+          ${(v.estudios||[]).map(e=>`<span class="estudio-tag">${e}</span>`).join('')}
+        </div>
+        <div class="hist-visita-medico">
+          ${v.medico||''}
+          ${v.informe_realizado ? ' · <span style="color:#1a7a45;font-weight:600;">Informe hecho</span>' : ''}
+          ${v.enviado ? ' · <span style="color:#1a7a45;font-weight:600;">Enviado</span>' : ''}
+        </div>
+      </div>
+    `).join('');
+    document.getElementById('histVisitas').style.display = 'block';
+  } else {
+    document.getElementById('histVisitasLista').innerHTML = '<div style="font-size:12px;color:#aaa;padding:8px 0;">Sin visitas registradas</div>';
+    document.getElementById('histVisitas').style.display = 'block';
+  }
+
+  // Cargar archivos de Drive
+  document.getElementById('histArchivos').style.display = 'block';
+  document.getElementById('histArchivosCargando').style.display = 'flex';
+  document.getElementById('histInformesLista').innerHTML = '';
+  document.getElementById('histEstudiosLista').innerHTML = '';
+
+  try {
+    const resp = await fetch(`/api/buscar-archivos?dni=${encodeURIComponent(dni)}`);
+    const data = await resp.json();
+    document.getElementById('histArchivosCargando').style.display = 'none';
+
+    if (data.ok) {
+      _renderArchivos('histInformesLista', data.informes, '📋 Informes');
+      _renderArchivos('histEstudiosLista', data.estudios, '📂 Estudios');
+    } else {
+      document.getElementById('histEstudiosLista').innerHTML = `<div style="font-size:12px;color:#e24b4a;padding:4px 0;">Error: ${data.error}</div>`;
+    }
+  } catch(err) {
+    document.getElementById('histArchivosCargando').style.display = 'none';
+    document.getElementById('histEstudiosLista').innerHTML = `<div style="font-size:12px;color:#e24b4a;padding:4px 0;">Error de conexión al buscar archivos</div>`;
+  }
+}
+
+function _renderArchivos(containerId, archivos, titulo) {
+  const el = document.getElementById(containerId);
+  if (!archivos || archivos.length === 0) {
+    el.innerHTML = `<div style="font-size:11px;color:#bbb;margin-bottom:10px;">${titulo}: ninguno</div>`;
+    return;
+  }
+  function fileIcon(mime) {
+    if (mime && mime.includes('pdf')) return '📄';
+    if (mime && mime.includes('image')) return '🖼️';
+    if (mime && (mime.includes('document') || mime.includes('word'))) return '📝';
+    return '📎';
+  }
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
+  }
+
+  el.innerHTML = `<div style="font-size:10px;font-weight:700;color:#bbb;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px;margin-top:2px;">${titulo}</div>` +
+    archivos.map(f => {
+      const previewUrl = f.mimeType && f.mimeType.includes('pdf')
+        ? `https://drive.google.com/file/d/${f.id}/preview`
+        : (f.mimeType && f.mimeType.includes('image')
+          ? `https://drive.google.com/file/d/${f.id}/preview`
+          : null);
+      const onclick = previewUrl
+        ? `_abrirArchivoVisor('${f.id}', ${JSON.stringify(f.name)}, '${f.webViewLink}', '${previewUrl}')`
+        : `window.open('${f.webViewLink}','_blank')`;
+      return `<div class="hist-archivo" id="hf-${f.id}" onclick="${onclick}">
+        <div class="hist-archivo-icon">${fileIcon(f.mimeType)}</div>
+        <div class="hist-archivo-info">
+          <div class="hist-archivo-nombre">${f.name}</div>
+          <div class="hist-archivo-meta">${fmtDate(f.createdTime)}</div>
+        </div>
+        <a href="${f.webViewLink}" target="_blank" class="hist-archivo-abrir" onclick="event.stopPropagation()">↗</a>
+      </div>`;
+    }).join('');
+}
+
+function _abrirArchivoVisor(id, nombre, webViewLink, previewUrl) {
+  // Quitar activo anterior
+  document.querySelectorAll('.hist-archivo.activo').forEach(el => el.classList.remove('activo'));
+  const el = document.getElementById('hf-' + id);
+  if (el) el.classList.add('activo');
+
+  _histSetViewer({ nombre, webViewLink, previewUrl });
+}
+
+function _histSetViewer(archivo) {
+  const empty  = document.getElementById('histViewerEmpty');
+  const panel  = document.getElementById('histViewerPanel');
+  const iframe = document.getElementById('histIframe');
+  const titulo = document.getElementById('histViewerTitulo');
+  const link   = document.getElementById('histViewerLink');
+
+  if (!archivo) {
+    empty.style.display = 'flex';
+    panel.style.display = 'none';
+    iframe.src = '';
+    return;
+  }
+  empty.style.display = 'none';
+  panel.style.display = 'flex';
+  titulo.textContent = archivo.nombre;
+  link.href = archivo.webViewLink;
+  iframe.src = archivo.previewUrl;
+}
+
+function cerrarHistorial() {
+  document.getElementById('modalHistorial').classList.remove('show');
+  document.getElementById('histIframe').src = '';
+  _histDni = '';
+  _histNombreStr = '';
+  _histCelular = '';
+}
+
+async function histEnviarEstudios() {
+  if (!_histDni) return;
+  const confirmar = confirm(`¿Enviar estudios de ${_histNombreStr} por WhatsApp?`);
+  if (!confirmar) return;
+  try {
+    const resp = await fetch('/api/enviar-estudios', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([{ nombre: _histNombreStr, dni: _histDni, celular: _histCelular }])
+    });
+    const data = await resp.json();
+    showToast(data.ok ? '📤 Estudios enviados por WhatsApp' : '❌ ' + (data.error || 'Error'));
+  } catch(e) { showToast('❌ Error de conexión'); }
+}
+
+async function histEnviarInforme() {
+  if (!_histDni) return;
+  const confirmar = confirm(`¿Enviar informe de ${_histNombreStr} por WhatsApp?`);
+  if (!confirmar) return;
+  try {
+    const resp = await fetch('/api/enviar-informe', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([{ nombre: _histNombreStr, dni: _histDni, celular: _histCelular }])
+    });
+    const data = await resp.json();
+    showToast(data.ok ? '📋 Informe enviado por WhatsApp' : '❌ ' + (data.error || 'Error'));
+  } catch(e) { showToast('❌ Error de conexión'); }
+}
 </script>
+
+<!-- Modal Historial Paciente -->
+<div class="hist-modal" id="modalHistorial">
+  <div class="hist-box">
+    <div class="hist-header">
+      <div class="hist-header-info">
+        <div class="hist-header-nombre" id="histNombre">—</div>
+        <div class="hist-header-dni" id="histDni">DNI —</div>
+      </div>
+      <button class="hist-close" onclick="cerrarHistorial()">×</button>
+    </div>
+    <div class="hist-body">
+      <!-- Panel izquierdo: visitas + archivos -->
+      <div class="hist-left" id="histLeft">
+        <div class="hist-loading" id="histLoadingVisitas">⏳ Cargando visitas...</div>
+        <div id="histVisitas" style="display:none;">
+          <div class="hist-section">
+            <div class="hist-section-title">Historial de visitas</div>
+            <div id="histVisitasLista"></div>
+          </div>
+        </div>
+        <div id="histArchivos" style="display:none;">
+          <div class="hist-section" style="border-top:1px solid #f0f0ee;">
+            <div class="hist-section-title">Archivos en Drive</div>
+            <div id="histArchivosCargando" class="hist-loading" style="display:none;">⏳ Buscando archivos...</div>
+            <div id="histInformesLista"></div>
+            <div id="histEstudiosLista"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Panel derecho: visor PDF -->
+      <div class="hist-right">
+        <div class="hist-viewer" id="histViewer">
+          <div class="hist-viewer-empty" id="histViewerEmpty">
+            <div class="hist-viewer-empty-icon">📄</div>
+            <div style="font-size:13px;">Seleccioná un archivo para previsualizarlo</div>
+          </div>
+          <div id="histViewerPanel" style="display:none;flex:1;flex-direction:column;">
+            <div class="hist-viewer-header">
+              <span class="hist-viewer-title" id="histViewerTitulo"></span>
+              <a id="histViewerLink" href="#" target="_blank" class="hist-btn hist-btn-link">↗ Abrir en Drive</a>
+            </div>
+            <iframe id="histIframe" style="flex:1;border:none;width:100%;height:100%;" allowfullscreen></iframe>
+          </div>
+        </div>
+        <div class="hist-actions" id="histActions">
+          <button class="hist-btn hist-btn-wa" onclick="histEnviarEstudios()">📤 Enviar estudios</button>
+          <button class="hist-btn hist-btn-inf" onclick="histEnviarInforme()">📋 Enviar informe</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Modal Configuración -->
 <div class="modal-overlay" id="modalConfig">
