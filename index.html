@@ -251,7 +251,7 @@
   .res-estudios-mini { display:flex; flex-wrap:wrap; gap:3px; }
   .res-estudios-mini .estudio-tag { font-size:10px; padding:1px 6px; }
 
-  .res-card-bottom { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid #f0f0ee; }
+  .res-card-bottom { display:grid; grid-template-columns:1fr 1fr 1fr; border-top:1px solid #f0f0ee; }
   .res-card-informe { padding:7px 11px; display:flex; flex-direction:column; gap:2px; border-right:1px solid #f0f0ee; cursor:pointer; transition:background 0.15s; }
   .res-card-informe:hover { background:#f0f7ff; }
   .res-card-informe-lbl { font-size:9px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#bbb; }
@@ -1389,7 +1389,10 @@ function renderLista() {
       <div class="paciente-info">
         <div class="paciente-nombre">${p.nombre_completo} ${badge}</div>
         <div class="paciente-meta">DNI ${p.dni} · +${p.celular}${p.obra_social ? ' · ' + p.obra_social : ''} · ${ordenBadge}</div>
-        <div style="margin-top:5px;"><span class="badge-informe ${p.informe_realizado?'hecho':''}" onclick="toggleInforme('${p.id}',${i})">${p.informe_realizado ? '📋 Informe hecho' : '📋 Marcar informe'}</span></div>
+        <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <span class="badge-informe ${p.informe_realizado?'hecho':''}" onclick="toggleInforme('${p.id}',${i})">${p.informe_realizado ? '📋 Informe hecho' : '📋 Marcar informe'}</span>
+          ${p.envio_programado && !p.enviado ? `<span style="font-size:11px;padding:3px 8px;background:#fff7e6;color:#e09c20;border:1px solid #f5d07a;border-radius:99px;font-weight:500;">📤 Pend. env.</span>` : ''}
+        </div>
         <div class="paciente-estudios">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
       </div>
       <div class="card-actions">
@@ -1446,6 +1449,12 @@ async function enviarPendientes() {
   // Marcar como enviados
   const ids = pendientes.map(p => p.id);
   await marcarComoEnviados(ids);
+
+  // Marcar envio_programado en los que no se enviaron directamente
+  // (si se compartió por WhatsApp/CSV para envío diferido, marcar pend. env.)
+  await sb.from('pacientes').update({ envio_programado: true }).in('id', ids);
+  pacientesHoy.forEach(p => { if (ids.includes(p.id)) p.envio_programado = true; });
+
   seleccionados.clear();
   todoSeleccionado = false;
 
@@ -1576,6 +1585,7 @@ async function buscar() {
   function cardHTML(p) {
     const informeHecho = p.informe_realizado;
     const enviado = p.enviado;
+    const envioProg = p.envio_programado;
     return `<div class="res-card${enviado?' res-enviada':''}"
       data-id="${p.id}" data-nombre="${p.nombre_completo.replace(/"/g,'&quot;')}"
       data-dni="${p.dni}" data-celular="${p.celular}" data-fecha="${p.fecha||''}"
@@ -1583,6 +1593,7 @@ async function buscar() {
       data-numero_orden="${p.numero_orden||''}" data-enviado="${enviado?'1':'0'}"
       data-informe="${informeHecho?'1':'0'}" data-orden_aut="${p.orden_autorizada?'1':'0'}"
       data-email="${(p.email||'').replace(/"/g,'&quot;')}"
+      data-envio_prog="${envioProg?'1':'0'}"
       onclick="abrirDetalle(this)">
       <div class="res-card-top">
         <div class="res-card-top-row1">
@@ -1604,6 +1615,10 @@ async function buscar() {
         <div class="res-card-estado">
           <span class="res-card-estado-lbl">WhatsApp</span>
           <span class="res-card-estado-val" style="color:${enviado?'#1a7a45':'#aaa'}">${enviado?'✓ Env.':'· Pend.'}</span>
+        </div>
+        <div class="res-card-estado">
+          <span class="res-card-estado-lbl">Envío</span>
+          <span class="res-card-estado-val" style="color:${enviado?'#1a7a45':envioProg?'#e09c20':'#aaa'}">${enviado?'✓ Env.':envioProg?'Pend. env.':'· Pend.'}</span>
         </div>
       </div>
     </div>`;
@@ -2681,6 +2696,12 @@ async function detalleEnviarInforme() {
   if (!_detalleId) return;
   const card = document.querySelector(`.res-card[data-id="${_detalleId}"]`);
   if (!card) return;
+  const nombre = card.dataset.nombre || 'Este paciente';
+  // Confirmación si el informe ya fue enviado (informe_realizado = true)
+  if (card.dataset.informe === '1') {
+    const confirmar = confirm(`${nombre} ya tiene informe marcado como hecho.\n¿Querés enviar el informe nuevamente por WhatsApp?`);
+    if (!confirmar) return;
+  }
   const btn = document.getElementById('detalleBtnInforme');
   btn.disabled = true; btn.textContent = 'Enviando...';
   try {
