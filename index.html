@@ -3062,6 +3062,8 @@ async function abrirHistorial(id) {
   }
 }
 
+const _histFilesMap = {};
+
 function _renderArchivosAgrupados(informes, estudios) {
   function fileIcon(mime, esInforme) {
     if (esInforme) return '📋';
@@ -3098,11 +3100,12 @@ function _renderArchivosAgrupados(informes, estudios) {
   document.getElementById('histInformesLista').innerHTML = Object.entries(grupos).map(([fecha, items]) => `
     <div style="font-size:10px;font-weight:700;color:#bbb;letter-spacing:0.05em;margin:10px 0 5px;">${fecha}</div>
     ${items.map(f => {
-      const fileId = (f.id || '').split('/')[0]; // limpiar cualquier sufijo tipo /view?...
+      const fileId = (f.id || '').split('/')[0];
       const previewUrl = (f.mimeType && (f.mimeType.includes('pdf') || f.mimeType.includes('image')))
         ? `/api/ver-archivo?id=${fileId}` : null;
+      _histFilesMap[fileId] = { nombre: f.name, webViewLink: f.webViewLink, previewUrl };
       const onclick = previewUrl
-        ? `_abrirArchivoVisor('${f.id}',${JSON.stringify(f.name)},'${f.webViewLink}','${previewUrl}')`
+        ? `_abrirArchivoVisorById('${fileId}')`
         : `window.open('${f.webViewLink}','_blank')`;
       return `<div class="hist-archivo" id="hf-${f.id}" onclick="${onclick}">
         <div class="hist-archivo-icon">${fileIcon(f.mimeType, f.esInforme)}</div>
@@ -3114,6 +3117,12 @@ function _renderArchivosAgrupados(informes, estudios) {
     }).join('')}
   `).join('');
   document.getElementById('histEstudiosLista').innerHTML = '';
+}
+
+function _abrirArchivoVisorById(id) {
+  const f = _histFilesMap[id];
+  if (!f) return;
+  _abrirArchivoVisor(id, f.nombre, f.webViewLink, f.previewUrl);
 }
 
 function _abrirArchivoVisor(id, nombre, webViewLink, previewUrl) {
