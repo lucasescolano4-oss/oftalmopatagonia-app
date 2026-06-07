@@ -3098,8 +3098,9 @@ function _renderArchivosAgrupados(informes, estudios) {
   document.getElementById('histInformesLista').innerHTML = Object.entries(grupos).map(([fecha, items]) => `
     <div style="font-size:10px;font-weight:700;color:#bbb;letter-spacing:0.05em;margin:10px 0 5px;">${fecha}</div>
     ${items.map(f => {
+      const fileId = (f.id || '').split('/')[0]; // limpiar cualquier sufijo tipo /view?...
       const previewUrl = (f.mimeType && (f.mimeType.includes('pdf') || f.mimeType.includes('image')))
-        ? `/api/ver-archivo?id=${f.id}` : null;
+        ? `/api/ver-archivo?id=${fileId}` : null;
       const onclick = previewUrl
         ? `_abrirArchivoVisor('${f.id}',${JSON.stringify(f.name)},'${f.webViewLink}','${previewUrl}')`
         : `window.open('${f.webViewLink}','_blank')`;
