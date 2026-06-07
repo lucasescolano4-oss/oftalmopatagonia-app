@@ -3099,7 +3099,7 @@ function _renderArchivosAgrupados(informes, estudios) {
     <div style="font-size:10px;font-weight:700;color:#bbb;letter-spacing:0.05em;margin:10px 0 5px;">${fecha}</div>
     ${items.map(f => {
       const previewUrl = (f.mimeType && (f.mimeType.includes('pdf') || f.mimeType.includes('image')))
-        ? `https://drive.google.com/file/d/${f.id}/preview` : null;
+        ? `/api/ver-archivo?id=${f.id}` : null;
       const onclick = previewUrl
         ? `_abrirArchivoVisor('${f.id}',${JSON.stringify(f.name)},'${f.webViewLink}','${previewUrl}')`
         : `window.open('${f.webViewLink}','_blank')`;
