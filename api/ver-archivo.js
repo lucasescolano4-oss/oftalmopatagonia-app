@@ -53,7 +53,8 @@ export default async function handler(req, res) {
     );
 
     if (!fileResp.ok) {
-      return res.status(fileResp.status).send('Error al obtener el archivo de Drive');
+      const errBody = await fileResp.text();
+      return res.status(fileResp.status).send(`Error Drive ${fileResp.status}: ${errBody.substring(0, 300)}`);
     }
 
     const buffer = await fileResp.arrayBuffer();
