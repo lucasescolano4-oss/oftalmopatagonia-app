@@ -1959,6 +1959,37 @@ async function doLogout() {
   location.reload();
 }
 
+async function cambiarPassword() {
+  const actual  = document.getElementById('pwActual').value;
+  const nueva   = document.getElementById('pwNueva').value;
+  const confirm = document.getElementById('pwConfirm').value;
+  const msg     = document.getElementById('pwMsg');
+
+  const mostrar = (texto, ok) => {
+    msg.textContent = texto;
+    msg.style.display = 'block';
+    msg.style.background = ok ? '#e6f9ec' : '#fdecea';
+    msg.style.color = ok ? '#1a7a3c' : '#c0392b';
+  };
+
+  if (!actual || !nueva || !confirm) return mostrar('Completá todos los campos.', false);
+  if (nueva.length < 8) return mostrar('La contraseña nueva debe tener al menos 8 caracteres.', false);
+  if (nueva !== confirm) return mostrar('Las contraseñas nuevas no coinciden.', false);
+
+  // Verificar contraseña actual reautenticando
+  const { data: { session } } = await sb.auth.getSession();
+  const { error: loginErr } = await sb.auth.signInWithPassword({ email: session.user.email, password: actual });
+  if (loginErr) return mostrar('La contraseña actual es incorrecta.', false);
+
+  const { error } = await sb.auth.updateUser({ password: nueva });
+  if (error) return mostrar('Error: ' + error.message, false);
+
+  mostrar('✓ Contraseña cambiada correctamente.', true);
+  document.getElementById('pwActual').value = '';
+  document.getElementById('pwNueva').value = '';
+  document.getElementById('pwConfirm').value = '';
+}
+
 // ─── MODAL INFORME ────────────────────────────────────────────────────────────
 
 const ESTUDIOS_CONFIG = {
@@ -3289,6 +3320,16 @@ async function histEnviarInforme() {
       <div style="font-size:12px;font-weight:600;color:#378add;margin-bottom:8px;">🧪 Modo demo</div>
       <button onclick="cerrarConfig(); testHistorialDemo()" style="width:100%;padding:10px;background:#378add;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">Ver historial de ejemplo</button>
       <div style="font-size:11px;color:#888;margin-top:5px;text-align:center;">Abre el historial con datos de prueba para ver cómo funciona</div>
+    </div>
+
+    <!-- Cambiar contraseña -->
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;">
+      <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:8px;">🔑 Cambiar contraseña</div>
+      <input type="password" id="pwActual" placeholder="Contraseña actual" style="width:100%;margin-bottom:8px;">
+      <input type="password" id="pwNueva" placeholder="Contraseña nueva (mínimo 8 caracteres)" style="width:100%;margin-bottom:8px;">
+      <input type="password" id="pwConfirm" placeholder="Repetir contraseña nueva" style="width:100%;margin-bottom:8px;">
+      <button onclick="cambiarPassword()" style="width:100%;padding:10px;background:#1a1a1a;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;">Cambiar contraseña</button>
+      <div id="pwMsg" style="display:none;font-size:12px;margin-top:8px;padding:8px;border-radius:6px;text-align:center;"></div>
     </div>
   </div>
 </div>
