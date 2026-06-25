@@ -2890,10 +2890,29 @@ async function detalleMarcarEnviado() {
     showToast(`${nombre} ya está marcado como enviado`);
     return;
   }
-  await sb.from('pacientes').update({ enviado: true }).eq('id', _detalleId);
-  card.classList.add('res-enviada'); card.dataset.enviado = '1';
+  const informeYaHecho = card.dataset.informe === '1';
+  const updData = informeYaHecho ? { enviado: true, informe_enviado: true } : { enviado: true };
+  await sb.from('pacientes').update(updData).eq('id', _detalleId);
+
+  // Actualizar memoria local
+  const pIdx = pacientesHoy.findIndex(p => p.id === _detalleId);
+  if (pIdx !== -1) {
+    pacientesHoy[pIdx].enviado = true;
+    if (informeYaHecho) pacientesHoy[pIdx].informe_enviado = true;
+  }
+
+  // Actualizar tarjeta
+  card.classList.add('res-enviada');
+  card.dataset.enviado = '1';
+  const spanEstudios = card.querySelector('.res-card-estado:not(.sep) .res-card-estado-val');
+  if (spanEstudios) { spanEstudios.textContent = '✓ Env.'; spanEstudios.style.color = '#1a7a45'; }
+  if (informeYaHecho) {
+    card.dataset.informe_env = '1';
+    const spanEnvInf = card.querySelector('.res-card-estado.sep .res-card-estado-val');
+    if (spanEnvInf) { spanEnvInf.textContent = '✓ Env.'; spanEnvInf.style.color = '#1a7a45'; }
+  }
+
   showToast(`✓ ${nombre} marcado como enviado`);
-  // Actualizar el estado en el sidebar
   const estadoEl = document.querySelector('#detalleSidebarContent .detalle-row-val[data-field="enviado"]');
   if (estadoEl) { estadoEl.textContent = '✓ Enviado'; estadoEl.style.color = '#1a7a45'; }
 }
