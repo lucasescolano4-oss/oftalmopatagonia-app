@@ -1932,7 +1932,16 @@ async function doLogin() {
   const { error } = await sb.auth.signInWithPassword({ email, password });
   btn.disabled = false; btn.textContent = 'Ingresar';
 
-  if (error) { errorEl.style.display = 'block'; return; }
+  if (error) { errorEl.textContent = 'Email o contraseña incorrectos.'; errorEl.style.display = 'block'; return; }
+
+  // Verificar que el email esté en la lista de permitidos
+  const { data: allowed } = await sb.from('allowed_emails').select('email').eq('email', email).single();
+  if (!allowed) {
+    await sb.auth.signOut();
+    errorEl.textContent = 'No tenés autorización para acceder.';
+    errorEl.style.display = 'block';
+    return;
+  }
 
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('btnLogout').style.display = 'inline-block';
