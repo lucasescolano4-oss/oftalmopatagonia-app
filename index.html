@@ -1041,6 +1041,7 @@ let todoSeleccionado = false;
 let editandoId = null;
 let ordenAutorizada = false;
 let medicoActual = '';
+let medicoId = null;
 
 function fechaLocalStr(d) {
   const dd = d || new Date();
@@ -1064,8 +1065,9 @@ function init() {
   // La carga se hace después de seleccionar médico
 }
 
-function seleccionarMedico(nombre) {
+function seleccionarMedico(nombre, uid) {
   medicoActual = nombre;
+  if (uid) medicoId = uid;
   document.getElementById('medicoScreen').classList.add('hidden');
   document.getElementById('medicoBadge').textContent = '👤 ' + nombre;
 
@@ -1167,7 +1169,7 @@ async function guardarPaciente() {
   const proximoNumero = (ultimoData && ultimoData.length > 0 ? (ultimoData[0].numero_orden || 0) : 0) + 1;
 
   const { data, error } = await sb.from('pacientes')
-    .insert([{ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, email: emailPaciente||null, fecha, estudios, enviado: false, obra_social: obraSocial, orden_autorizada: ordenAutorizada, medico: medicoActual, numero_orden: proximoNumero }])
+    .insert([{ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, email: emailPaciente||null, fecha, estudios, enviado: false, obra_social: obraSocial, orden_autorizada: ordenAutorizada, medico: medicoActual, medico_id: medicoId, numero_orden: proximoNumero }])
     .select();
 
   btn.disabled = false; btn.textContent = '+ Agregar paciente';
@@ -1912,7 +1914,7 @@ async function checkAuth() {
     document.getElementById('btnLogout').style.display = 'inline-block';
     const nombre = EMAIL_MEDICO[session.user.email];
     if (nombre) {
-      seleccionarMedico(nombre);
+      seleccionarMedico(nombre, session.user.id);
     } else {
       document.getElementById('medicoScreen').classList.remove('hidden');
     }
@@ -1934,9 +1936,10 @@ async function doLogin() {
 
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('btnLogout').style.display = 'inline-block';
+  const { data: { session } } = await sb.auth.getSession();
   const nombre = EMAIL_MEDICO[email];
   if (nombre) {
-    seleccionarMedico(nombre);
+    seleccionarMedico(nombre, session?.user?.id);
   } else {
     document.getElementById('medicoScreen').classList.remove('hidden');
   }
@@ -2253,8 +2256,9 @@ async function guardarFirma() {
     // Guardar URL en Supabase
     const { error: dbError } = await sb.from('firmas_medicos').upsert({
       medico: medicoActual,
+      medico_id: medicoId,
       firma_url: urlData.publicUrl,
-      firma_base64: null,   // limpiar el legacy
+      firma_base64: null,
       updated_at: new Date().toISOString()
     });
     if (dbError) throw new Error('DB: ' + dbError.message);
@@ -2441,7 +2445,7 @@ async function guardarCirugia() {
 
   const celular = pais + tel;
   const { data, error } = await sb.from('cirugias').insert([{
-    medico: medicoActual, nombre_completo: nombre, dni, celular,
+    medico: medicoActual, medico_id: medicoId, nombre_completo: nombre, dni, celular,
     obra_social: obra, tipo_cirugia: tipo, fecha, horario, enviado: false
   }]).select();
 
