@@ -1232,6 +1232,25 @@
     </div>
 
     <div class="panel-list">
+      <!-- Fila de métricas -->
+      <div id="metricsRow" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
+        <div style="background:white;border:1px solid #e8e8e6;border-radius:10px;padding:10px 14px;">
+          <div style="font-size:22px;font-weight:600;line-height:1;" id="metricTotal">0</div>
+          <div style="font-size:11px;color:#aaa;margin-top:3px;">Pacientes</div>
+        </div>
+        <div style="background:white;border:1px solid #e8e8e6;border-radius:10px;padding:10px 14px;">
+          <div style="font-size:22px;font-weight:600;line-height:1;color:#1a7a45;" id="metricEnviados">0</div>
+          <div style="font-size:11px;color:#aaa;margin-top:3px;">Enviados</div>
+        </div>
+        <div style="background:white;border:1px solid #e8e8e6;border-radius:10px;padding:10px 14px;">
+          <div style="font-size:22px;font-weight:600;line-height:1;color:#9a6b00;" id="metricPendientes">0</div>
+          <div style="font-size:11px;color:#aaa;margin-top:3px;">Pendientes</div>
+        </div>
+        <div style="background:white;border:1px solid #e8e8e6;border-radius:10px;padding:10px 14px;">
+          <div style="font-size:22px;font-weight:600;line-height:1;color:#c0392b;" id="metricSinOrden">0</div>
+          <div style="font-size:11px;color:#aaa;margin-top:3px;">Sin orden</div>
+        </div>
+      </div>
       <div class="list-header">
         <div class="list-header-left">
           <div class="section-label" style="margin:0;">Lista del día</div>
@@ -1780,6 +1799,18 @@ function renderLista() {
   const numSeleccionados = seleccionados.size;
 
   document.getElementById('countBadge').textContent = `${count} paciente${count!==1?'s':''}`;
+
+  // Actualizar métricas
+  const enviados = pacientesHoy.filter(p => p.enviado).length;
+  const sinOrden = pacientesHoy.filter(p => !p.orden_autorizada).length;
+  const elTotal = document.getElementById('metricTotal');
+  const elEnv = document.getElementById('metricEnviados');
+  const elPend = document.getElementById('metricPendientes');
+  const elSO = document.getElementById('metricSinOrden');
+  if (elTotal) elTotal.textContent = count;
+  if (elEnv) elEnv.textContent = enviados;
+  if (elPend) elPend.textContent = pendientes;
+  if (elSO) elSO.textContent = sinOrden;
 
   const pb = document.getElementById('pendingBadge');
   if (pendientes > 0) { pb.style.display='inline-block'; pb.textContent=`${pendientes} pendiente${pendientes!==1?'s':''}`; }
