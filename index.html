@@ -725,6 +725,364 @@
   [data-theme="dark"] .toast { background:#e4e4e6; color:#111113; }
   [data-theme="dark"] .panel-form .section-label { color:#555; }
   [data-theme="dark"] .loading { color:#555; }
+
+  /* ═══════════════════════════════════════
+     REDISEÑO UI — rama feature/rediseno-ui
+  ═══════════════════════════════════════ */
+
+  /* Variables de color */
+  :root {
+    --azul: #185fa5;
+    --azul-light: #e8f4fd;
+    --azul-mid: #378add;
+    --verde: #1a7a45;
+    --verde-light: #d4f5e2;
+    --rojo-light: #fff0f0;
+    --gris-bg: #f4f4f2;
+    --gris-card: #ffffff;
+    --gris-borde: #e8e8e6;
+    --gris-borde-fuerte: #d0d0ce;
+    --gris-texto: #6b6b6b;
+    --radio: 10px;
+  }
+
+  /* ── Body y fondo ── */
+  body { background: var(--gris-bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+  /* ── Header ── */
+  .header {
+    background: white;
+    border-bottom: 1px solid var(--gris-borde);
+    padding: 0.75rem 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .logo-text { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+  .logo-sub { font-size: 11px; color: #aaa; }
+  .logo-icon { background: var(--azul-light); border-radius: 10px; }
+
+  /* ── Tabs ── */
+  .tabs {
+    background: white;
+    border-bottom: 1px solid var(--gris-borde);
+    padding: 0 1rem;
+    gap: 2px;
+  }
+  .tab {
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 400;
+    color: #999;
+    border-radius: 6px 6px 0 0;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: #1a1a1a; background: #fafafa; }
+  .tab.active {
+    color: var(--azul);
+    border-bottom-color: var(--azul-mid);
+    font-weight: 500;
+    background: none;
+  }
+
+  /* ── Panel formulario ── */
+  .panel-form {
+    background: white;
+    border-right: 1px solid var(--gris-borde);
+    padding: 1.25rem 1.1rem;
+  }
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #bbb;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .form-group { margin-bottom: 10px; }
+  .form-label { font-size: 12px; color: var(--gris-texto); margin-bottom: 4px; }
+
+  input[type=text], input[type=date], input[type=tel],
+  input[type=search], input[type=email], select {
+    border: 1px solid var(--gris-borde);
+    border-radius: 8px;
+    background: #fafafa;
+    font-size: 13px;
+    padding: 7px 10px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--azul-mid);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(55,138,221,0.08);
+  }
+
+  /* ── Chips de estudios ── */
+  .estudio-chip {
+    border: 1px solid var(--gris-borde);
+    border-radius: 7px;
+    font-size: 12px;
+    color: #777;
+    background: #fafafa;
+    padding: 6px 8px;
+    transition: all 0.12s;
+  }
+  .estudio-chip:hover { border-color: var(--azul-mid); color: var(--azul); background: var(--azul-light); }
+  .estudio-chip.active { background: var(--azul-light); border-color: var(--azul-mid); color: var(--azul); font-weight: 500; }
+  .chip-dot { background: #ddd; }
+  .estudio-chip.active .chip-dot { background: var(--azul-mid); }
+
+  /* ── Botón agregar ── */
+  .btn-agregar {
+    background: var(--azul);
+    color: white;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px;
+    margin-top: 12px;
+    letter-spacing: 0.01em;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-agregar:hover { background: #1452a0; }
+
+  /* ── Panel lista ── */
+  .panel-list { background: var(--gris-bg); padding: 1.25rem 1.1rem; }
+  .list-header { margin-bottom: 12px; }
+  .count-badge {
+    background: white;
+    border: 1px solid var(--gris-borde);
+    border-radius: 99px;
+    font-size: 12px;
+    color: #777;
+    padding: 3px 10px;
+  }
+  .pending-badge {
+    background: #fff8e8;
+    border: 1px solid #fac75060;
+    border-radius: 99px;
+    font-size: 12px;
+    color: #9a6b00;
+    padding: 3px 10px;
+  }
+
+  /* ── Tarjeta paciente ── */
+  .paciente-card {
+    background: white;
+    border: 1px solid var(--gris-borde);
+    border-radius: 10px;
+    padding: 11px 13px;
+    margin-bottom: 7px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .paciente-card:hover {
+    border-color: var(--gris-borde-fuerte);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.07);
+  }
+  .paciente-card.enviado { border-color: #b8eacf; background: #f6fff9; }
+  .paciente-card.sin-orden { border-color: #f0a0a0; background: var(--rojo-light); }
+  .paciente-card.seleccionado { border-color: var(--azul-mid); background: #f0f7ff; }
+
+  .paciente-initials {
+    background: var(--azul-light);
+    color: var(--azul);
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 600;
+    width: 36px;
+    height: 36px;
+  }
+  .paciente-nombre { font-size: 13px; font-weight: 600; }
+  .paciente-meta { font-size: 12px; color: #aaa; margin-top: 1px; }
+
+  .numero-orden {
+    background: #1a1a1a;
+    color: white;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  /* ── Badges ── */
+  .badge-enviado { background: #dcf5ea; color: var(--verde); border: 1px solid #a8e0be; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+  .badge-pendiente { background: #fff3cd; color: #856404; border: 1px solid #fac75060; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+  .badge-sin-orden { background: #ffe0e0; color: #c0392b; border: 1px solid #e24b4a60; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 700; }
+  .badge-informe { background: var(--azul-light); color: var(--azul); border: 1px solid #378add50; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+  .badge-informe.hecho { background: #dcf5ea; color: var(--verde); border-color: #a8e0be; }
+
+  .estudio-tag { background: #f2f2f0; border: 1px solid #e4e4e2; border-radius: 99px; font-size: 11px; color: #777; padding: 2px 8px; }
+
+  /* ── Actions bar ── */
+  .actions-bar {
+    background: white;
+    border-top: 1px solid var(--gris-borde);
+    padding: 0.75rem 1.5rem;
+    box-shadow: 0 -1px 4px rgba(0,0,0,0.04);
+  }
+  .btn-select-all, .btn-export {
+    border: 1px solid var(--gris-borde);
+    border-radius: 8px;
+    background: white;
+    font-size: 13px;
+    color: #555;
+    padding: 7px 14px;
+    transition: background 0.12s;
+  }
+  .btn-select-all:hover, .btn-export:hover { background: #f5f5f3; }
+
+  .btn-enviar {
+    background: #22c55e;
+    color: white;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border: none;
+    transition: background 0.12s;
+  }
+  .btn-enviar:hover { background: #16a34a; }
+  .btn-enviar:disabled { opacity: 0.35; }
+
+  .btn-reenviar {
+    background: var(--azul-mid);
+    color: white;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border: none;
+    transition: background 0.12s;
+  }
+  .btn-reenviar:hover { background: #2a78c8; }
+  .btn-reenviar:disabled { opacity: 0.35; }
+
+  /* ── Cards resultados (buscar) ── */
+  .res-card {
+    background: white;
+    border: 1px solid var(--gris-borde);
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  }
+  .res-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    border-color: #c5d9f0;
+  }
+  .res-card.res-enviada { border-color: #b8eacf; background: #f8fff9; }
+  .res-card.res-seleccionada { border-color: var(--azul-mid); background: #f0f7ff; }
+  .res-num { background: #f0f0ee; color: #aaa; font-size: 11px; }
+  .res-nombre { font-size: 13px; font-weight: 600; }
+  .res-card-bottom { border-top: 1px solid #f2f2f0; }
+  .res-card-informe { border-right: 1px solid #f2f2f0; }
+  .res-card-estado.sep { border-right: 1px solid #f2f2f0; }
+  .res-card-hist-btn { color: var(--azul-mid); border-right: 1px solid #f2f2f0; }
+
+  /* ── Cirugía cards ── */
+  .cir-card {
+    background: white;
+    border: 1px solid var(--gris-borde);
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  }
+  .cir-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.07); border-color: var(--gris-borde-fuerte); }
+  .cir-card.cir-enviada { border-color: #b8eacf; background: #f8fff9; }
+  .cir-nombre { font-size: 13px; font-weight: 600; }
+  .cir-meta { font-size: 12px; color: #aaa; }
+  .cir-horario-input { background: #f0f7ff; border-color: #c5d9f0; color: var(--azul); border-radius: 7px; font-size: 13px; }
+
+  /* ── Panel detalle paciente ── */
+  .detalle-header {
+    background: var(--azul);
+    padding: 18px 20px 14px;
+  }
+  .detalle-paciente-nombre { font-size: 15px; font-weight: 700; color: white; }
+  .detalle-paciente-sub { font-size: 12px; color: rgba(255,255,255,0.7); }
+  .detalle-close { background: rgba(255,255,255,0.15); border-radius: 7px; color: white; }
+  .detalle-close:hover { background: rgba(255,255,255,0.28); }
+  .detalle-section-label { font-size: 10px; color: #bbb; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+  .detalle-row { border-bottom: 1px solid #f4f4f2; padding: 8px 0; }
+  .detalle-row-lbl { font-size: 13px; color: #aaa; }
+  .detalle-row-val { font-size: 13px; font-weight: 500; }
+
+  .dbtn-edit { background: #f4f4f2; border: 1px solid var(--gris-borde); border-radius: 8px; font-size: 13px; font-weight: 500; color: #555; }
+  .dbtn-del { background: white; border: 1px solid #fcc; border-radius: 8px; font-size: 13px; font-weight: 500; color: #e24b4a; }
+  .dbtn-wa { background: #22c55e; border-radius: 8px; font-size: 13px; font-weight: 600; color: white; }
+  .dbtn-wa:hover { background: #16a34a; }
+  .dbtn-informe { background: var(--azul); border-radius: 8px; font-size: 13px; font-weight: 600; color: white; }
+  .dbtn-informe:hover { background: #1452a0; }
+  .dbtn-marcar { background: white; border: 1px solid var(--gris-borde); border-radius: 8px; font-size: 12px; color: #888; }
+  .dbtn-marcar:hover { background: #f5f5f3; }
+
+  /* ── Tabla búsqueda ── */
+  .result-table { border-radius: 10px; border: 1px solid var(--gris-borde); box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+  .result-table th { background: #fafaf9; font-size: 11px; color: #aaa; }
+  .result-table td { font-size: 13px; border-bottom: 1px solid #f4f4f2; }
+  .result-table tr:hover td { background: #fafaf9; }
+
+  /* ── Login ── */
+  .login-box { border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.07); border: 1px solid var(--gris-borde); }
+  .login-title { font-size: 17px; font-weight: 700; }
+  .btn-login { background: var(--azul); border-radius: 8px; font-size: 14px; font-weight: 500; }
+  .btn-login:hover { background: #1452a0; }
+
+  /* ── Médico cards ── */
+  .medico-card { border-radius: 14px; border: 1.5px solid var(--gris-borde); transition: all 0.15s; }
+  .medico-card:hover { border-color: var(--azul-mid); background: #f0f7ff; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(55,138,221,0.12); }
+  .medico-card-avatar { background: var(--azul-light); color: var(--azul); }
+  .medico-badge { background: var(--azul-light); color: var(--azul); border: 1px solid #378add40; font-size: 12px; border-radius: 99px; padding: 3px 10px; }
+
+  /* ── Modal informe ── */
+  .modal-box { border-radius: 14px; }
+  .modal-title { font-size: 16px; font-weight: 700; }
+  .informe-textarea { border-radius: 8px; border: 1px solid var(--gris-borde); font-size: 13px; }
+  .informe-textarea:focus { border-color: var(--azul-mid); box-shadow: 0 0 0 3px rgba(55,138,221,0.08); }
+  .btn-pdf { background: var(--azul); border-radius: 8px; }
+  .btn-pdf:hover { background: #1452a0; }
+
+  /* ── Historial ── */
+  .hist-topbar { background: white; border-bottom: 1px solid var(--gris-borde); }
+  .hist-back-btn { border: 1px solid var(--gris-borde); border-radius: 8px; color: #555; background: white; }
+  .hist-left { background: white; border-right: 1px solid var(--gris-borde); }
+  .hist-right { background: var(--gris-bg); }
+  .hist-visita { border: 1px solid var(--gris-borde); border-radius: 8px; }
+  .hist-visita-fecha { color: var(--azul-mid); font-size: 11px; font-weight: 700; }
+  .hist-archivo:hover { background: #f0f7ff; border-color: #c5d9f0; }
+  .hist-archivo.activo { background: #e8f3ff; border-color: var(--azul-mid); }
+
+  /* ── Toast ── */
+  .toast { border-radius: 8px; font-size: 13px; }
+
+  /* ── Búsqueda barra ── */
+  .search-bar { background: white; border-bottom: 1px solid var(--gris-borde); padding: 1rem 1.5rem; }
+  .btn-buscar { background: #1a1a1a; color: white; border-radius: 8px; font-size: 13px; font-weight: 500; padding: 8px 18px; border: none; }
+  .btn-buscar:hover { background: #333; }
+  .btn-limpiar { border: 1px solid var(--gris-borde); border-radius: 8px; background: white; color: #666; font-size: 13px; padding: 8px 14px; }
+
+  /* Fecha grupo en búsqueda */
+  .fecha-grupo-header { border-bottom: 1.5px solid var(--gris-borde); margin: 20px 0 8px; }
+  .fecha-grupo-label { font-size: 13px; font-weight: 700; color: var(--azul); }
+
+  /* ── Btn logout ── */
+  .btn-logout { border: 1px solid var(--gris-borde); border-radius: 99px; background: #f5f5f3; color: #888; font-size: 12px; padding: 4px 12px; }
+  .btn-logout:hover { background: #fee; color: #e24b4a; border-color: #e24b4a60; }
+
+  /* ── Configuración ── */
+  #btnSoloPendientes {
+    background: #fffbe6;
+    border: 1px solid #fac75080;
+    border-radius: 8px;
+    color: #9a6b00;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  #btnSoloPendientes:hover { background: #fff3cd; }
 </style>
 <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
 </head>
