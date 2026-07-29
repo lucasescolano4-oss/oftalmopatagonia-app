@@ -1181,53 +1181,12 @@
     padding: 5px 12px; align-items: center;
     font-size: 11px; font-weight: 600; color: #555;
   }
-  .results-area .res-card {
-    display: grid !important;
-    grid-template-columns: 36px 70px 1fr 150px 180px 120px 100px !important;
-    align-items: center !important;
-    border-radius: 0 !important; border: none !important;
-    border-bottom: 1px solid #f0f0ee !important;
-    box-shadow: none !important;
-    transition: background 0.1s !important;
-    padding: 0 !important; min-height: 44px;
+  /* res-card in search now uses paciente-card-v2 layout */
+  .results-area .res-cards-grid {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
   }
-  .results-area .res-card:hover {
-    background: #f5f8ff !important;
-    transform: none !important; box-shadow: none !important;
-  }
-  .results-area .res-card-top { display: contents !important; }
-  .results-area .res-card-top-row1 { display: contents !important; }
-  .results-area .check-resultado { display: block; margin: 0 auto !important; }
-  .results-area .res-num { padding: 0 8px !important; font-size: 12px !important; }
-  .results-area .res-nombre {
-    padding: 0 6px !important; font-size: 13px !important;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .results-area .res-estudios-mini {
-    padding: 0 6px !important;
-    display: flex !important; flex-wrap: wrap !important; gap: 2px !important;
-  }
-  .results-area .res-badges {
-    padding: 0 6px !important;
-    display: flex !important; gap: 3px !important; align-items: center !important;
-  }
-  .results-area .res-card-bottom { display: contents !important; border-top: none !important; }
-  .results-area .res-card-hist-btn {
-    border: none !important; padding: 0 8px !important; justify-content: center !important;
-  }
-  .results-area .res-card-informe {
-    border-right: none !important; padding: 0 6px !important;
-    flex-direction: row !important; gap: 4px !important; align-items: center !important;
-    cursor: pointer;
-  }
-  .results-area .res-card-informe-lbl { display: none !important; }
-  .results-area .res-card-estado {
-    padding: 0 6px !important;
-    flex-direction: row !important; gap: 4px !important; align-items: center !important;
-  }
-  .results-area .res-card-estado-lbl { display: none !important; }
-  .results-area .res-card-estado.sep { border-right: none !important; }
-  .results-area .res-card:last-child { border-bottom: none !important; }
 
   /* Dark mode sidebar */
   [data-theme="dark"] .sidebar-nav { background: #1c1c1e; border-color: #2c2c2e; }
@@ -1241,6 +1200,82 @@
   [data-theme="dark"] .badge-enviado { background: #0d3320; color: #4dd88a; border-color: #1a5030; }
   [data-theme="dark"] .badge-pendiente { background: #2a2000; color: #e0b000; border-color: #4a3800; }
   [data-theme="dark"] .badge-sin-orden { background: #2a0a0a; color: #e06060; border-color: #4a1a1a; }
+
+  /* ════ CARD V2 (nueva tarjeta paciente) ════ */
+  .paciente-card-v2 {
+    display: grid;
+    grid-template-columns: 60px 1fr 170px 100px 72px;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    border: 1px solid #e5e5e3;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .paciente-card-v2:hover { border-color: #c5d9f0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .paciente-card-v2.enviado { border-color: #b8eacf; background: #f6fff9; }
+  .paciente-card-v2.sin-orden { border-color: #f0a0a0; background: #fff5f5; }
+  .paciente-card-v2.seleccionado { border-color: #378add; background: #f0f7ff; }
+
+  .pcard-left { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .pcard-identity { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .pcard-nombre { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pcard-sub { font-size: 11px; color: #999; }
+  .pcard-obra { font-size: 11px; color: #555; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .pcard-estudios-col { display: flex; flex-direction: column; gap: 5px; }
+  .pcard-cel { font-size: 11px; color: #888; }
+
+  .pcard-status { display: flex; flex-direction: column; gap: 7px; }
+  .pcard-status-item { display: flex; align-items: center; gap: 6px; }
+  .pcard-status-lbl { font-size: 10px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .pcard-circle {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid #ddd; background: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; color: transparent;
+    flex-shrink: 0; transition: all 0.2s;
+  }
+  .pcard-circle.done { border-color: #aaa; color: #aaa; }
+  .pcard-circle.green { border-color: #25D366; background: #d1f5e0; color: #157a40; }
+  .pcard-circle.informe-click { cursor: pointer; }
+  .pcard-circle.informe-click:hover { border-color: #999; }
+
+  .pcard-actions { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .pcard-btn-ojo {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e5e3;
+    background: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; color: #378add;
+  }
+  .pcard-btn-ojo:hover { background: #e8f3ff; border-color: #c0d8f0; }
+  .pcard-btn-ojo svg { width: 15px; height: 15px; }
+  .pcard-btn-edit { font-size: 13px; background: none; border: none; cursor: pointer; color: #bbb; padding: 2px 4px; }
+  .pcard-btn-edit:hover { color: #555; }
+  .pcard-btn-del { font-size: 16px; background: none; border: none; cursor: pointer; color: #ddd; padding: 2px 4px; line-height: 1; }
+  .pcard-btn-del:hover { color: #e24b4a; }
+
+  /* Dark mode */
+  [data-theme="dark"] .paciente-card-v2 { background: #1c1c1e; border-color: #2c2c2e; }
+  [data-theme="dark"] .paciente-card-v2.enviado { background: #0a1810; border-color: #1a4030; }
+  [data-theme="dark"] .paciente-card-v2.sin-orden { background: #180a0a; border-color: #4a1010; }
+  [data-theme="dark"] .paciente-card-v2.seleccionado { background: #101820; border-color: #2a4060; }
+  [data-theme="dark"] .pcard-sub { color: #555; }
+  [data-theme="dark"] .pcard-obra { color: #888; }
+  [data-theme="dark"] .pcard-circle { border-color: #444; background: #1c1c1e; }
+  [data-theme="dark"] .pcard-circle.done { border-color: #666; color: #666; }
+  [data-theme="dark"] .pcard-circle.green { background: #0d3320; color: #4dd88a; border-color: #1a5030; }
+  [data-theme="dark"] .pcard-btn-ojo { background: #1c1c1e; border-color: #2c2c2e; color: #5aabff; }
+  [data-theme="dark"] .pcard-btn-ojo:hover { background: #162030; }
+  [data-theme="dark"] .pcard-btn-edit { color: #444; }
+  [data-theme="dark"] .pcard-btn-del { color: #333; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .paciente-card-v2 { grid-template-columns: 50px 1fr auto auto; }
+    .pcard-estudios-col { display: none; }
+  }
 </style>
 <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
 </head>
@@ -2081,22 +2116,41 @@ function renderLista() {
     const sinOrdenClass = !p.orden_autorizada ? 'sin-orden' : '';
 
     return `
-    <div class="paciente-card ${p.enviado?'enviado':''} ${estaSeleccionado?'seleccionado':''} ${sinOrdenClass}">
-      <div class="card-checkbox ${estaSeleccionado?'checked':''}" onclick="toggleCheckbox('${p.id}')"></div>
-      <div class="numero-orden" style="width:28px;height:28px;font-size:12px;">${p.numero_orden||'—'}</div>
-      <div class="paciente-initials">${initials}</div>
-      <div class="paciente-info">
-        <div class="paciente-nombre">${p.nombre_completo} ${badge}</div>
-        <div class="paciente-meta">DNI ${p.dni} · +${p.celular}${p.obra_social ? ' · ' + p.obra_social : ''} · ${ordenBadge}</div>
-        <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-          <span class="badge-informe ${p.informe_realizado?'hecho':''}" onclick="toggleInforme('${p.id}',${i})">${p.informe_realizado ? '📋 Informe hecho' : '📋 Marcar informe'}</span>
-          ${p.envio_programado && !p.enviado ? `<span style="font-size:11px;padding:3px 8px;background:#fff7e6;color:#e09c20;border:1px solid #f5d07a;border-radius:99px;font-weight:500;">📤 Pend. env.</span>` : ''}
-        </div>
-        <div class="paciente-estudios">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
+    <div class="paciente-card-v2 ${p.enviado?'enviado':''} ${estaSeleccionado?'seleccionado':''} ${sinOrdenClass}">
+      <!-- Col 1: Checkbox + Número -->
+      <div class="pcard-left">
+        <div class="card-checkbox ${estaSeleccionado?'checked':''}" onclick="event.stopPropagation();toggleCheckbox('${p.id}')"></div>
+        <div class="numero-orden" style="width:28px;height:28px;font-size:12px;">${p.numero_orden||'—'}</div>
       </div>
-      <div class="card-actions">
-        <button class="btn-remove" onclick="editarPaciente('${p.id}')" title="Editar" style="color:#bbb;font-size:14px;">✏️</button>
-        <button class="btn-remove" onclick="eliminar('${p.id}',${i})" title="Eliminar">&times;</button>
+      <!-- Col 2: Identidad -->
+      <div class="pcard-identity">
+        <div class="pcard-nombre">${p.nombre_completo}${!p.orden_autorizada ? ' <span class="badge-sin-orden" style="font-size:9px;padding:1px 6px;">⚠ SIN ORDEN</span>' : ''}</div>
+        <div class="pcard-sub">DNI ${p.dni}</div>
+        <div class="pcard-obra">${p.obra_social||'—'}</div>
+      </div>
+      <!-- Col 3: Estudios + Celular -->
+      <div class="pcard-estudios-col">
+        <div class="paciente-estudios">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
+        <div class="pcard-cel">📱 +${p.celular||''}</div>
+      </div>
+      <!-- Col 4: Estado (círculos) -->
+      <div class="pcard-status">
+        <div class="pcard-status-item">
+          <span class="pcard-circle ${p.enviado?'green':''}">✓</span>
+          <span class="pcard-status-lbl">Estudios</span>
+        </div>
+        <div class="pcard-status-item">
+          <span class="pcard-circle informe-click ${p.informe_enviado?'green':p.informe_realizado?'done':''}" onclick="event.stopPropagation();toggleInforme('${p.id}',${i})" title="Marcar/desmarcar informe">✓</span>
+          <span class="pcard-status-lbl">Informe</span>
+        </div>
+      </div>
+      <!-- Col 5: Acciones -->
+      <div class="pcard-actions">
+        <button class="pcard-btn-ojo" onclick="event.stopPropagation();abrirHistorial('${p.id}')" title="Ver historial del paciente">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+        <button class="pcard-btn-edit" onclick="event.stopPropagation();editarPaciente('${p.id}')" title="Editar">✏️</button>
+        <button class="pcard-btn-del" onclick="event.stopPropagation();eliminar('${p.id}',${i})" title="Eliminar">&times;</button>
       </div>
     </div>`;
   }).join('');
@@ -2297,7 +2351,7 @@ async function buscar() {
     const informeEnviado = p.informe_enviado;
     const enviado = p.enviado;
     const envioProg = p.envio_programado;
-    return `<div class="res-card${enviado?' res-enviada':''}"
+    return `<div class="res-card paciente-card-v2 ${enviado?' res-enviada':''}"
       data-id="${p.id}" data-nombre="${p.nombre_completo.replace(/"/g,'&quot;')}"
       data-dni="${p.dni}" data-celular="${p.celular}" data-fecha="${p.fecha||''}"
       data-estudios="${p.estudios.join('|')}" data-obra_social="${(p.obra_social||'').replace(/"/g,'&quot;')}"
@@ -2307,32 +2361,42 @@ async function buscar() {
       data-envio_prog="${envioProg?'1':'0'}"
       data-informe_env="${informeEnviado?'1':'0'}"
       onclick="abrirDetalle(this)">
-      <div class="res-card-top">
-        <div class="res-card-top-row1">
-          <input type="checkbox" class="check-resultado" value="${p.id}" onclick="event.stopPropagation()">
-          <span class="res-num">${p.numero_orden||'—'}${p.obra_social ? `<span style="font-weight:400;color:#888;font-size:10px;margin-left:4px;">${p.obra_social}</span>` : ''}</span>
-          <span class="res-badges">
-            ${enviado ? '<span class="badge-enviado">ENV</span>' : '<span class="badge-pendiente">PEND</span>'}
-            ${!p.orden_autorizada ? '<span class="badge-sin-orden">⚠</span>' : ''}
-          </span>
-        </div>
-        <span class="res-nombre">${p.nombre_completo}${p.dni ? `<span style="font-weight:400;color:#aaa;font-size:11px;margin-left:6px;">${p.dni}</span>` : ''}</span>
-        <div class="res-estudios-mini">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
+      <!-- Col 1: Checkbox + Número -->
+      <div class="pcard-left">
+        <input type="checkbox" class="check-resultado" value="${p.id}" onclick="event.stopPropagation()" style="width:14px;height:14px;cursor:pointer;accent-color:#378add;flex-shrink:0;">
+        <div class="numero-orden" style="width:28px;height:28px;font-size:12px;">${p.numero_orden||'—'}</div>
       </div>
-      <div class="res-card-bottom">
-        <div class="res-card-hist-btn" title="Ver historial completo" onclick="event.stopPropagation(); abrirHistorial('${p.id}')"><img src="/assets/icono-ojo.png" style="width:30px;height:30px;object-fit:contain;" alt="historial"></div>
-        <div class="res-card-informe" onclick="event.stopPropagation(); toggleInformeResultado('${p.id}', this)">
-          <span class="res-card-informe-lbl">Informe</span>
-          <span class="res-card-informe-val ${informeHecho?'hecho':'pendiente'}">${informeHecho ? '✓ Hecho' : '· Pend.'}</span>
+      <!-- Col 2: Identidad -->
+      <div class="pcard-identity">
+        <div class="pcard-nombre">${p.nombre_completo}${!p.orden_autorizada ? ' <span class="badge-sin-orden" style="font-size:9px;padding:1px 6px;">⚠ SIN ORDEN</span>' : ''}</div>
+        <div class="pcard-sub">${p.dni||''}</div>
+        <div class="pcard-obra">${p.obra_social||'—'}</div>
+      </div>
+      <!-- Col 3: Estudios + Celular (hidden in res-card-informe for JS compat) -->
+      <div class="pcard-estudios-col">
+        <div class="res-estudios-mini">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
+        <div class="pcard-cel">📱 +${p.celular||''}</div>
+      </div>
+      <!-- Col 4: Estado círculos -->
+      <div class="pcard-status">
+        <div class="pcard-status-item">
+          <span class="pcard-circle ${enviado?'green':''}">✓</span>
+          <span class="pcard-status-lbl">Estudios</span>
         </div>
-        <div class="res-card-estado sep">
-          <span class="res-card-estado-lbl">Env. informe</span>
-          <span class="res-card-estado-val" style="color:${informeEnviado?'#1a7a45':'#aaa'}">${informeEnviado?'✓ Env.':'· Pend.'}</span>
+        <div class="pcard-status-item">
+          <span class="pcard-circle ${informeEnviado?'green':informeHecho?'done':''}" onclick="event.stopPropagation(); toggleInformeResultado('${p.id}', this)" title="Marcar/desmarcar informe">✓</span>
+          <span class="pcard-status-lbl">Informe</span>
         </div>
-        <div class="res-card-estado">
-          <span class="res-card-estado-lbl">Estudios</span>
-          <span class="res-card-estado-val" style="color:${enviado?'#1a7a45':envioProg?'#e09c20':'#aaa'}">${enviado?'✓ Env.':envioProg?'Pend. env.':'· Pend.'}</span>
-        </div>
+      </div>
+      <!-- Col 5: Acciones -->
+      <div class="pcard-actions">
+        <button class="pcard-btn-ojo" onclick="event.stopPropagation();abrirHistorial('${p.id}')" title="Ver historial">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <!-- Hidden elements for JS compat -->
+      <div class="res-card-informe" style="display:none;" onclick="toggleInformeResultado('${p.id}', this)">
+        <span class="res-card-informe-val ${informeHecho?'hecho':'pendiente'}">${informeHecho ? '✓ Hecho' : '· Pend.'}</span>
       </div>
     </div>`;
   }
@@ -2409,7 +2473,8 @@ async function toggleInformeResultado(id, el) {
     const { error } = await sb.from('pacientes').update({ informe_realizado: false }).eq('id', id);
     if (error) { showToast('Error al actualizar'); return; }
     // Actualizar visual en card
-    if (card) { card.dataset.informe = '0'; const val = el.querySelector('.res-card-informe-val'); if(val){ val.textContent='· Pend.'; val.className='res-card-informe-val pendiente'; } }
+    if (card) { card.dataset.informe = '0'; const val = el.querySelector('.res-card-informe-val'); if(val){ val.textContent='· Pend.'; val.className='res-card-informe-val pendiente'; }
+      if (el.classList.contains('pcard-circle')) { el.classList.remove('green','done'); } }
     const p = pacientesHoy.find(x => x.id === id);
     if (p) { p.informe_realizado = false; renderLista(); }
     showToast('Informe desmarcado');
@@ -2836,6 +2901,8 @@ async function generarYSubirInforme() {
         if (val) { val.textContent = '✓ Hecho'; val.className = 'res-card-informe-val hecho'; }
         const card = _informeResultadoEl.closest('.res-card');
         if (card) card.dataset.informe = '1';
+        // Update pcard-circle if it was the trigger element
+        if (_informeResultadoEl.classList.contains('pcard-circle')) { _informeResultadoEl.classList.add('done'); }
       }
       renderLista();
     }
