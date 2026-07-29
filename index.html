@@ -1411,7 +1411,10 @@
       </div>
       <div class="form-group">
         <label class="form-label">Obra social</label>
-        <input type="text" id="obraSocial" placeholder="Escribí o seleccioná..." list="listaObrasSociales" autocomplete="off">
+        <input type="text" id="obraSocial" placeholder="Escribí o seleccioná..." list="listaObrasSociales" autocomplete="off" oninput="chkNuevaObraCarga(this)">
+        <div id="hintNuevaObraCarga" style="display:none;padding:5px 12px;font-size:12px;color:#378add;cursor:pointer;background:#f0f7ff;border:1px solid #c5d9f0;border-radius:8px;margin-top:4px;" onclick="agregarNuevaObraCarga()">
+          ➕ Agregar "<span id="hintNuevaObraTextoCarga"></span>" como nueva
+        </div>
         <datalist id="listaObrasSociales">
           <option value="PARTICULAR">
           <option value="PAMI">
@@ -1614,12 +1617,15 @@
   <div class="search-view">
     <div class="search-bar">
       <input type="search" id="searchQuery" placeholder="Nombre, apellido o DNI..." onkeydown="if(event.key==='Enter')buscar()">
-      <input type="text" id="searchObraSocial" placeholder="Obra social..." style="width:150px;">
+      <input type="text" id="searchObraSocial" placeholder="Obra social..." style="width:160px;" list="listaObrasSociales" autocomplete="off" oninput="chkNuevaObraBuscar(this)">
       <input type="date" id="searchFechaDesde" title="Fecha desde">
       <input type="date" id="searchFechaHasta" title="Fecha hasta">
       <button class="btn-limpiar" onclick="limpiarBusqueda()">Limpiar</button>
       <button class="btn-limpiar" id="btnSoloPendientes" onclick="toggleSoloPendientes()" style="border-color:#FAC775;color:#a07000;background:#fff8e6;">⏳ Solo pendientes</button>
       <button class="btn-buscar" onclick="buscar()">Buscar</button>
+    </div>
+    <div id="hintNuevaObra" style="display:none;padding:6px 14px;font-size:12px;color:#378add;cursor:pointer;background:#f0f7ff;border:1px solid #c5d9f0;border-radius:8px;margin-top:4px;width:fit-content;" onclick="agregarNuevaObraSocial()">
+      ➕ Agregar "<span id="hintNuevaObraTexto"></span>" como nueva obra social
     </div>
     <div class="results-area" id="resultsArea">
       <div class="empty-state"><div class="empty-icon">🔍</div>Usá los filtros para buscar pacientes.</div>
@@ -1670,6 +1676,9 @@
 const SUPABASE_URL = 'https://jxhxitgyvssxhmfpzzlt.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_GR173HjCr2rpSxiQbOLzEA_KXKfFMnA';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Init obras sociales desde localStorage
+document.addEventListener('DOMContentLoaded', () => { addObrasSocialesToDatalist(); });
 
 const ESTUDIOS = ['Campimetría','OCT','Paquimetría','Biometría','Retinografía','UBM','Topografía'];
 let pacientesHoy = [];
@@ -1726,6 +1735,87 @@ async function cargarProximoNumero() {
   const { data } = await sb.from('pacientes').select('numero_orden').eq('medico', medicoActual).order('numero_orden', { ascending: false }).limit(1);
   const ultimo = data && data.length > 0 ? (data[0].numero_orden || 0) : 0;
   document.getElementById('previewNumero').textContent = ultimo + 1;
+}
+
+
+// Lista de obras sociales (sincronizada con datalist)
+const OBRAS_SOCIALES_DEFAULT = [
+  'PARTICULAR','PAMI','OSDE','SANCOR SALUD','AVALIAN','MEDICUS','GALENO','MEDIFE','OMINT',
+  'ACCORD','ADMED','A. SAN PEDRO','ASOC DE MOTOCICLISTAS','ASOCIART ART','CAMIONEROS',
+  'COLONIA SUIZA ART','DASU','GERDANNA','GENERAR SALUD','IOSFA','JERARQUICOS','OSDIPP',
+  'OSDOP','OSECAC','OSEM','OSFATLYF','OSAM','OSPEDYC','OSPES','OSPIM','OSPM','OSPRERA',
+  'OSPRERA MONOTRIBUTO','OSSEG','OSTEL','OSTYR','OSUTGHRA','OSPECON','PODER JUDICIAL',
+  'PREVIMEDIC','PREVENCION SALUD','PROFE','PROVINCIAL SEGUROS','SAMI','SMATA','SWISS MEDICAL',
+  'UNIMED','UNION PERSONAL','UTEDYC','WITCEL'
+];
+
+function getObrasSociales() {
+  const guardadas = localStorage.getItem('obrasSocialesExtra');
+  const extras = guardadas ? JSON.parse(guardadas) : [];
+  return [...OBRAS_SOCIALES_DEFAULT, ...extras];
+}
+
+function addObrasSocialesToDatalist() {
+  const lists = document.querySelectorAll('#listaObrasSociales');
+  const todas = getObrasSociales();
+  lists.forEach(dl => {
+    dl.innerHTML = todas.map(o => `<option value="${o}">`).join('');
+  });
+}
+
+function chkNuevaObraBuscar(input) {
+  const val = input.value.trim().toUpperCase();
+  const hint = document.getElementById('hintNuevaObra');
+  const hintTxt = document.getElementById('hintNuevaObraTexto');
+  if (!hint) return;
+  if (val.length > 1 && !getObrasSociales().includes(val)) {
+    hintTxt.textContent = val;
+    hint.style.display = 'block';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+
+function chkNuevaObraCarga(input) {
+  const val = input.value.trim().toUpperCase();
+  const hint = document.getElementById('hintNuevaObraCarga');
+  const hintTxt = document.getElementById('hintNuevaObraTextoCarga');
+  if (!hint) return;
+  if (val.length > 1 && !getObrasSociales().includes(val)) {
+    hintTxt.textContent = val;
+    hint.style.display = 'block';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+
+function agregarNuevaObraSocial() {
+  const input = document.getElementById('searchObraSocial');
+  const val = input ? input.value.trim().toUpperCase() : '';
+  if (!val) return;
+  const extras = JSON.parse(localStorage.getItem('obrasSocialesExtra') || '[]');
+  if (!extras.includes(val)) {
+    extras.push(val);
+    localStorage.setItem('obrasSocialesExtra', JSON.stringify(extras));
+    addObrasSocialesToDatalist();
+    showToast('Obra social "' + val + '" agregada ✓');
+  }
+  document.getElementById('hintNuevaObra').style.display = 'none';
+}
+
+function agregarNuevaObraCarga() {
+  const input = document.getElementById('obraSocial');
+  const val = input ? input.value.trim().toUpperCase() : '';
+  if (!val) return;
+  const extras = JSON.parse(localStorage.getItem('obrasSocialesExtra') || '[]');
+  if (!extras.includes(val)) {
+    extras.push(val);
+    localStorage.setItem('obrasSocialesExtra', JSON.stringify(extras));
+    addObrasSocialesToDatalist();
+    showToast('Obra social "' + val + '" agregada ✓');
+  }
+  const hint = document.getElementById('hintNuevaObraCarga');
+  if (hint) hint.style.display = 'none';
 }
 
 function toggleSidebar() {
