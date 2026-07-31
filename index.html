@@ -1153,7 +1153,15 @@
     flex: 1;
     position: relative;
     overflow: hidden;
-    padding: 12px;
+    padding: 8px;
+    min-height: 0;
+  }
+  #itViewerFrame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 8px;
+    display: none;
   }
   .it-file-item {
     display: flex;
@@ -1600,7 +1608,7 @@
           <div style="font-size:14px;color:#bbb;">Tocá un archivo para previsualizarlo</div>
           <div style="font-size:12px;color:#ccc;">Los PDFs e imágenes se muestran aquí</div>
         </div>
-        <iframe id="itViewerFrame" style="display:none;width:100%;height:100%;border:none;border-radius:8px;" src="about:blank"></iframe>
+        <iframe id="itViewerFrame" src="about:blank"></iframe>
       </div>
     </div>
   </div>
