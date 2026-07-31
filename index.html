@@ -1083,6 +1083,107 @@
     transition: background 0.12s;
   }
   #btnSoloPendientes:hover { background: #fff3cd; }
+
+  /* ── PESTAÑA INFORME SPLIT LAYOUT ── */
+  .informe-tab-layout {
+    display: flex;
+    height: calc(100vh - 110px);
+    gap: 0;
+    overflow: hidden;
+  }
+  .informe-tab-left {
+    width: 420px;
+    min-width: 320px;
+    max-width: 480px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #e5e7eb;
+    overflow-y: auto;
+    padding: 16px 20px;
+    background: #fff;
+  }
+  .informe-tab-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #f8f9fb;
+  }
+  .informe-tab-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+  }
+  .informe-tab-volver {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #555;
+    white-space: nowrap;
+  }
+  .informe-tab-volver:hover { background: #f5f5f5; }
+  .informe-tab-nombre { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+  .informe-tab-sub { font-size: 12px; color: #888; margin-top: 2px; }
+  .informe-tab-fields { flex: 0 0 auto; }
+  .informe-tab-right-header {
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 14px 16px 8px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fff;
+  }
+  .informe-tab-files {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    background: #fff;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .informe-tab-viewer {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    padding: 12px;
+  }
+  .it-file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #444;
+    transition: background 0.15s;
+    border: 1px solid transparent;
+  }
+  .it-file-item:hover { background: #f0f4ff; border-color: #c7d7ff; }
+  .it-file-item.active { background: #e8f0fe; border-color: #4a6cf7; color: #2a4ccc; font-weight: 600; }
+  .it-file-icon { font-size: 14px; flex-shrink: 0; }
+  .it-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .it-file-open { color: #4a6cf7; text-decoration: none; font-size: 11px; flex-shrink: 0; }
+  @media (prefers-color-scheme: dark) {
+    .informe-tab-left { background: #1a1a2e; border-color: #333; }
+    .informe-tab-right { background: #141420; }
+    .informe-tab-right-header { background: #1a1a2e; border-color: #333; color: #aaa; }
+    .informe-tab-files { background: #1a1a2e; border-color: #333; }
+    .informe-tab-volver { border-color: #444; color: #ccc; }
+    .informe-tab-volver:hover { background: #222; }
+    .informe-tab-nombre { color: #eee; }
+    .it-file-item { color: #ccc; }
+    .it-file-item:hover { background: #252540; }
+    .it-file-item.active { background: #1e2a5e; color: #8aadff; }
+  }
 </style>
 <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
 </head>
@@ -1151,9 +1252,10 @@
 </div>
 
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('carga')">📋 Carga del día</button>
-  <button class="tab" onclick="switchTab('cirugia')">🔪 Cirugía</button>
-  <button class="tab" onclick="switchTab('buscar')">🔍 Buscar pacientes</button>
+  <button class="tab active" id="tab-carga" onclick="switchTab('carga')">📋 Carga del día</button>
+  <button class="tab" id="tab-cirugia" onclick="switchTab('cirugia')">🔪 Cirugía</button>
+  <button class="tab" id="tab-buscar" onclick="switchTab('buscar')">🔍 Buscar pacientes</button>
+  <button class="tab" id="tab-informe" onclick="switchTab('informe')" style="display:none;">📋 Informe</button>
 </div>
 
 <!-- PESTAÑA CARGA -->
@@ -1432,6 +1534,51 @@
     </button>
 </div>
 
+<!-- PESTAÑA INFORME -->
+<div class="view" id="view-informe">
+  <div class="informe-tab-layout">
+    <!-- Izquierda: formulario -->
+    <div class="informe-tab-left">
+      <div class="informe-tab-header">
+        <button class="informe-tab-volver" onclick="cerrarTabInforme()">← Volver</button>
+        <div class="informe-tab-paciente-info">
+          <div class="informe-tab-nombre" id="itNombre">—</div>
+          <div class="informe-tab-sub" id="itSub">—</div>
+        </div>
+      </div>
+      <div class="informe-tab-fields" id="itFields"></div>
+      <hr class="informe-divider" style="margin:12px 0;">
+      <div class="informe-section">
+        <span class="informe-section-label">Diagnóstico</span>
+        <textarea class="informe-textarea" id="itDiagnostico" placeholder="Diagnóstico..."></textarea>
+      </div>
+      <div class="informe-section">
+        <span class="informe-section-label">Indicaciones / Observaciones (opcional)</span>
+        <textarea class="informe-textarea" id="itObservaciones" placeholder="Indicaciones y observaciones adicionales..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px;padding-bottom:24px;">
+        <button class="btn-pdf" id="itBtnGuardar" onclick="guardarYSubirInformeTab()" style="flex:1;">📄 Enviar informe</button>
+      </div>
+    </div>
+    <!-- Derecha: visor de archivos -->
+    <div class="informe-tab-right">
+      <div class="informe-tab-right-header">Archivos del paciente</div>
+      <div class="informe-tab-files" id="itFilesList">
+        <div class="hist-loading" id="itFilesLoading">⏳ Buscando archivos...</div>
+      </div>
+      <div class="informe-tab-viewer" id="itViewerArea">
+        <div class="hist-viewer-empty" id="itViewerEmpty">
+          <div class="hist-viewer-empty-icon">📄</div>
+          <div style="font-size:14px;color:#bbb;">Tocá un archivo para previsualizarlo</div>
+          <div style="font-size:12px;color:#ccc;">Los PDFs e imágenes se muestran aquí</div>
+        </div>
+        <iframe id="itViewerFrame" style="display:none;width:100%;height:100%;border:none;border-radius:8px;" src="about:blank"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <div class="modal-overlay" id="modalInforme">
   <div class="modal-box">
     <button class="modal-close-btn" onclick="cerrarModalInforme()">×</button>
@@ -1521,12 +1668,13 @@ async function cargarProximoNumero() {
 }
 
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('active', (i===0&&tab==='carga')||(i===1&&tab==='cirugia')||(i===2&&tab==='buscar'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const tabEl = document.getElementById('tab-' + tab);
+  if (tabEl) tabEl.classList.add('active');
+  ['carga','cirugia','buscar','informe'].forEach(v => {
+    const el = document.getElementById('view-' + v);
+    if (el) el.classList.toggle('active', v === tab);
   });
-  document.getElementById('view-carga').classList.toggle('active', tab==='carga');
-  document.getElementById('view-cirugia').classList.toggle('active', tab==='cirugia');
-  document.getElementById('view-buscar').classList.toggle('active', tab==='buscar');
   document.getElementById('actionsBar').style.display = tab==='carga' ? 'flex' : 'none';
   document.getElementById('actionsBarCirugia').style.display = tab==='cirugia' ? 'flex' : 'none';
   if (tab==='buscar') buscar();
@@ -1617,7 +1765,7 @@ async function guardarPaciente() {
 async function toggleInforme(id, i) {
   const p = pacientesHoy[i];
   if (!p.informe_realizado) {
-    abrirModalInforme(id, i);
+    abrirTabInforme(p, 'carga');
   } else {
     if (!confirm('¿Desmarcar el informe de ' + p.nombre_completo + '?')) return;
     const { error } = await sb.from('pacientes').update({ informe_realizado: false }).eq('id', id);
@@ -2199,14 +2347,11 @@ async function toggleInformeResultado(id, el) {
       informe_realizado: false
     };
     const existeIdx = pacientesHoy.findIndex(p => p.id === id);
-    if (existeIdx >= 0) {
-      _informeResultadoEl = el;
-      abrirModalInforme(id, existeIdx);
-    } else {
+    if (existeIdx < 0) {
       pacientesHoy.push(tmpPaciente);
-      _informeResultadoEl = el;
-      abrirModalInforme(id, pacientesHoy.length - 1);
     }
+    _informeResultadoEl = el;
+    abrirTabInforme(tmpPaciente, 'buscar');
   } else {
     if (!confirm('¿Desmarcar el informe?')) return;
     const { error } = await sb.from('pacientes').update({ informe_realizado: false }).eq('id', id);
@@ -2560,9 +2705,10 @@ function cerrarModalInforme() {
 
 async function generarYSubirInforme() {
   if (!_informeId) return;
-  const p = pacientesHoy[_informeIdx];
+  const p = _informeIdx >= 0 ? pacientesHoy[_informeIdx] : (_itPaciente || null);
+  if (!p) return;
   const btn = document.getElementById('btnGenerarPDF');
-  btn.disabled = true; btn.textContent = 'Enviando...';
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
 
   const NO_SOL = 'Estudio no solicitado';
   const val = (id) => { const el = document.getElementById('campo_' + id); return el ? el.value.trim() : NO_SOL; };
@@ -3706,6 +3852,151 @@ async function histEnviarInforme() {
     showToast(data.ok ? '📋 Informe enviado por WhatsApp' : '❌ ' + (data.error || 'Error'));
   } catch(e) { showToast('❌ Error de conexión'); }
 }
+
+function histHacerInforme() {
+  if (!_histDni) return;
+  // Buscar al paciente en pacientesHoy o construir objeto mínimo
+  const p = pacientesHoy.find(x => x.dni === _histDni) || {
+    id: null,
+    nombre_completo: _histNombreStr,
+    dni: _histDni,
+    celular: _histCelular,
+    estudios: [],
+    informe_realizado: false,
+    fecha: null
+  };
+  cerrarHistorial();
+  abrirTabInforme(p, 'buscar');
+}
+
+// ── PESTAÑA INFORME ──────────────────────────────────────────────────────────
+
+let _itPaciente = null;
+let _itPrevTab = 'carga';
+
+async function abrirTabInforme(pacienteObj, fromTab) {
+  _itPaciente = pacienteObj;
+  _itPrevTab = fromTab || 'carga';
+
+  const tabBtn = document.getElementById('tab-informe');
+  if (tabBtn) tabBtn.style.display = '';
+  switchTab('informe');
+
+  document.getElementById('itNombre').textContent = pacienteObj.nombre_completo || '—';
+  const fecha = pacienteObj.fecha
+    ? new Date(pacienteObj.fecha + 'T12:00:00').toLocaleDateString('es-AR', {day:'numeric',month:'long',year:'numeric'})
+    : '';
+  document.getElementById('itSub').textContent = 'DNI ' + pacienteObj.dni + (fecha ? ' · ' + fecha : '');
+
+  _informeId = pacienteObj.id;
+  const idx = pacientesHoy.findIndex(p => p.id === pacienteObj.id);
+  _informeIdx = idx >= 0 ? idx : -1;
+
+  const btnGuardar = document.getElementById('itBtnGuardar');
+  btnGuardar.textContent = pacienteObj.informe_realizado ? '🔄 Reenviar informe' : '📄 Enviar informe';
+  btnGuardar.disabled = false;
+
+  const estudios = (pacienteObj.estudios && pacienteObj.estudios.length) ? pacienteObj.estudios : [];
+  let html = '';
+  const renderCamposIt = (campos) => {
+    let s = '';
+    for (const campo of campos) {
+      const isNormalChip = (op) => campo.normal && op.texto === campo.normal;
+      const chips = campo.opciones.map(op =>
+        '<button type="button" class="opcion-chip' + (isNormalChip(op) ? ' normal-chip' : '') + '" data-id="' + campo.id + '" data-texto="' + op.texto.replace(/"/g,'&quot;') + '" onclick="setOpcionInforme(' + "'"+campo.id+"'" + ',this)">' + op.label + '</button>'
+      ).join('');
+      s += '<div class="informe-ojo-item"><div class="informe-ojo-label">' + campo.ojo + '</div><div class="opciones-chips">' + chips + '</div><textarea class="informe-textarea" id="campo_' + campo.id + '">' + (campo.normal||'') + '</textarea></div>';
+    }
+    return s;
+  };
+  for (const estudio of estudios) {
+    const config = ESTUDIOS_CONFIG[estudio];
+    if (!config) {
+      html += '<div class="informe-estudio-section"><div class="informe-estudio-title">' + estudio + '</div><div class="informe-ojo-item"><textarea class="informe-textarea" id="campo_libre_' + estudio + '" placeholder="Hallazgos..."></textarea></div></div>';
+      continue;
+    }
+    html += '<div class="informe-estudio-section"><div class="informe-estudio-title">' + config.titulo + '</div>';
+    for (const grupo of config.grupos) {
+      html += '<div class="informe-grupo-nombre">' + grupo.nombre + '</div><div class="informe-ojos-row">' + renderCamposIt(grupo.campos) + '</div>';
+    }
+    html += '</div>';
+  }
+  document.getElementById('itFields').innerHTML = html || '<div style="color:#aaa;font-size:13px;padding:8px 0;">Sin estudios cargados para este paciente.</div>';
+
+  const diagEl = document.getElementById('informeDiagnostico');
+  const obsEl = document.getElementById('informeObservaciones');
+  document.getElementById('itDiagnostico').value = diagEl ? diagEl.value : '';
+  document.getElementById('itObservaciones').value = obsEl ? obsEl.value : '';
+
+  await _itCargarArchivos(pacienteObj.dni);
+}
+
+async function _itCargarArchivos(dni) {
+  const filesList = document.getElementById('itFilesList');
+  filesList.innerHTML = '<div class="hist-loading">⏳ Buscando archivos...</div>';
+  document.getElementById('itViewerEmpty').style.display = 'flex';
+  document.getElementById('itViewerFrame').style.display = 'none';
+
+  try {
+    const resp = await fetch('/api/buscar-archivos?dni=' + encodeURIComponent(dni));
+    const data = await resp.json();
+    if (!data.ok) {
+      filesList.innerHTML = '<div style="font-size:12px;color:#e24b4a;padding:8px;">Error: ' + data.error + '</div>';
+      return;
+    }
+    const todos = [...(data.informes || []), ...(data.estudios || [])];
+    if (todos.length === 0) {
+      filesList.innerHTML = '<div style="font-size:12px;color:#aaa;padding:8px;">Sin archivos en Drive.</div>';
+      return;
+    }
+    filesList.innerHTML = todos.map(f => {
+      const nameEsc = (f.name||'').replace(/'/g,"\'");
+      const linkEsc = (f.webViewLink||'').replace(/'/g,"\'");
+      return '<div class="it-file-item" onclick="_itAbrirArchivo(this,\'' + f.id + '\',\'' + linkEsc + '\',\'' + nameEsc + '\')">' +
+        '<span class="it-file-icon">📄</span>' +
+        '<span class="it-file-name" title="' + (f.name||'') + '">' + (f.name||'') + '</span>' +
+        '<a class="it-file-open" href="' + (f.webViewLink||'#') + '" target="_blank" onclick="event.stopPropagation()">↗</a>' +
+        '</div>';
+    }).join('');
+  } catch(e) {
+    filesList.innerHTML = '<div style="font-size:12px;color:#e24b4a;padding:8px;">Error de conexión.</div>';
+  }
+}
+
+function _itAbrirArchivo(el, fileId, viewLink, name) {
+  document.querySelectorAll('.it-file-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  const frame = document.getElementById('itViewerFrame');
+  const empty = document.getElementById('itViewerEmpty');
+  frame.src = 'https://drive.google.com/file/d/' + fileId + '/preview';
+  frame.style.display = 'block';
+  empty.style.display = 'none';
+}
+
+function cerrarTabInforme() {
+  const diagEl = document.getElementById('informeDiagnostico');
+  const obsEl = document.getElementById('informeObservaciones');
+  if (diagEl) diagEl.value = document.getElementById('itDiagnostico').value;
+  if (obsEl) obsEl.value = document.getElementById('itObservaciones').value;
+  const tabBtn = document.getElementById('tab-informe');
+  if (tabBtn) tabBtn.style.display = 'none';
+  switchTab(_itPrevTab);
+  _itPaciente = null;
+}
+
+async function guardarYSubirInformeTab() {
+  const diagEl = document.getElementById('informeDiagnostico');
+  const obsEl = document.getElementById('informeObservaciones');
+  if (diagEl) diagEl.value = document.getElementById('itDiagnostico').value;
+  if (obsEl) obsEl.value = document.getElementById('itObservaciones').value;
+  const btn = document.getElementById('itBtnGuardar');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generando...';
+  await generarYSubirInforme();
+  btn.disabled = false;
+  btn.textContent = '🔄 Reenviar informe';
+}
+
 </script>
 
 <!-- Historial Paciente — pantalla completa -->
@@ -3719,6 +4010,7 @@ async function histEnviarInforme() {
     </div>
     <div class="hist-topbar-actions">
       <button class="hist-btn hist-btn-wa" onclick="histEnviarEstudios()">📤 Enviar estudios</button>
+      <button class="hist-btn" onclick="histHacerInforme()" style="background:#4a6cf7;color:white;border:none;">✏️ Hacer informe</button>
       <button class="hist-btn hist-btn-inf" onclick="histEnviarInforme()">📋 Enviar informe</button>
     </div>
   </div>
