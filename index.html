@@ -1184,6 +1184,33 @@
     .it-file-item:hover { background: #252540; }
     .it-file-item.active { background: #1e2a5e; color: #8aadff; }
   }
+  .it-resize-handle {
+    height: 6px;
+    background: #e5e7eb;
+    cursor: ns-resize;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    position: relative;
+  }
+  .it-resize-handle::after {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 2px;
+    background: #bbb;
+    border-radius: 2px;
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .it-resize-handle:hover, .it-resize-handle.dragging { background: #c7d7ff; }
+  @media (prefers-color-scheme: dark) {
+    .it-resize-handle { background: #2a2a3e; }
+    .it-resize-handle::after { background: #555; }
+    .it-resize-handle:hover, .it-resize-handle.dragging { background: #2a3a6e; }
+  }
+
 </style>
 <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
 </head>
@@ -1563,9 +1590,10 @@
     <!-- Derecha: visor de archivos -->
     <div class="informe-tab-right">
       <div class="informe-tab-right-header">Archivos del paciente</div>
-      <div class="informe-tab-files" id="itFilesList">
+      <div class="informe-tab-files" id="itFilesList" style="height:160px;min-height:60px;max-height:50%;">
         <div class="hist-loading" id="itFilesLoading">⏳ Buscando archivos...</div>
       </div>
+      <div class="it-resize-handle" id="itResizeHandle" title="Arrastrar para redimensionar"></div>
       <div class="informe-tab-viewer" id="itViewerArea">
         <div class="hist-viewer-empty" id="itViewerEmpty">
           <div class="hist-viewer-empty-icon">📄</div>
@@ -3903,7 +3931,7 @@ async function abrirTabInforme(pacienteObj, fromTab) {
     for (const campo of campos) {
       const isNormalChip = (op) => campo.normal && op.texto === campo.normal;
       const chips = campo.opciones.map(op =>
-        '<button type="button" class="opcion-chip' + (isNormalChip(op) ? ' normal-chip' : '') + '" data-id="' + campo.id + '" data-texto="' + op.texto.replace(/"/g,'&quot;') + '" onclick="setOpcionInforme(' + "'"+campo.id+"'" + ',this)">' + op.label + '</button>'
+        '<button type="button" class="opcion-chip' + (isNormalChip(op) ? ' normal-chip' : '') + '" data-id="' + campo.id + '" data-texto="' + op.texto.replace(/"/g,'&quot;') + '" onclick="setOpcionInforme(\'' + campo.id + '\',this)">' + op.label + '</button>'
       ).join('');
       s += '<div class="informe-ojo-item"><div class="informe-ojo-label">' + campo.ojo + '</div><div class="opciones-chips">' + chips + '</div><textarea class="informe-textarea" id="campo_' + campo.id + '">' + (campo.normal||'') + '</textarea></div>';
     }
@@ -3912,14 +3940,19 @@ async function abrirTabInforme(pacienteObj, fromTab) {
   for (const estudio of estudios) {
     const config = ESTUDIOS_CONFIG[estudio];
     if (!config) {
-      html += '<div class="informe-estudio-section"><div class="informe-estudio-title">' + estudio + '</div><div class="informe-ojo-item"><textarea class="informe-textarea" id="campo_libre_' + estudio + '" placeholder="Hallazgos..."></textarea></div></div>';
+      html += '<div class="informe-estudio-section"><div class="informe-estudio-titulo">' + estudio + '</div><div style="padding:12px 14px;background:white;"><textarea class="informe-textarea" id="campo_' + estudio.replace(/[^a-zA-Z0-9]/g,'_') + '" placeholder="Hallazgos..."></textarea></div></div>';
       continue;
     }
-    html += '<div class="informe-estudio-section"><div class="informe-estudio-title">' + config.titulo + '</div>';
-    for (const grupo of config.grupos) {
-      html += '<div class="informe-grupo-nombre">' + grupo.nombre + '</div><div class="informe-ojos-row">' + renderCamposIt(grupo.campos) + '</div>';
+    html += '<div class="informe-estudio-section"><div class="informe-estudio-titulo">' + config.label + '</div><div class="informe-ojo-grid">';
+    if (config.grupos) {
+      for (const grupo of config.grupos) {
+        html += '<div class="informe-subgrupo-titulo">' + grupo.titulo + '</div>';
+        html += renderCamposIt(grupo.campos);
+      }
+    } else {
+      html += renderCamposIt(config.campos);
     }
-    html += '</div>';
+    html += '</div></div>';
   }
   document.getElementById('itFields').innerHTML = html || '<div style="color:#aaa;font-size:13px;padding:8px 0;">Sin estudios cargados para este paciente.</div>';
 
@@ -3968,7 +4001,7 @@ function _itAbrirArchivo(el, fileId, viewLink, name) {
   el.classList.add('active');
   const frame = document.getElementById('itViewerFrame');
   const empty = document.getElementById('itViewerEmpty');
-  frame.src = 'https://drive.google.com/file/d/' + fileId + '/preview';
+  frame.src = '/api/ver-archivo?id=' + fileId;
   frame.style.display = 'block';
   empty.style.display = 'none';
 }
@@ -3996,6 +4029,34 @@ async function guardarYSubirInformeTab() {
   btn.disabled = false;
   btn.textContent = '🔄 Reenviar informe';
 }
+
+// ── Resize handle para panel de archivos en pestaña informe ──
+(function() {
+  let dragging = false, startY = 0, startH = 0;
+  document.addEventListener('mousedown', function(e) {
+    const handle = document.getElementById('itResizeHandle');
+    if (!handle || !handle.contains(e.target)) return;
+    dragging = true;
+    startY = e.clientY;
+    const filesList = document.getElementById('itFilesList');
+    startH = filesList ? filesList.offsetHeight : 160;
+    handle.classList.add('dragging');
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    const filesList = document.getElementById('itFilesList');
+    if (!filesList) return;
+    const newH = Math.max(40, Math.min(startH + (e.clientY - startY), window.innerHeight * 0.6));
+    filesList.style.height = newH + 'px';
+  });
+  document.addEventListener('mouseup', function() {
+    if (!dragging) return;
+    dragging = false;
+    const handle = document.getElementById('itResizeHandle');
+    if (handle) handle.classList.remove('dragging');
+  });
+})();
 
 </script>
 
