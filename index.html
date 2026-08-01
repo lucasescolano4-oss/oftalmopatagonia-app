@@ -1158,7 +1158,7 @@
   /* Table-like search results */
   .res-table-header {
     display: grid;
-    grid-template-columns: 36px 70px 1fr 150px 180px 120px 100px;
+    grid-template-columns: 60px 1fr minmax(80px,auto) 200px 110px 72px;
     padding: 7px 12px;
     background: #f5f5f3;
     border: 1px solid #e5e5e3;
@@ -1176,7 +1176,7 @@
   }
   .results-area .fecha-grupo-row {
     display: grid;
-    grid-template-columns: 36px 70px 1fr 150px 180px 120px 100px;
+    grid-template-columns: 60px 1fr minmax(80px,auto) 200px 110px 72px;
     background: #f9f9f7; border-bottom: 1px solid #e5e5e3;
     padding: 5px 12px; align-items: center;
     font-size: 11px; font-weight: 600; color: #555;
@@ -1204,7 +1204,7 @@
   /* ════ CARD V2 (nueva tarjeta paciente) ════ */
   .paciente-card-v2 {
     display: grid;
-    grid-template-columns: 60px 1fr 170px 100px 72px;
+    grid-template-columns: 60px 1fr minmax(80px,auto) 200px 110px 72px;
     align-items: center;
     gap: 10px;
     background: white;
@@ -1222,11 +1222,13 @@
   .pcard-left { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
   .pcard-identity { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .pcard-nombre { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .pcard-sub { font-size: 11px; color: #999; }
+  .pcard-sub { font-size: 13px; color: #777; }
   .pcard-obra { font-size: 11px; color: #555; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pcard-obra-col { font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 
   .pcard-estudios-col { display: flex; flex-direction: column; gap: 5px; }
-  .pcard-cel { font-size: 11px; color: #888; }
+  .pcard-cel { font-size: 13px; color: #555; margin-top: 4px; }
 
   .pcard-status { display: flex; flex-direction: column; gap: 7px; }
   .pcard-status-item { display: flex; align-items: center; gap: 6px; }
@@ -2216,9 +2218,10 @@ function renderLista() {
       <div class="pcard-identity">
         <div class="pcard-nombre">${p.nombre_completo}${!p.orden_autorizada ? ' <span class="badge-sin-orden" style="font-size:9px;padding:1px 6px;">⚠ SIN ORDEN</span>' : ''}</div>
         <div class="pcard-sub">DNI ${p.dni}</div>
-        <div class="pcard-obra">${p.obra_social||'—'}</div>
       </div>
-      <!-- Col 3: Estudios + Celular -->
+      <!-- Col 3: Obra Social -->
+      <div class="pcard-obra-col">${p.obra_social||'—'}</div>
+      <!-- Col 4: Estudios + Celular -->
       <div class="pcard-estudios-col">
         <div class="paciente-estudios">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
         <div class="pcard-cel">📱 +${p.celular||''}</div>
@@ -2508,7 +2511,6 @@ async function buscar() {
   const resumenHTML = Object.entries(resumenEstudios).sort((a,b)=>b[1]-a[1]).map(([e,n])=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:#f0f0ee;border:1px solid #e0e0e0;border-radius:99px;font-size:12px;margin:3px;"><strong>${n}</strong> ${e}</span>`).join('');
 
   const tableHeaderHTML = `<div class="res-table-header">
-    <span></span>
     <span>#</span>
     <span>Paciente</span>
     <span>Obra social</span>
