@@ -2463,9 +2463,10 @@ async function buscar() {
       <div class="pcard-identity">
         <div class="pcard-nombre">${p.nombre_completo}${!p.orden_autorizada ? ' <span class="badge-sin-orden" style="font-size:9px;padding:1px 6px;">⚠ SIN ORDEN</span>' : ''}</div>
         <div class="pcard-sub">${p.dni||''}</div>
-        <div class="pcard-obra">${p.obra_social||'—'}</div>
       </div>
-      <!-- Col 3: Estudios + Celular (hidden in res-card-informe for JS compat) -->
+      <!-- Col 3: Obra Social -->
+      <div class="pcard-obra-col">${p.obra_social||'—'}</div>
+      <!-- Col 4: Estudios + Celular (hidden in res-card-informe for JS compat) -->
       <div class="pcard-estudios-col">
         <div class="res-estudios-mini">${p.estudios.map(e=>`<span class="estudio-tag">${e}</span>`).join('')}</div>
         <div class="pcard-cel">📱 +${p.celular||''}</div>
@@ -2511,7 +2512,6 @@ async function buscar() {
   const resumenHTML = Object.entries(resumenEstudios).sort((a,b)=>b[1]-a[1]).map(([e,n])=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:#f0f0ee;border:1px solid #e0e0e0;border-radius:99px;font-size:12px;margin:3px;"><strong>${n}</strong> ${e}</span>`).join('');
 
   const tableHeaderHTML = `<div class="res-table-header">
-    <span>#</span>
     <span>Paciente</span>
     <span>Obra social</span>
     <span>Estudios</span>
