@@ -2511,13 +2511,7 @@ async function buscar() {
   data.forEach(p => p.estudios.forEach(e => { resumenEstudios[e] = (resumenEstudios[e]||0)+1; }));
   const resumenHTML = Object.entries(resumenEstudios).sort((a,b)=>b[1]-a[1]).map(([e,n])=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:#f0f0ee;border:1px solid #e0e0e0;border-radius:99px;font-size:12px;margin:3px;"><strong>${n}</strong> ${e}</span>`).join('');
 
-  const tableHeaderHTML = `<div class="res-table-header">
-    <span>Paciente</span>
-    <span>Obra social</span>
-    <span>Estudios</span>
-    <span>Estado</span>
-    <span>Acciones</span>
-  </div>`;
+  const tableHeaderHTML = ``;
   document.getElementById('resultsArea').innerHTML=`
     <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:13px;color:#888;">${data.length} resultado${data.length!==1?'s':''} · <label style="font-size:13px;color:#888;cursor:pointer;"><input type="checkbox" id="checkTodosResultados" onclick="toggleTodosResultados()" style="margin-right:4px;accent-color:#378add;">Seleccionar todos</label></div>
