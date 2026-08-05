@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
     try {
         const resp = await fetch(
-            'https://botwhatsapp-production-2822.up.railway.app/enviar-cirugia',
+            'https://botwhatsapp-production-0692.up.railway.app/enviar-cirugia',
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
