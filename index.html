@@ -1912,8 +1912,8 @@
     <div style="margin-top:16px;">
       <label class="form-label">Asignar a:</label>
       <select id="selectMedicoReasignar" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;">
-        <option value="Dr. Escolano Lucas">Dr. Escolano Lucas</option>
-        <option value="Dr. Polzonetti Ricardo">Dr. Polzonetti Ricardo</option>
+        <option value="Dr. Escolano Lucas" data-uid="c21b540b-9813-4933-b7e1-31e3f0916cb5">Dr. Escolano Lucas</option>
+        <option value="Dr. Polzonetti Ricardo" data-uid="02557101-f727-422e-96b0-b38a78392cdd">Dr. Polzonetti Ricardo</option>
       </select>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
@@ -2923,11 +2923,13 @@ function cerrarModalReasignar() {
 }
 
 async function confirmarReasignar() {
-  const nuevoMedico = document.getElementById('selectMedicoReasignar').value;
+  const select = document.getElementById('selectMedicoReasignar');
+  const nuevoMedico = select.value;
+  const nuevoMedicoId = select.options[select.selectedIndex].dataset.uid;
   const ids = [...seleccionados];
   if (!ids.length) return;
   cerrarModalReasignar();
-  const { error } = await sb.from('pacientes').update({ medico: nuevoMedico }).in('id', ids);
+  const { error } = await sb.from('pacientes').update({ medico: nuevoMedico, medico_id: nuevoMedicoId }).in('id', ids);
   if (error) { showToast('Error al reasignar ✗'); console.error(error); return; }
   showToast(`✓ ${ids.length} paciente${ids.length > 1 ? 's' : ''} reasignado${ids.length > 1 ? 's' : ''} a ${nuevoMedico}`);
   seleccionados.clear();
