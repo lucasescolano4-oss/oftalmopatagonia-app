@@ -2925,12 +2925,13 @@ function cerrarModalReasignar() {
 async function confirmarReasignar() {
   const nuevoMedico = document.getElementById('selectMedicoReasignar').value;
   const ids = [...seleccionados];
+  if (!ids.length) return;
   cerrarModalReasignar();
   const { error } = await sb.from('pacientes').update({ medico: nuevoMedico }).in('id', ids);
-  if (error) { showToast('Error al reasignar ✗'); return; }
+  if (error) { showToast('Error al reasignar ✗'); console.error(error); return; }
   showToast(`✓ ${ids.length} paciente${ids.length > 1 ? 's' : ''} reasignado${ids.length > 1 ? 's' : ''} a ${nuevoMedico}`);
   seleccionados.clear();
-  actualizarBotonesSeleccion();
+  renderLista();
   await cargarPacientesHoy();
 }
 
