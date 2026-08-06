@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { rechazarSinSesion } from './_auth.js';
 
 const CARPETA_INFORMES = '1aVuHtL48zQi1QdQj0jONyjBrn8fTqIT3';
 
@@ -38,11 +39,20 @@ async function buscarEnDrive(token, query, extra = '') {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', 'https://oftalmopatagonia-app.vercel.app');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+
+  // Listar estudios por DNI equivale a leer una historia clinica: exige sesion.
+  if (await rechazarSinSesion(req, res)) return;
 
   const { dni } = req.query;
   if (!dni) return res.status(400).json({ ok: false, error: 'dni requerido' });
+
+  // Solo digitos: el DNI se interpola en la query de Drive y una comilla
+  // simple permitiria alterar la busqueda para listar archivos ajenos.
+  if (!/^\d{7,9}$/.test(String(dni))) {
+    return res.status(400).json({ ok: false, error: 'dni invalido' });
+  }
 
   const saJson = process.env.GOOGLE_SERVICE_ACCOUNT;
   if (!saJson) return res.status(500).json({ ok: false, error: 'GOOGLE_SERVICE_ACCOUNT no configurado en Vercel' });

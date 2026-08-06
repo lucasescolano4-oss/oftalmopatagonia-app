@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { rechazarSinSesion } from './_auth.js';
 
 async function getAccessToken(sa) {
   const now = Math.floor(Date.now() / 1000);
@@ -27,10 +28,15 @@ async function getAccessToken(sa) {
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', 'https://oftalmopatagonia-app.vercel.app');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+
+  // Devuelve el PDF de un estudio: exige sesion iniciada.
+  if (await rechazarSinSesion(req, res)) return;
 
   const { id } = req.query;
   if (!id) return res.status(400).send('id requerido');
+  if (!/^[A-Za-z0-9_-]{10,}$/.test(String(id))) return res.status(400).send('id invalido');
 
   const saJson = process.env.GOOGLE_SERVICE_ACCOUNT;
   if (!saJson) return res.status(500).send('GOOGLE_SERVICE_ACCOUNT no configurado');

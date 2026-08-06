@@ -12,7 +12,10 @@ export default async function handler(req, res) {
             'https://botwhatsapp-production-0692.up.railway.app/enviar-informe',
             {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': process.env.BOT_API_KEY || '',
+                },
                 body: JSON.stringify(req.body),
             }
         );

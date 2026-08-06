@@ -1954,6 +1954,31 @@ const SUPABASE_URL = 'https://jxhxitgyvssxhmfpzzlt.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_GR173HjCr2rpSxiQbOLzEA_KXKfFMnA';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Los endpoints que devuelven estudios exigen sesion: hay que mandarles el token.
+async function authHeaders() {
+  const { data } = await sb.auth.getSession();
+  return data && data.session
+    ? { 'Authorization': 'Bearer ' + data.session.access_token }
+    : {};
+}
+
+// Un iframe no puede mandar cabeceras, asi que el archivo se descarga con
+// fetch autenticado y se muestra desde un blob local.
+async function mostrarEnIframe(iframe, ruta) {
+  if (iframe._blobUrl) { URL.revokeObjectURL(iframe._blobUrl); iframe._blobUrl = null; }
+  iframe.src = '';
+  if (!ruta) return;
+  try {
+    const r = await fetch(ruta, { headers: await authHeaders() });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    iframe._blobUrl = URL.createObjectURL(await r.blob());
+    iframe.src = iframe._blobUrl;
+  } catch (e) {
+    console.error('[visor]', e);
+    showToast('No se pudo abrir el archivo ✗');
+  }
+}
+
 // Init obras sociales desde localStorage
 document.addEventListener('DOMContentLoaded', () => { addObrasSocialesToDatalist(); });
 
@@ -4212,7 +4237,7 @@ async function abrirHistorial(id) {
   }
 
   try {
-    const resp = await fetch(`/api/buscar-archivos?dni=${encodeURIComponent(_histDni)}`);
+    const resp = await fetch(`/api/buscar-archivos?dni=${encodeURIComponent(_histDni)}`, { headers: await authHeaders() });
     const data = await resp.json();
     document.getElementById('histArchivosCargando').style.display = 'none';
 
@@ -4318,7 +4343,7 @@ function _histSetViewer(archivo) {
   panel.style.flexDirection = 'column';
   titulo.textContent = archivo.nombre;
   link.href = archivo.webViewLink;
-  iframe.src = archivo.previewUrl;
+  mostrarEnIframe(iframe, archivo.previewUrl);
 }
 
 function cerrarHistorial() {
@@ -4449,7 +4474,7 @@ async function _itCargarArchivos(dni) {
   document.getElementById('itViewerFrame').style.display = 'none';
 
   try {
-    const resp = await fetch('/api/buscar-archivos?dni=' + encodeURIComponent(dni));
+    const resp = await fetch('/api/buscar-archivos?dni=' + encodeURIComponent(dni), { headers: await authHeaders() });
     const data = await resp.json();
     if (!data.ok) {
       filesList.innerHTML = '<div style="font-size:12px;color:#e24b4a;padding:8px;">Error: ' + data.error + '</div>';
@@ -4479,7 +4504,7 @@ function _itAbrirArchivo(el, fileId, viewLink, name) {
   el.classList.add('active');
   const frame = document.getElementById('itViewerFrame');
   const empty = document.getElementById('itViewerEmpty');
-  frame.src = '/api/ver-archivo?id=' + fileId;
+  mostrarEnIframe(frame, '/api/ver-archivo?id=' + encodeURIComponent(fileId));
   frame.style.display = 'block';
   empty.style.display = 'none';
 }
@@ -4663,12 +4688,18 @@ async function guardarYSubirInformeTab() {
 
 <script>
 // ── BANDEJA DE MENSAJES ──────────────────────────────────────────────────────
-const BOT_URL = 'https://botwhatsapp-production-0692.up.railway.app';
 let numeroSeleccionado = null;
 
 function inicialMsj(numero) {
   const d = numero.replace(/\D/g,'');
   return d ? d.slice(-2).toUpperCase() : '?';
+}
+
+// El contenido de los mensajes lo escribe el paciente: nunca va crudo al DOM.
+function escHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 async function cargarConversaciones() {
@@ -4686,16 +4717,18 @@ async function cargarConversaciones() {
 
   if (!lista.length) { el.innerHTML = '<div style="padding:20px;color:#bbb;font-size:13px;text-align:center;">Sin conversaciones aún</div>'; return; }
 
-  el.innerHTML = lista.map(m => `
-    <div class="msj-conv-item ${m.numero===numeroSeleccionado?'selected':''}" onclick="seleccionarConversacion('${m.numero}')">
-      <div class="msj-conv-avatar">${inicialMsj(m.numero)}</div>
+  el.innerHTML = lista.map(m => {
+    const num = String(m.numero).replace(/\D/g,'');
+    return `
+    <div class="msj-conv-item ${m.numero===numeroSeleccionado?'selected':''}" onclick="seleccionarConversacion('${num}')">
+      <div class="msj-conv-avatar">${escHtml(inicialMsj(num))}</div>
       <div class="msj-conv-info">
-        <div class="msj-conv-num">+${m.numero}</div>
-        <div class="msj-conv-preview">${m.direccion==='saliente'?'Bot: ':''}${m.contenido.substring(0,45)}</div>
+        <div class="msj-conv-num">+${escHtml(num)}</div>
+        <div class="msj-conv-preview">${m.direccion==='saliente'?'Bot: ':''}${escHtml(m.contenido.substring(0,45))}</div>
       </div>
       <div class="msj-conv-time">${new Date(m.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 async function seleccionarConversacion(numero) {
@@ -4716,9 +4749,10 @@ async function seleccionarConversacion(numero) {
 
   body.innerHTML = data.map(m => {
     const esDoc = m.tipo === 'documento';
+    const seguro = escHtml(m.contenido);
     const contenido = esDoc
-      ? `<div class="msj-doc"><span class="msj-doc-icon">📄</span><span>${m.contenido}</span></div>`
-      : m.contenido.replace(/\n/g,'<br>');
+      ? `<div class="msj-doc"><span class="msj-doc-icon">📄</span><span>${seguro}</span></div>`
+      : seguro.replace(/\n/g,'<br>');
     return `
       <div class="msj-bubble-wrap ${m.direccion==='saliente'?'out':'in'}">
         <div class="msj-bubble ${m.direccion==='saliente'?'out':'in'}">
@@ -4739,7 +4773,7 @@ async function enviarMensajeManual() {
   const btn = document.querySelector('.msj-send-btn');
   if (btn) btn.disabled = true;
   try {
-    const r = await fetch(BOT_URL + '/enviar-manual', {
+    const r = await fetch('/api/enviar-manual', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ numero: numeroSeleccionado, mensaje })

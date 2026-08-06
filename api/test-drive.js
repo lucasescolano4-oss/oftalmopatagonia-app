@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { rechazarSinSesion } from './_auth.js';
 
 async function getAccessToken(sa) {
   const now = Math.floor(Date.now() / 1000);
@@ -22,6 +23,9 @@ async function getAccessToken(sa) {
 }
 
 export default async function handler(req, res) {
+  // Diagnostico interno: revela la cuenta de servicio, no debe quedar publico.
+  if (await rechazarSinSesion(req, res)) return;
+
   const saJson = process.env.GOOGLE_SERVICE_ACCOUNT;
   if (!saJson) return res.json({ ok: false, error: 'GOOGLE_SERVICE_ACCOUNT no está configurado' });
 
