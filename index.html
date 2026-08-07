@@ -1275,6 +1275,21 @@
 
   /* ── PESTAÑA INFORME SPLIT LAYOUT ── */
   #view-informe { display: none; }
+  /* Marcar caso para revisar despues — no forma parte del informe del paciente */
+  .revision-box { margin-top: 14px; padding: 12px 14px; border: 1px dashed #d9c9a8; border-radius: 10px; background: #fdfaf3; }
+  .revision-check { display: flex; align-items: center; gap: 9px; cursor: pointer; font-size: 13.5px; font-weight: 600; color: #8a6d1f; }
+  .revision-check input { width: 17px; height: 17px; cursor: pointer; accent-color: #c9a227; margin: 0; }
+  .revision-hint { font-size: 11px; color: #b09a6a; margin: 3px 0 0 26px; }
+  .revision-nota { margin-top: 10px; min-height: 70px; }
+  [data-theme="dark"] .revision-box { background: #2a2620; border-color: #5c4f33; }
+  [data-theme="dark"] .revision-check { color: #e0c063; }
+  [data-theme="dark"] .revision-hint { color: #8d7a4e; }
+
+  /* Nota de revision dentro de la tarjeta del paciente */
+  .card-revision { margin-top: 8px; padding: 8px 11px; border-left: 3px solid #c9a227; background: #fdfaf3; border-radius: 0 8px 8px 0; font-size: 12.5px; color: #6b5518; line-height: 1.45; white-space: pre-wrap; }
+  .card-revision-vacia { font-style: italic; color: #b09a6a; }
+  [data-theme="dark"] .card-revision { background: #2a2620; color: #d8c758; }
+
   #view-mensajes { display: none; }
   #view-mensajes.active { display: flex; flex: 1; overflow: hidden; width: 100%; height: 100%; }
 
@@ -1520,10 +1535,6 @@
     <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/></svg>
     <span class="nav-label-text">Carga del día</span>
   </button>
-  <button class="nav-item" id="nav-cirugia" onclick="switchTab('cirugia')">
-    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-    <span class="nav-label-text">Cirugía</span>
-  </button>
   <button class="nav-item" id="nav-buscar" onclick="switchTab('buscar')">
     <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     <span class="nav-label-text">Buscar pacientes</span>
@@ -1535,6 +1546,14 @@
   <button class="nav-item" id="nav-mensajes" onclick="switchTab('mensajes')">
     <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     <span class="nav-label-text">Mensajes</span>
+  </button>
+  <button class="nav-item" id="nav-cirugia" onclick="switchTab('cirugia')">
+    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    <span class="nav-label-text">Cirugía</span>
+  </button>
+  <button class="nav-item" id="nav-revision" onclick="switchTab('revision')">
+    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v1H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2V5a3 3 0 0 0-3-3z"/><path d="M9 13h6"/><path d="M9 17h4"/></svg>
+    <span class="nav-label-text">Pacientes para revisión</span>
   </button>
 </nav>
 <div class="content-area">
@@ -1834,6 +1853,15 @@
         <span class="informe-section-label">Indicaciones / Observaciones (opcional)</span>
         <textarea class="informe-textarea" id="itObservaciones" placeholder="Indicaciones y observaciones adicionales..."></textarea>
       </div>
+      <div class="revision-box">
+        <label class="revision-check">
+          <input type="checkbox" id="itParaRevision" onchange="toggleNotaRevision('it')">
+          <span>Marcar para revisión</span>
+        </label>
+        <div class="revision-hint">No se incluye en el informe del paciente</div>
+        <textarea class="informe-textarea revision-nota" id="itNotaRevision" style="display:none;"
+                  placeholder="¿Qué querés revisar o consultar de este caso? (opcional)"></textarea>
+      </div>
       <div style="display:flex;gap:10px;margin-top:16px;padding-bottom:24px;">
         <button class="btn-pdf" id="itBtnGuardar" onclick="guardarYSubirInformeTab()" style="flex:1;">📄 Enviar informe</button>
       </div>
@@ -1856,6 +1884,20 @@
     </div>
   </div>
 </div>
+<!-- PESTAÑA PACIENTES PARA REVISIÓN -->
+<div class="view" id="view-revision">
+  <div class="search-view">
+    <div class="search-bar">
+      <input type="search" id="revisionQuery" placeholder="Nombre, apellido o DNI..." onkeydown="if(event.key==='Enter')buscar({revision:true})">
+      <button class="btn-buscar" onclick="buscar({revision:true})">Buscar</button>
+      <span style="font-size:12px;color:#aaa;margin-left:auto;">Se marcan desde el informe</span>
+    </div>
+    <div class="results-area" id="revisionResults">
+      <div class="empty-state"><div class="empty-icon">📋</div>Cargando...</div>
+    </div>
+  </div>
+</div>
+
 <!-- PESTAÑA MENSAJES -->
 <div class="view" id="view-mensajes">
   <div class="msj-layout">
@@ -1940,6 +1982,15 @@
       <span class="informe-section-label">Indicaciones / Observaciones (opcional)</span>
       <textarea class="informe-textarea" id="informeObservaciones" placeholder="Indicaciones y observaciones adicionales..."></textarea>
     </div>
+    <div class="revision-box">
+      <label class="revision-check">
+        <input type="checkbox" id="informeParaRevision" onchange="toggleNotaRevision('informe')">
+        <span>Marcar para revisión</span>
+      </label>
+      <div class="revision-hint">No se incluye en el informe del paciente</div>
+      <textarea class="informe-textarea revision-nota" id="informeNotaRevision" style="display:none;"
+                placeholder="¿Qué querés revisar o consultar de este caso? (opcional)"></textarea>
+    </div>
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;">
       <button onclick="cerrarModalInforme()" style="padding:11px 18px;font-size:13px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;color:#888;">Cancelar</button>
       <button class="btn-pdf" id="btnGenerarPDF" onclick="generarYSubirInforme()">📄 Generar y subir PDF</button>
@@ -1953,6 +2004,13 @@
 const SUPABASE_URL = 'https://jxhxitgyvssxhmfpzzlt.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_GR173HjCr2rpSxiQbOLzEA_KXKfFMnA';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Texto escrito por pacientes o cargado a mano: nunca va crudo al DOM.
+function escHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
 // Los endpoints que devuelven estudios exigen sesion: hay que mandarles el token.
 async function authHeaders() {
@@ -2129,11 +2187,11 @@ function toggleSidebar() {
 }
 
 function switchTab(tab) {
-  ['carga','cirugia','buscar','informe','mensajes'].forEach(t => {
+  ['carga','cirugia','buscar','informe','mensajes','revision'].forEach(t => {
     const el = document.getElementById('nav-'+t);
     if (el) el.classList.toggle('active', t === tab);
   });
-  ['carga','cirugia','buscar','informe','mensajes'].forEach(v => {
+  ['carga','cirugia','buscar','informe','mensajes','revision'].forEach(v => {
     const el = document.getElementById('view-' + v);
     if (el) el.classList.toggle('active', v === tab);
   });
@@ -2142,6 +2200,7 @@ function switchTab(tab) {
   if (tab==='buscar') buscar();
   if (tab==='cirugia') cargarCirugias();
   if (tab==='mensajes') cargarConversaciones();
+  if (tab==='revision') buscar({ revision: true });
 }
 
 function setSyncStatus(state) {
@@ -2698,12 +2757,14 @@ function toggleSoloPendientes() {
   buscar();
 }
 
-async function buscar() {
-  const query = document.getElementById('searchQuery').value.trim();
-  const desde = document.getElementById('searchFechaDesde').value;
-  const hasta = document.getElementById('searchFechaHasta').value;
+async function buscar(opts) {
+  // Misma pantalla para dos solapas: "Buscar pacientes" y "Pacientes para
+  // revisión". La segunda es esta misma lista filtrada por la marca de revisión.
+  const soloRevision = !!(opts && opts.revision);
+  const areaId = soloRevision ? 'revisionResults' : 'resultsArea';
+  const query = document.getElementById(soloRevision ? 'revisionQuery' : 'searchQuery').value.trim();
 
-  document.getElementById('resultsArea').innerHTML = `<div class="loading"><div class="spinner"></div><br>Buscando...</div>`;
+  document.getElementById(areaId).innerHTML = `<div class="loading"><div class="spinner"></div><br>Buscando...</div>`;
 
   let q = sb.from('pacientes').select('*').order('fecha',{ascending:false}).order('created_at',{ascending:false});
   if (medicoActual) q = q.eq('medico', medicoActual);
@@ -2711,16 +2772,25 @@ async function buscar() {
     if (/^\d+$/.test(query)) q = q.ilike('dni',`%${query}%`);
     else q = q.ilike('nombre_completo',`%${query}%`);
   }
-  const obraS = document.getElementById('searchObraSocial').value.trim();
-  if (desde) q = q.gte('fecha',desde);
-  if (hasta) q = q.lte('fecha',hasta);
-  if (obraS) q = q.ilike('obra_social',`%${obraS}%`);
-  if (soloPendientes) q = q.eq('enviado', false);
+  if (soloRevision) {
+    q = q.eq('para_revision', true);
+  } else {
+    const desde = document.getElementById('searchFechaDesde').value;
+    const hasta = document.getElementById('searchFechaHasta').value;
+    const obraS = document.getElementById('searchObraSocial').value.trim();
+    if (desde) q = q.gte('fecha',desde);
+    if (hasta) q = q.lte('fecha',hasta);
+    if (obraS) q = q.ilike('obra_social',`%${obraS}%`);
+    if (soloPendientes) q = q.eq('enviado', false);
+  }
   q = q.limit(200);
 
   const { data, error } = await q;
   if (error||!data||data.length===0) {
-    document.getElementById('resultsArea').innerHTML=`<div class="empty-state"><div class="empty-icon">🔍</div>${error?'Error al buscar.':'Sin resultados.'}</div>`;
+    const vacio = soloRevision
+      ? `<div class="empty-state"><div class="empty-icon">📋</div>${error?'Error al buscar.':'No tenés pacientes marcados para revisión.<br><span style="font-size:12px;color:#bbb;">Se marcan desde el informe, con el tilde "Marcar para revisión".</span>'}</div>`
+      : `<div class="empty-state"><div class="empty-icon">🔍</div>${error?'Error al buscar.':'Sin resultados.'}</div>`;
+    document.getElementById(areaId).innerHTML = vacio;
     return;
   }
 
@@ -2790,6 +2860,16 @@ async function buscar() {
       <div class="res-card-informe" style="display:none;" onclick="toggleInformeResultado('${p.id}', this)">
         <span class="res-card-informe-val ${informeHecho?'hecho':'pendiente'}">${informeHecho ? '✓ Hecho' : '· Pend.'}</span>
       </div>
+      ${soloRevision ? `
+      <div class="card-revision" onclick="event.stopPropagation()">
+        ${p.nota_revision ? escHtml(p.nota_revision) : '<span class="card-revision-vacia">Sin nota</span>'}
+        <div style="margin-top:7px;">
+          <button onclick="event.stopPropagation();quitarDeRevision('${p.id}')"
+                  style="padding:4px 10px;font-size:11px;background:white;color:#8a6d1f;border:1px solid #d9c9a8;border-radius:6px;cursor:pointer;">
+            ✓ Ya lo revisé
+          </button>
+        </div>
+      </div>` : ''}
     </div>`;
   }
 
@@ -2809,21 +2889,33 @@ async function buscar() {
   data.forEach(p => p.estudios.forEach(e => { resumenEstudios[e] = (resumenEstudios[e]||0)+1; }));
   const resumenHTML = Object.entries(resumenEstudios).sort((a,b)=>b[1]-a[1]).map(([e,n])=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:#f0f0ee;border:1px solid #e0e0e0;border-radius:99px;font-size:12px;margin:3px;"><strong>${n}</strong> ${e}</span>`).join('');
 
-  const tableHeaderHTML = ``;
-  document.getElementById('resultsArea').innerHTML=`
-    <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+  // En revisión no van las acciones de envío masivo ni el resumen de estudios:
+  // la lista es para consultar casos, no para operar sobre ellos.
+  const encabezado = soloRevision
+    ? `<div style="margin-bottom:8px;font-size:13px;color:#888;">${data.length} paciente${data.length!==1?'s':''} para revisar</div>`
+    : `<div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:13px;color:#888;">${data.length} resultado${data.length!==1?'s':''} · <label style="font-size:13px;color:#888;cursor:pointer;"><input type="checkbox" id="checkTodosResultados" onclick="toggleTodosResultados()" style="margin-right:4px;accent-color:#378add;">Seleccionar todos</label></div>
       <div style="display:flex;gap:8px;">
         <button onclick="eliminarDesdeResultadosBulk()" style="padding:7px 14px;font-size:13px;font-weight:500;background:white;color:#e24b4a;border:1px solid #fcc;border-radius:8px;cursor:pointer;">🗑 Eliminar</button>
         <button onclick="reenviarDesdeResultados()" style="padding:7px 16px;font-size:13px;font-weight:500;background:#25D366;color:white;border:none;border-radius:8px;cursor:pointer;">📤 Enviar seleccionados</button>
       </div>
-    </div>
-    ${tableHeaderHTML}
-    ${gruposHTML}
+    </div>`;
+
+  const resumen = soloRevision ? '' : `
     <div style="margin-top:16px;padding:14px;background:white;border:1px solid #e5e5e3;border-radius:12px;">
       <div style="font-size:11px;font-weight:600;letter-spacing:0.07em;color:#888;text-transform:uppercase;margin-bottom:10px;">Resumen de estudios</div>
       <div>${resumenHTML||'Sin datos'}</div>
     </div>`;
+
+  document.getElementById(areaId).innerHTML = encabezado + gruposHTML + resumen;
+}
+
+/** Saca al paciente de la lista de revisión, conservando la nota por si vuelve. */
+async function quitarDeRevision(id) {
+  const { error } = await sb.from('pacientes').update({ para_revision: false }).eq('id', id);
+  if (error) { showToast('No se pudo actualizar ✗'); return; }
+  showToast('Quitado de la lista de revisión ✓');
+  buscar({ revision: true });
 }
 
 async function toggleInformeResultado(id, el) {
@@ -3216,7 +3308,40 @@ function abrirModalInforme(id, i) {
   document.getElementById('modalInformeFields').innerHTML = html;
   document.getElementById('informeDiagnostico').value = '';
   document.getElementById('informeObservaciones').value = '';
+  cargarEstadoRevision('informe', _informeIdx >= 0 ? pacientesHoy[_informeIdx] : _itPaciente);
   document.getElementById('modalInforme').classList.add('show');
+}
+
+// ── Marca de revisión ────────────────────────────────────────────────────────
+
+function toggleNotaRevision(prefijo) {
+  const chk = document.getElementById(prefijo + 'ParaRevision');
+  const nota = document.getElementById(prefijo + 'NotaRevision');
+  if (!chk || !nota) return;
+  nota.style.display = chk.checked ? 'block' : 'none';
+  if (chk.checked) nota.focus();
+}
+
+/** Refleja en el formulario si el paciente ya venía marcado. */
+function cargarEstadoRevision(prefijo, paciente) {
+  const chk = document.getElementById(prefijo + 'ParaRevision');
+  const nota = document.getElementById(prefijo + 'NotaRevision');
+  if (!chk || !nota) return;
+  chk.checked = !!(paciente && paciente.para_revision);
+  nota.value = (paciente && paciente.nota_revision) || '';
+  nota.style.display = chk.checked ? 'block' : 'none';
+}
+
+/** Copia la marca entre la pestaña Informe y el modal, que comparten estado. */
+function copiarRevision(desde, hacia) {
+  const chkA = document.getElementById(desde + 'ParaRevision');
+  const chkB = document.getElementById(hacia + 'ParaRevision');
+  const notaA = document.getElementById(desde + 'NotaRevision');
+  const notaB = document.getElementById(hacia + 'NotaRevision');
+  if (!chkA || !chkB || !notaA || !notaB) return;
+  chkB.checked = chkA.checked;
+  notaB.value = notaA.value;
+  notaB.style.display = chkB.checked ? 'block' : 'none';
 }
 
 function setOpcionInforme(id, btn) {
@@ -3304,8 +3429,22 @@ async function generarYSubirInforme() {
       if (el) informeDataToSave.campos[campo.id] = el.value.trim();
     });
 
-    const { error } = await sb.from('pacientes').update({ informe_realizado: true, informe_data: informeDataToSave }).eq('id', _informeId);
+    // La marca de revision es interna: se guarda en el paciente, no en el PDF.
+    const chkRev = document.getElementById('informeParaRevision');
+    const notaRev = document.getElementById('informeNotaRevision');
+    const paraRevision = chkRev ? chkRev.checked : false;
+
+    const { error } = await sb.from('pacientes').update({
+      informe_realizado: true,
+      informe_data: informeDataToSave,
+      para_revision: paraRevision,
+      nota_revision: paraRevision && notaRev ? (notaRev.value.trim() || null) : null
+    }).eq('id', _informeId);
     if (!error) {
+      if (_informeIdx >= 0) {
+        pacientesHoy[_informeIdx].para_revision = paraRevision;
+        pacientesHoy[_informeIdx].nota_revision = paraRevision && notaRev ? notaRev.value.trim() : null;
+      }
       if (_informeIdx >= 0) pacientesHoy[_informeIdx].informe_realizado = true;
       if (_informeResultadoEl) {
         const val = _informeResultadoEl.querySelector('.res-card-informe-val');
@@ -4463,6 +4602,7 @@ async function abrirTabInforme(pacienteObj, fromTab) {
   const obsEl = document.getElementById('informeObservaciones');
   document.getElementById('itDiagnostico').value = diagEl ? diagEl.value : '';
   document.getElementById('itObservaciones').value = obsEl ? obsEl.value : '';
+  cargarEstadoRevision('it', pacienteObj);
 
   await _itCargarArchivos(pacienteObj.dni);
 }
@@ -4527,6 +4667,7 @@ async function guardarYSubirInformeTab() {
   const obsEl = document.getElementById('informeObservaciones');
   if (diagEl) diagEl.value = document.getElementById('itDiagnostico').value;
   if (obsEl) obsEl.value = document.getElementById('itObservaciones').value;
+  copiarRevision('it', 'informe');
   const btn = document.getElementById('itBtnGuardar');
   btn.disabled = true;
   btn.textContent = '⏳ Generando...';
@@ -4693,13 +4834,6 @@ let numeroSeleccionado = null;
 function inicialMsj(numero) {
   const d = numero.replace(/\D/g,'');
   return d ? d.slice(-2).toUpperCase() : '?';
-}
-
-// El contenido de los mensajes lo escribe el paciente: nunca va crudo al DOM.
-function escHtml(s) {
-  return String(s ?? '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 async function cargarConversaciones() {
