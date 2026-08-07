@@ -1285,8 +1285,9 @@
   [data-theme="dark"] .revision-check { color: #e0c063; }
   [data-theme="dark"] .revision-hint { color: #8d7a4e; }
 
-  /* Nota de revision dentro de la tarjeta del paciente */
-  .card-revision { margin-top: 8px; padding: 8px 11px; border-left: 3px solid #c9a227; background: #fdfaf3; border-radius: 0 8px 8px 0; font-size: 12.5px; color: #6b5518; line-height: 1.45; white-space: pre-wrap; }
+  /* Nota de revision: renglon propio abarcando todo el ancho de la tarjeta.
+     Sin grid-column cae dentro de la primera columna y el texto sale vertical. */
+  .card-revision { grid-column: 1 / -1; width: 100%; margin-top: 8px; padding: 9px 12px; border-left: 3px solid #c9a227; background: #fdfaf3; border-radius: 0 8px 8px 0; font-size: 12.5px; color: #6b5518; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
   .card-revision-vacia { font-style: italic; color: #b09a6a; }
   [data-theme="dark"] .card-revision { background: #2a2620; color: #d8c758; }
 
@@ -2863,12 +2864,6 @@ async function buscar(opts) {
       ${soloRevision ? `
       <div class="card-revision" onclick="event.stopPropagation()">
         ${p.nota_revision ? escHtml(p.nota_revision) : '<span class="card-revision-vacia">Sin nota</span>'}
-        <div style="margin-top:7px;">
-          <button onclick="event.stopPropagation();quitarDeRevision('${p.id}')"
-                  style="padding:4px 10px;font-size:11px;background:white;color:#8a6d1f;border:1px solid #d9c9a8;border-radius:6px;cursor:pointer;">
-            ✓ Ya lo revisé
-          </button>
-        </div>
       </div>` : ''}
     </div>`;
   }
@@ -2892,7 +2887,13 @@ async function buscar(opts) {
   // En revisión no van las acciones de envío masivo ni el resumen de estudios:
   // la lista es para consultar casos, no para operar sobre ellos.
   const encabezado = soloRevision
-    ? `<div style="margin-bottom:8px;font-size:13px;color:#888;">${data.length} paciente${data.length!==1?'s':''} para revisar</div>`
+    ? `<div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div style="font-size:13px;color:#888;">${data.length} paciente${data.length!==1?'s':''} para revisar · <label style="font-size:13px;color:#888;cursor:pointer;"><input type="checkbox" onclick="marcarTodosRevision(this)" style="margin-right:4px;accent-color:#c9a227;">Seleccionar todos</label></div>
+      <button onclick="sacarDeRevisionSeleccionados()"
+              style="padding:7px 16px;font-size:13px;font-weight:500;background:#c9a227;color:white;border:none;border-radius:8px;cursor:pointer;">
+        ✓ Sacar de la lista
+      </button>
+    </div>`
     : `<div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:13px;color:#888;">${data.length} resultado${data.length!==1?'s':''} · <label style="font-size:13px;color:#888;cursor:pointer;"><input type="checkbox" id="checkTodosResultados" onclick="toggleTodosResultados()" style="margin-right:4px;accent-color:#378add;">Seleccionar todos</label></div>
       <div style="display:flex;gap:8px;">
@@ -2910,11 +2911,21 @@ async function buscar(opts) {
   document.getElementById(areaId).innerHTML = encabezado + gruposHTML + resumen;
 }
 
-/** Saca al paciente de la lista de revisión, conservando la nota por si vuelve. */
-async function quitarDeRevision(id) {
-  const { error } = await sb.from('pacientes').update({ para_revision: false }).eq('id', id);
-  if (error) { showToast('No se pudo actualizar ✗'); return; }
-  showToast('Quitado de la lista de revisión ✓');
+function marcarTodosRevision(el) {
+  document.querySelectorAll('#revisionResults .check-resultado').forEach(c => c.checked = el.checked);
+}
+
+/** Saca de la lista los tildados. La nota se conserva por si vuelve a marcarse. */
+async function sacarDeRevisionSeleccionados() {
+  const checks = [...document.querySelectorAll('#revisionResults .check-resultado:checked')];
+  if (checks.length === 0) { showToast('Seleccioná al menos un paciente'); return; }
+  const ids = checks.map(c => c.value);
+  const nombres = checks.map(c => c.closest('.res-card')?.dataset.nombre || '').filter(Boolean).join(', ');
+  if (!confirm(`¿Sacar de la lista de revisión a ${nombres}?\n\nEl paciente y sus estudios no se borran: solo deja de aparecer acá.`)) return;
+
+  const { error } = await sb.from('pacientes').update({ para_revision: false }).in('id', ids);
+  if (error) { showToast('No se pudo actualizar ✗'); console.error(error); return; }
+  showToast(`✓ ${ids.length} paciente${ids.length!==1?'s':''} fuera de la lista`);
   buscar({ revision: true });
 }
 
