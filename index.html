@@ -1299,7 +1299,17 @@
   /* Sidebar */
   .msj-sidebar { width: 300px; min-width: 300px; background: white; border-right: 1px solid #e5e5e3; display: flex; flex-direction: column; overflow: hidden; }
   .msj-sidebar-header { padding: 14px 16px; border-bottom: 1px solid #f0f0ee; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #888; display: flex; justify-content: space-between; align-items: center; }
+  .msj-buscador { padding: 8px 12px; border-bottom: 1px solid #f0f0ee; }
+  .msj-buscador input { width: 100%; padding: 7px 11px; font-size: 13px; border: 1px solid #e0e0e0; border-radius: 18px; background: #f8f8f8; outline: none; }
+  .msj-buscador input:focus { border-color: #378add; background: white; }
   .msj-lista { flex: 1; overflow-y: auto; }
+  .msj-conv-nombre { font-size: 13px; font-weight: 600; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .msj-conv-tel { font-size: 11px; color: #aaa; }
+  .msj-clip-btn { width: 38px; height: 38px; border-radius: 50%; background: none; border: none; cursor: pointer; color: #888; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .15s, color .15s; }
+  .msj-clip-btn:hover { background: #f0f0ee; color: #378add; }
+  .msj-clip-btn:disabled { color: #ddd; cursor: default; }
+  [data-theme="dark"] .msj-buscador input { background: #2c2c2e; border-color: #3a3a3c; color: #eee; }
+  [data-theme="dark"] .msj-conv-nombre { color: #eee; }
   .msj-conv-item { padding: 12px 16px; border-bottom: 1px solid #f5f5f3; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background .12s; }
   .msj-conv-item:hover { background: #f8f8f8; }
   .msj-conv-item.selected { background: #edf4ff; }
@@ -1908,6 +1918,9 @@
         <span>Conversaciones</span>
         <button onclick="cargarConversaciones()" title="Actualizar" style="background:none;border:none;cursor:pointer;color:#888;font-size:16px;">↻</button>
       </div>
+      <div class="msj-buscador">
+        <input type="search" id="msjBuscar" placeholder="Buscar por nombre o número..." oninput="filtrarConversaciones()">
+      </div>
       <div id="listaConversaciones" class="msj-lista"></div>
     </div>
     <!-- Panel chat -->
@@ -1921,6 +1934,10 @@
       </div>
       <div id="mensajesBody" class="msj-body"></div>
       <div class="msj-input-bar">
+        <input type="file" id="msjArchivo" accept="application/pdf,image/*" style="display:none;" onchange="enviarAdjunto(this)">
+        <button onclick="document.getElementById('msjArchivo').click()" class="msj-clip-btn" title="Adjuntar PDF o imagen">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
         <input type="text" id="mensajeManualInput" class="msj-input" placeholder="Escribí un mensaje..." onkeydown="if(event.key==='Enter')enviarMensajeManual()">
         <button onclick="enviarMensajeManual()" class="msj-send-btn">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -4841,34 +4858,89 @@ async function guardarYSubirInformeTab() {
 <script>
 // ── BANDEJA DE MENSAJES ──────────────────────────────────────────────────────
 let numeroSeleccionado = null;
+let _convLista = [];          // último mensaje por número, ya ordenado
+let _nombrePorLinea = {};     // últimos 8 dígitos del celular → nombre del paciente
+
+/** Los celulares se guardan en formatos distintos; los últimos 8 dígitos
+ *  identifican la línea igual que en el bot. */
+function linea8(numero) {
+  return String(numero || '').replace(/\D/g, '').slice(-8);
+}
+
+function nombreDeNumero(numero) {
+  return _nombrePorLinea[linea8(numero)] || null;
+}
 
 function inicialMsj(numero) {
-  const d = numero.replace(/\D/g,'');
-  return d ? d.slice(-2).toUpperCase() : '?';
+  const nom = nombreDeNumero(numero);
+  if (nom) {
+    const partes = nom.trim().split(/\s+/);
+    return ((partes[0]?.[0] || '') + (partes[1]?.[0] || '')).toUpperCase() || '?';
+  }
+  const d = String(numero).replace(/\D/g,'');
+  return d ? d.slice(-2) : '?';
+}
+
+/** Cruza los celulares de la ficha con los números de las conversaciones.
+ *  Ascendente por fecha: la visita más reciente pisa al nombre anterior. */
+async function cargarIndiceNombres() {
+  const { data } = await sb.from('pacientes')
+    .select('nombre_completo, celular, fecha')
+    .order('fecha', { ascending: true });
+  _nombrePorLinea = {};
+  for (const p of (data || [])) {
+    const k = linea8(p.celular);
+    if (k.length === 8 && p.nombre_completo) _nombrePorLinea[k] = p.nombre_completo;
+  }
 }
 
 async function cargarConversaciones() {
-  const { data, error } = await sb
-    .from('mensajes_conversaciones')
-    .select('numero, contenido, direccion, created_at')
-    .order('created_at', { ascending: false });
-
   const el = document.getElementById('listaConversaciones');
+  const [{ data, error }] = await Promise.all([
+    sb.from('mensajes_conversaciones')
+      .select('numero, contenido, direccion, created_at')
+      .order('created_at', { ascending: false }),
+    cargarIndiceNombres()
+  ]);
+
   if (error || !data) { el.innerHTML = '<div style="padding:16px;color:#aaa;font-size:13px;">Error al cargar</div>'; return; }
 
   const map = {};
   for (const m of data) { if (!map[m.numero]) map[m.numero] = m; }
-  const lista = Object.values(map).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  _convLista = Object.values(map).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  renderConversaciones();
+}
 
-  if (!lista.length) { el.innerHTML = '<div style="padding:20px;color:#bbb;font-size:13px;text-align:center;">Sin conversaciones aún</div>'; return; }
+function filtrarConversaciones() { renderConversaciones(); }
+
+function renderConversaciones() {
+  const el = document.getElementById('listaConversaciones');
+  const filtroEl = document.getElementById('msjBuscar');
+  const filtro = (filtroEl ? filtroEl.value : '').trim().toLowerCase();
+  const soloDigitos = filtro.replace(/\D/g, '');
+
+  const lista = !filtro ? _convLista : _convLista.filter(m => {
+    const nom = (nombreDeNumero(m.numero) || '').toLowerCase();
+    if (nom.includes(filtro)) return true;
+    return soloDigitos.length > 0 && String(m.numero).includes(soloDigitos);
+  });
+
+  if (!lista.length) {
+    el.innerHTML = `<div style="padding:20px;color:#bbb;font-size:13px;text-align:center;">${
+      _convLista.length ? 'Sin coincidencias' : 'Sin conversaciones aún'}</div>`;
+    return;
+  }
 
   el.innerHTML = lista.map(m => {
     const num = String(m.numero).replace(/\D/g,'');
+    const nom = nombreDeNumero(num);
     return `
     <div class="msj-conv-item ${m.numero===numeroSeleccionado?'selected':''}" onclick="seleccionarConversacion('${num}')">
       <div class="msj-conv-avatar">${escHtml(inicialMsj(num))}</div>
       <div class="msj-conv-info">
-        <div class="msj-conv-num">+${escHtml(num)}</div>
+        ${nom
+          ? `<div class="msj-conv-nombre">${escHtml(nom)}</div><div class="msj-conv-tel">+${escHtml(num)}</div>`
+          : `<div class="msj-conv-nombre">+${escHtml(num)}</div>`}
         <div class="msj-conv-preview">${m.direccion==='saliente'?'Bot: ':''}${escHtml(m.contenido.substring(0,45))}</div>
       </div>
       <div class="msj-conv-time">${new Date(m.created_at).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
@@ -4878,10 +4950,11 @@ async function cargarConversaciones() {
 
 async function seleccionarConversacion(numero) {
   numeroSeleccionado = numero;
-  document.getElementById('msjNumero').textContent = '+' + numero;
-  document.getElementById('msjSub').textContent = 'WhatsApp';
+  const nom = nombreDeNumero(numero);
+  document.getElementById('msjNumero').textContent = nom || ('+' + numero);
+  document.getElementById('msjSub').textContent = nom ? ('+' + numero) : 'WhatsApp';
   document.getElementById('msjAvatar').textContent = inicialMsj(numero);
-  cargarConversaciones();
+  renderConversaciones();
 
   const { data } = await sb
     .from('mensajes_conversaciones')
@@ -4926,6 +4999,59 @@ async function enviarMensajeManual() {
     if (r.ok) await seleccionarConversacion(numeroSeleccionado);
   } catch(e) { alert('Error al enviar: ' + e.message); }
   finally { if (btn) btn.disabled = false; }
+}
+
+// Vercel corta los pedidos por encima de ~4,5 MB y base64 infla el archivo un
+// tercio, así que el original tiene que quedar por debajo de este tope.
+const MAX_ADJUNTO_MB = 3;
+
+function leerBase64(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result).split(',')[1] || '');
+    fr.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    fr.readAsDataURL(file);
+  });
+}
+
+async function enviarAdjunto(input) {
+  const file = input.files && input.files[0];
+  input.value = '';   // permite volver a elegir el mismo archivo
+  if (!file) return;
+
+  if (!numeroSeleccionado) { showToast('Elegí una conversación primero'); return; }
+  if (file.size > MAX_ADJUNTO_MB * 1024 * 1024) {
+    showToast(`El archivo pesa ${(file.size/1048576).toFixed(1)} MB — el máximo es ${MAX_ADJUNTO_MB} MB ✗`);
+    return;
+  }
+
+  const btn = document.querySelector('.msj-clip-btn');
+  if (btn) btn.disabled = true;
+  showToast(`Enviando ${file.name}...`);
+  try {
+    const archivoBase64 = await leerBase64(file);
+    const r = await fetch('/api/enviar-documento', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        numero: numeroSeleccionado,
+        filename: file.name,
+        mimeType: file.type || 'application/pdf',
+        archivoBase64
+      })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok && data.ok) {
+      showToast('Archivo enviado ✓');
+      await seleccionarConversacion(numeroSeleccionado);
+    } else {
+      showToast('No se pudo enviar el archivo ✗');
+      console.error('[adjunto]', data);
+    }
+  } catch(e) {
+    showToast('Error al enviar el archivo ✗');
+    console.error('[adjunto]', e);
+  } finally { if (btn) btn.disabled = false; }
 }
 </script>
 
