@@ -4885,7 +4885,9 @@ async function guardarYSubirInformeTab() {
       <button class="dbtn-del" onclick="detalleEliminar()">🗑</button>
       <button class="dbtn-wa" id="detalleBtnWA" onclick="abrirArchivosDrive(_detallePaciente)" title="Elegir qué archivos mandarle">📤 Enviar archivos…</button>
     </div>
-    <button class="dbtn-informe" id="detalleBtnInforme" onclick="detalleEnviarInforme()">📋 Enviar informe</button>
+    <!-- "Enviar informe" se retiró: el informe se manda desde "Enviar archivos…",
+         donde se ve cuál es y de qué fecha antes de mandarlo. La función
+         detalleEnviarInforme() queda en el código por si hiciera falta volver. -->
     <button class="dbtn-informe" id="detalleBtnEmail" onclick="detalleEnviarEmail()" style="display:none;background:#6c5ce7;">📧 Enviar estudios por email</button>
     <button class="dbtn-marcar" id="detalleBtnMarcar" onclick="detalleMarcarEnviado()">✓ Marcar estudios como enviado</button>
   </div>
