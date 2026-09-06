@@ -1239,6 +1239,23 @@
   .pcard-circle.informe-click { cursor: pointer; }
   .pcard-circle.informe-click:hover { border-color: #999; }
 
+  /* El informe se abría clickeando un círculo de 20 px sin nada que indicara
+     que era un botón. Ahora el círculo y su etiqueta son un solo blanco. */
+  .pcard-informe-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 5px 14px; border: 1px solid #e0e0e0; border-radius: 10px;
+    background: white; cursor: pointer; font: inherit;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .pcard-informe-btn:hover {
+    border-color: #378add; background: #f2f8ff;
+    box-shadow: 0 1px 4px rgba(55,138,221,.15);
+  }
+  .pcard-informe-btn:active { transform: translateY(1px); }
+  .pcard-informe-btn .pcard-status-lbl { white-space: nowrap; }
+  [data-theme="dark"] .pcard-informe-btn { background: #1c1c1e; border-color: #3a3a3c; }
+  [data-theme="dark"] .pcard-informe-btn:hover { background: #1a2840; border-color: #5aabff; }
+
   .pcard-actions { display: flex; flex-direction: column; align-items: center; gap: 4px; }
   .pcard-btn-ojo {
     width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e5e3;
@@ -1935,7 +1952,10 @@
       <div id="mensajesBody" class="msj-body"></div>
       <div class="msj-input-bar">
         <input type="file" id="msjArchivo" accept="application/pdf,image/*" style="display:none;" onchange="enviarAdjunto(this)">
-        <button onclick="document.getElementById('msjArchivo').click()" class="msj-clip-btn" title="Adjuntar PDF o imagen">
+        <button onclick="abrirArchivosDrive()" class="msj-clip-btn" title="Enviar un estudio guardado en Drive (sin límite de tamaño)">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </button>
+        <button onclick="document.getElementById('msjArchivo').click()" class="msj-clip-btn" title="Adjuntar un archivo de esta computadora (hasta 3 MB)">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
         </button>
         <input type="text" id="mensajeManualInput" class="msj-input" placeholder="Escribí un mensaje..." onkeydown="if(event.key==='Enter')enviarMensajeManual()">
@@ -1961,6 +1981,17 @@
 </div>
 
 
+
+<div class="modal-overlay" id="modalArchivosDrive">
+  <div class="modal-box" style="max-width:520px;">
+    <button class="modal-close-btn" onclick="cerrarArchivosDrive()">×</button>
+    <div class="modal-header">
+      <div class="modal-title">📄 Enviar un estudio guardado</div>
+      <div class="modal-sub" id="archivosDriveSub"></div>
+    </div>
+    <div id="archivosDriveLista" style="max-height:340px;overflow-y:auto;margin-top:14px;"></div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="modalReasignar">
   <div class="modal-box" style="max-width:360px;">
@@ -2607,10 +2638,11 @@ function renderLista() {
           <span class="pcard-circle ${p.enviado?'green':''}">✓</span>
           <span class="pcard-status-lbl">Estudios</span>
         </div>
-        <div class="pcard-status-item">
-          <span class="pcard-circle informe-click ${p.informe_enviado?'green':p.informe_realizado?'done':''}" onclick="event.stopPropagation();toggleInforme('${p.id}',${i})" title="Marcar/desmarcar informe">✓</span>
+        <button class="pcard-informe-btn" onclick="event.stopPropagation();toggleInforme('${p.id}',${i})"
+                title="${p.informe_realizado ? 'Desmarcar el informe' : 'Hacer el informe de este paciente'}">
+          <span class="pcard-circle informe-click ${p.informe_enviado?'green':p.informe_realizado?'done':''}">✓</span>
           <span class="pcard-status-lbl">Informe</span>
-        </div>
+        </button>
       </div>
       <!-- Col 5: Acciones -->
       <div class="pcard-actions">
@@ -2863,10 +2895,12 @@ async function buscar(opts) {
           <span class="pcard-circle ${enviado?'green':''}">✓</span>
           <span class="pcard-status-lbl">Estudios</span>
         </div>
-        <div class="pcard-status-item">
-          <span class="pcard-circle ${informeEnviado?'green':informeHecho?'done':''}" onclick="event.stopPropagation(); toggleInformeResultado('${p.id}', this)" title="Marcar/desmarcar informe">✓</span>
+        <button class="pcard-informe-btn"
+                onclick="event.stopPropagation(); toggleInformeResultado('${p.id}', this.querySelector('.pcard-circle'))"
+                title="${informeHecho ? 'Desmarcar el informe' : 'Hacer el informe de este paciente'}">
+          <span class="pcard-circle ${informeEnviado?'green':informeHecho?'done':''}">✓</span>
           <span class="pcard-status-lbl">Informe</span>
-        </div>
+        </button>
       </div>
       <!-- Col 5: Acciones -->
       <div class="pcard-actions">
@@ -4860,6 +4894,7 @@ async function guardarYSubirInformeTab() {
 let numeroSeleccionado = null;
 let _convLista = [];          // último mensaje por número, ya ordenado
 let _nombrePorLinea = {};     // últimos 8 dígitos del celular → nombre del paciente
+let _dniPorLinea = {};        // últimos 8 dígitos del celular → DNI
 
 /** Los celulares se guardan en formatos distintos; los últimos 8 dígitos
  *  identifican la línea igual que en el bot. */
@@ -4885,12 +4920,15 @@ function inicialMsj(numero) {
  *  Ascendente por fecha: la visita más reciente pisa al nombre anterior. */
 async function cargarIndiceNombres() {
   const { data } = await sb.from('pacientes')
-    .select('nombre_completo, celular, fecha')
+    .select('nombre_completo, celular, dni, fecha')
     .order('fecha', { ascending: true });
   _nombrePorLinea = {};
+  _dniPorLinea = {};
   for (const p of (data || [])) {
     const k = linea8(p.celular);
-    if (k.length === 8 && p.nombre_completo) _nombrePorLinea[k] = p.nombre_completo;
+    if (k.length !== 8) continue;
+    if (p.nombre_completo) _nombrePorLinea[k] = p.nombre_completo;
+    if (p.dni) _dniPorLinea[k] = String(p.dni).replace(/\D/g, '');
   }
 }
 
@@ -4999,6 +5037,94 @@ async function enviarMensajeManual() {
     if (r.ok) await seleccionarConversacion(numeroSeleccionado);
   } catch(e) { alert('Error al enviar: ' + e.message); }
   finally { if (btn) btn.disabled = false; }
+}
+
+// ── Enviar un archivo que ya está en Drive ───────────────────────────────────
+// El navegador manda solo el identificador y el bot lo descarga y lo envía,
+// así que este camino no tiene el tope de tamaño del adjunto manual.
+
+async function abrirArchivosDrive() {
+  if (!numeroSeleccionado) { showToast('Elegí una conversación primero'); return; }
+
+  const dni = _dniPorLinea[linea8(numeroSeleccionado)];
+  if (!dni) {
+    showToast('No encontré la ficha de este número, no puedo buscar sus estudios');
+    return;
+  }
+
+  const nom = nombreDeNumero(numeroSeleccionado) || ('+' + numeroSeleccionado);
+  document.getElementById('archivosDriveSub').textContent = `${nom} · DNI ${dni}`;
+  document.getElementById('archivosDriveLista').innerHTML =
+    '<div class="loading"><div class="spinner"></div><br>Buscando archivos...</div>';
+  document.getElementById('modalArchivosDrive').classList.add('show');
+
+  try {
+    const r = await fetch('/api/buscar-archivos?dni=' + encodeURIComponent(dni), { headers: await authHeaders() });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'Error al buscar');
+
+    const archivos = [...(data.informes || []), ...(data.estudios || [])];
+    if (!archivos.length) {
+      document.getElementById('archivosDriveLista').innerHTML =
+        '<div style="padding:20px;color:#bbb;font-size:13px;text-align:center;">Este paciente no tiene archivos cargados.</div>';
+      return;
+    }
+
+    const informeIds = new Set((data.informes || []).map(f => f.id));
+    document.getElementById('archivosDriveLista').innerHTML = archivos.map(f => {
+      const mb = f.size ? (Number(f.size) / 1048576).toFixed(1) + ' MB' : '';
+      const fecha = f.createdTime ? new Date(f.createdTime).toLocaleDateString('es-AR') : '';
+      return `
+      <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-bottom:1px solid #f0f0ee;">
+        <span style="font-size:20px;">${informeIds.has(f.id) ? '📋' : '📄'}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;color:#1a1a1a;word-break:break-all;">${escHtml(f.name)}</div>
+          <div style="font-size:11px;color:#aaa;">${[fecha, mb].filter(Boolean).join(' · ')}</div>
+        </div>
+        <button onclick="enviarDesdeDrive('${f.id}', this)"
+                style="padding:6px 14px;font-size:12px;font-weight:600;background:#25D366;color:white;border:none;border-radius:7px;cursor:pointer;flex-shrink:0;">
+          Enviar
+        </button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('archivosDriveLista').innerHTML =
+      `<div style="padding:20px;color:#e24b4a;font-size:13px;">No se pudieron cargar los archivos: ${escHtml(e.message)}</div>`;
+  }
+}
+
+function cerrarArchivosDrive() {
+  document.getElementById('modalArchivosDrive').classList.remove('show');
+}
+
+async function enviarDesdeDrive(fileId, btn) {
+  if (!numeroSeleccionado) return;
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+  try {
+    const r = await fetch('/api/enviar-desde-drive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+      body: JSON.stringify({ numero: numeroSeleccionado, fileId })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok && data.ok) {
+      btn.textContent = '✓ Enviado';
+      btn.style.background = '#999';
+      await seleccionarConversacion(numeroSeleccionado);
+    } else {
+      showToast('No se pudo enviar ✗');
+      console.error('[drive→wa]', data);
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+    }
+  } catch(e) {
+    showToast('Error al enviar ✗');
+    console.error('[drive→wa]', e);
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
 }
 
 // Vercel corta los pedidos por encima de ~4,5 MB y base64 infla el archivo un
