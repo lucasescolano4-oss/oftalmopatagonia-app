@@ -4038,6 +4038,7 @@ function actualizarHintEnvio() {
 
 // ── DETALLE SIDEBAR ──────────────────────────────────────────────────────────
 let _detalleId = null;
+let _detallePaciente = null;   // {dni, numero, nombre} del paciente abierto
 
 function renderInformeResumen(informeData, estudios) {
   if (!informeData || !informeData.campos) return '<span style="color:#aaa;font-size:12px;">Sin datos guardados</span>';
@@ -4074,6 +4075,7 @@ function renderInformeResumen(informeData, estudios) {
 async function abrirDetalle(cardEl) {
   const d = cardEl.dataset;
   _detalleId = d.id;
+  _detallePaciente = { dni: d.dni, numero: (d.celular || '').replace(/\D/g, ''), nombre: d.nombre };
   const estudios = (d.estudios || '').split('|').filter(Boolean);
   const fechaStr = d.fecha ? new Date(d.fecha + 'T12:00:00').toLocaleDateString('es-AR') : '—';
   const informeHecho = d.informe === '1';
@@ -4881,7 +4883,7 @@ async function guardarYSubirInformeTab() {
     <div class="detalle-footer-row">
       <button class="dbtn-edit" onclick="detalleEditar()">✏️ Editar</button>
       <button class="dbtn-del" onclick="detalleEliminar()">🗑</button>
-      <button class="dbtn-wa" id="detalleBtnWA" onclick="detalleEnviarWA()">📤 Enviar estudios</button>
+      <button class="dbtn-wa" id="detalleBtnWA" onclick="abrirArchivosDrive(_detallePaciente)" title="Elegir qué archivos mandarle">📤 Enviar archivos…</button>
     </div>
     <button class="dbtn-informe" id="detalleBtnInforme" onclick="detalleEnviarInforme()">📋 Enviar informe</button>
     <button class="dbtn-informe" id="detalleBtnEmail" onclick="detalleEnviarEmail()" style="display:none;background:#6c5ce7;">📧 Enviar estudios por email</button>
@@ -5043,16 +5045,28 @@ async function enviarMensajeManual() {
 // El navegador manda solo el identificador y el bot lo descarga y lo envía,
 // así que este camino no tiene el tope de tamaño del adjunto manual.
 
-async function abrirArchivosDrive() {
-  if (!numeroSeleccionado) { showToast('Elegí una conversación primero'); return; }
+// Destinatario del modal de archivos. Se setea al abrirlo porque el modal se
+// usa desde dos lados: la bandeja de mensajes y la ficha del paciente.
+let _destinoArchivos = null;
 
-  const dni = _dniPorLinea[linea8(numeroSeleccionado)];
+/**
+ * Abre el selector de archivos del paciente.
+ * Sin argumentos usa la conversación abierta; desde la ficha se le pasan
+ * los datos del paciente directamente.
+ */
+async function abrirArchivosDrive(opts) {
+  const numero = (opts && opts.numero) || numeroSeleccionado;
+  if (!numero) { showToast('Elegí una conversación primero'); return; }
+
+  const numeroLimpio = String(numero).replace(/\D/g, '');
+  const dni = (opts && opts.dni) || _dniPorLinea[linea8(numeroLimpio)];
   if (!dni) {
     showToast('No encontré la ficha de este número, no puedo buscar sus estudios');
     return;
   }
 
-  const nom = nombreDeNumero(numeroSeleccionado) || ('+' + numeroSeleccionado);
+  const nom = (opts && opts.nombre) || nombreDeNumero(numeroLimpio) || ('+' + numeroLimpio);
+  _destinoArchivos = { numero: numeroLimpio, nombre: nom };
   document.getElementById('archivosDriveSub').textContent = `${nom} · DNI ${dni}`;
   document.getElementById('archivosDriveLista').innerHTML =
     '<div class="loading"><div class="spinner"></div><br>Buscando archivos...</div>';
@@ -5098,7 +5112,8 @@ function cerrarArchivosDrive() {
 }
 
 async function enviarDesdeDrive(fileId, btn) {
-  if (!numeroSeleccionado) return;
+  if (!_destinoArchivos) return;
+  const destino = _destinoArchivos.numero;
   const textoOriginal = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Enviando...';
@@ -5106,13 +5121,14 @@ async function enviarDesdeDrive(fileId, btn) {
     const r = await fetch('/api/enviar-desde-drive', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-      body: JSON.stringify({ numero: numeroSeleccionado, fileId })
+      body: JSON.stringify({ numero: destino, fileId })
     });
     const data = await r.json().catch(() => ({}));
     if (r.ok && data.ok) {
       btn.textContent = '✓ Enviado';
       btn.style.background = '#999';
-      await seleccionarConversacion(numeroSeleccionado);
+      // Si el modal se abrió desde esta misma conversación, refrescar el chat.
+      if (numeroSeleccionado === destino) await seleccionarConversacion(destino);
     } else {
       showToast('No se pudo enviar ✗');
       console.error('[drive→wa]', data);
