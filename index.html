@@ -5123,12 +5123,20 @@ async function enviarDesdeDrive(fileId, btn) {
     const r = await fetch('/api/enviar-desde-drive', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-      body: JSON.stringify({ numero: destino, fileId })
+      body: JSON.stringify({ numero: destino, fileId, nombrePaciente: _destinoArchivos.nombre })
     });
     const data = await r.json().catch(() => ({}));
     if (r.ok && data.ok) {
-      btn.textContent = '✓ Enviado';
-      btn.style.background = '#999';
+      if (data.enEspera) {
+        // El paciente no escribió en las últimas 24 h: WhatsApp no deja mandarle
+        // el archivo hasta que conteste. Ya se le pidió por plantilla.
+        btn.textContent = '⏳ En espera';
+        btn.style.background = '#c9a227';
+        showToast('Le pedimos que confirme: el archivo sale apenas responda');
+      } else {
+        btn.textContent = '✓ Enviado';
+        btn.style.background = '#999';
+      }
       // Si el modal se abrió desde esta misma conversación, refrescar el chat.
       if (numeroSeleccionado === destino) await seleccionarConversacion(destino);
     } else {
