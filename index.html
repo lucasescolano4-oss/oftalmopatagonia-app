@@ -306,6 +306,8 @@
   .dbtn-wa { flex:1; padding:10px; font-size:13px; font-weight:600; background:#25D366; color:white; border:none; border-radius:8px; cursor:pointer; text-align:center; }
   .dbtn-wa:hover { opacity:0.88; }
   .dbtn-informe { width:100%; padding:10px; font-size:13px; font-weight:600; background:#185fa5; color:white; border:none; border-radius:8px; cursor:pointer; text-align:center; }
+  .dbtn-cirugia { width:100%; padding:10px; font-size:13px; font-weight:600; background:#0f7b6c; color:white; border:none; border-radius:8px; cursor:pointer; text-align:center; transition:background .15s; }
+  .dbtn-cirugia:hover { background:#0c6357; }
   .dbtn-informe:hover { opacity:0.88; }
   .dbtn-informe:disabled { opacity:0.45; cursor:not-allowed; }
   .dbtn-marcar { width:100%; padding:8px; font-size:12px; font-weight:500; background:white; color:#888; border:1px solid #ddd; border-radius:8px; cursor:pointer; text-align:center; }
@@ -1293,6 +1295,11 @@
   /* ── PESTAÑA INFORME SPLIT LAYOUT ── */
   #view-informe { display: none; }
   /* Marcar caso para revisar despues — no forma parte del informe del paciente */
+  /* Aviso de paciente ya cargado al tipear el DNI en una cirugía */
+  .cir-hint { margin-top: 6px; padding: 7px 10px; border-radius: 8px; font-size: 12px; line-height: 1.4;
+              background: #eefaf1; border: 1px solid #c5e8d1; color: #1a7a45; }
+  [data-theme="dark"] .cir-hint { background: #12301f; border-color: #1f5233; color: #4dd88a; }
+
   .revision-box { margin-top: 14px; padding: 12px 14px; border: 1px dashed #d9c9a8; border-radius: 10px; background: #fdfaf3; }
   .revision-check { display: flex; align-items: center; gap: 9px; cursor: pointer; font-size: 13.5px; font-weight: 600; color: #8a6d1f; }
   .revision-check input { width: 17px; height: 17px; cursor: pointer; accent-color: #c9a227; margin: 0; }
@@ -1761,7 +1768,8 @@
       </div>
       <div class="form-group">
         <label class="form-label">DNI</label>
-        <input type="text" id="cir-dni" placeholder="12345678" maxlength="8">
+        <input type="text" id="cir-dni" placeholder="12345678" maxlength="8" oninput="cirBuscarPaciente()">
+        <div id="cir-hint-paciente" class="cir-hint" style="display:none;"></div>
       </div>
       <div class="form-group">
         <label class="form-label">Celular</label>
@@ -3789,6 +3797,88 @@ function actualizarPrefijoC() {
   document.getElementById('cir-prefijo').textContent = '+' + val;
 }
 
+// ── Reutilizar datos del paciente en el alta de cirugía ─────────────────────
+// Retipear nombre, celular y obra social es donde se cuelan los errores, y un
+// celular mal copiado significa que los estudios no llegan. Si el DNI ya está
+// en el sistema, los datos se traen de ahí.
+
+let _cirBuscarTimer = null;
+
+/** Separa un celular guardado ("5492945548180") en prefijo de país y número. */
+function separarCelular(celular) {
+  const d = String(celular || '').replace(/\D/g, '');
+  const prefijos = [...document.getElementById('cir-pais').options]
+    .map(o => o.value)
+    .sort((a, b) => b.length - a.length);   // el más largo primero: 549 antes que 1
+  for (const p of prefijos) {
+    if (d.startsWith(p)) return { pais: p, tel: d.slice(p.length) };
+  }
+  return { pais: '549', tel: d };
+}
+
+function cirBuscarPaciente() {
+  clearTimeout(_cirBuscarTimer);
+  _cirBuscarTimer = setTimeout(cirBuscarPacienteAhora, 400);
+}
+
+async function cirBuscarPacienteAhora() {
+  const hint = document.getElementById('cir-hint-paciente');
+  const dni = document.getElementById('cir-dni').value.replace(/\D/g, '');
+  if (dni.length < 7) { hint.style.display = 'none'; return; }
+
+  const { data } = await sb.from('pacientes')
+    .select('nombre_completo, celular, obra_social, fecha')
+    .eq('dni', dni)
+    .order('fecha', { ascending: false })
+    .limit(1);
+
+  if (!data || !data.length) { hint.style.display = 'none'; return; }
+
+  const p = data[0];
+  cirCargarDatosPaciente({
+    nombre: p.nombre_completo, celular: p.celular, obra: p.obra_social
+  });
+
+  const fechaTxt = p.fecha ? new Date(p.fecha + 'T12:00:00').toLocaleDateString('es-AR') : '';
+  hint.innerHTML = `✓ <strong>${escHtml(p.nombre_completo || '')}</strong> ya está en el sistema` +
+                   (fechaTxt ? ` · última visita ${fechaTxt}` : '') +
+                   `<br><span style="opacity:.75;">Se completaron sus datos. Solo falta la fecha de cirugía.</span>`;
+  hint.style.display = 'block';
+}
+
+/** Vuelca los datos de un paciente en el formulario de cirugía. */
+function cirCargarDatosPaciente({ nombre, celular, obra, dni }) {
+  if (dni !== undefined) document.getElementById('cir-dni').value = dni;
+  if (nombre) document.getElementById('cir-nombre').value = nombre;
+  if (obra) document.getElementById('cir-obra').value = obra;
+  if (celular) {
+    const { pais, tel } = separarCelular(celular);
+    document.getElementById('cir-pais').value = pais;
+    actualizarPrefijoC();
+    document.getElementById('cir-tel').value = tel;
+  }
+}
+
+/** Pasa el paciente abierto en la ficha al alta de cirugía. */
+function mandarACirugia() {
+  if (!_detallePaciente) return;
+  const { dni, numero, nombre, obra } = _detallePaciente;
+
+  cerrarDetalle();
+  switchTab('cirugia');
+  cirCargarDatosPaciente({ dni, nombre, celular: numero, obra });
+
+  const hint = document.getElementById('cir-hint-paciente');
+  hint.innerHTML = `✓ <strong>${escHtml(nombre || '')}</strong> viene de su ficha` +
+                   `<br><span style="opacity:.75;">Completá fecha, horario y tipo de cirugía, y tocá Agregar.</span>`;
+  hint.style.display = 'block';
+
+  const fecha = document.getElementById('cir-fecha');
+  fecha.focus();
+  fecha.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  showToast(`${nombre} pasó a cirugía — falta la fecha`);
+}
+
 async function guardarCirugia() {
   const nombre = document.getElementById('cir-nombre').value.trim();
   const dni    = document.getElementById('cir-dni').value.trim();
@@ -3812,6 +3902,7 @@ async function guardarCirugia() {
   // Limpiar form
   ['cir-nombre','cir-dni','cir-tel','cir-obra','cir-tipo','cir-horario'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('cir-fecha').value = '';
+  document.getElementById('cir-hint-paciente').style.display = 'none';
   showToast('✓ Cirugía agregada');
   cargarCirugias();
 }
@@ -3941,6 +4032,7 @@ function cancelarEdicionCir() {
   _cirEditandoId = null;
   ['cir-nombre','cir-dni','cir-tel','cir-obra','cir-tipo','cir-horario'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('cir-fecha').value = '';
+  document.getElementById('cir-hint-paciente').style.display = 'none';
   const btn = document.querySelector('#view-cirugia .btn-agregar');
   btn.textContent = '+ Agregar cirugía';
   btn.onclick = guardarCirugia;
@@ -4075,7 +4167,7 @@ function renderInformeResumen(informeData, estudios) {
 async function abrirDetalle(cardEl) {
   const d = cardEl.dataset;
   _detalleId = d.id;
-  _detallePaciente = { dni: d.dni, numero: (d.celular || '').replace(/\D/g, ''), nombre: d.nombre };
+  _detallePaciente = { dni: d.dni, numero: (d.celular || '').replace(/\D/g, ''), nombre: d.nombre, obra: d.obra_social || '' };
   const estudios = (d.estudios || '').split('|').filter(Boolean);
   const fechaStr = d.fecha ? new Date(d.fecha + 'T12:00:00').toLocaleDateString('es-AR') : '—';
   const informeHecho = d.informe === '1';
@@ -4888,6 +4980,9 @@ async function guardarYSubirInformeTab() {
     <!-- "Enviar informe" se retiró: el informe se manda desde "Enviar archivos…",
          donde se ve cuál es y de qué fecha antes de mandarlo. La función
          detalleEnviarInforme() queda en el código por si hiciera falta volver. -->
+    <button class="dbtn-cirugia" onclick="mandarACirugia()" title="Pasar este paciente a la lista de cirugías con sus datos">
+      🏥 Pasar a lista de cirugía
+    </button>
     <button class="dbtn-informe" id="detalleBtnEmail" onclick="detalleEnviarEmail()" style="display:none;background:#6c5ce7;">📧 Enviar estudios por email</button>
     <button class="dbtn-marcar" id="detalleBtnMarcar" onclick="detalleMarcarEnviado()">✓ Marcar estudios como enviado</button>
   </div>
