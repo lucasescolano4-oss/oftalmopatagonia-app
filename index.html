@@ -1318,6 +1318,48 @@
   .card-revision-vacia { font-style: italic; color: #b09a6a; }
   [data-theme="dark"] .card-revision { background: #2a2620; color: #d8c758; }
 
+  /* ── Gráficas ─────────────────────────────────────────────────────────── */
+  #view-graficas { display: none; }
+  #view-graficas.active { display: flex; flex: 1; overflow: hidden; width: 100%; }
+  .graf-wrap { flex: 1; overflow-y: auto; padding: 18px 22px 28px; width: 100%; }
+  .graf-topbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+  .graf-titulo { font-size: 17px; font-weight: 700; color: #1a1a1a; }
+  .graf-sub { font-size: 12.5px; color: #999; margin-top: 2px; }
+  #grafPeriodo { padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: white; cursor: pointer; }
+
+  .graf-tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .graf-tarjeta { background: white; border: 1px solid #e5e5e3; border-radius: 12px; padding: 14px 16px; }
+  .graf-tarjeta-num { font-size: 26px; font-weight: 700; color: #1a1a1a; line-height: 1.1; }
+  .graf-tarjeta-lbl { font-size: 11.5px; color: #999; margin-top: 3px; }
+  .graf-tarjeta-extra { font-size: 11px; color: #bbb; margin-top: 5px; }
+
+  .graf-paneles { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 14px; align-items: start; }
+  .graf-panel { background: white; border: 1px solid #e5e5e3; border-radius: 12px; padding: 16px 18px; }
+  .graf-panel-tit { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #999; margin-bottom: 14px; }
+
+  /* Barras horizontales: una fila por tipo de estudio. */
+  .graf-fila { display: grid; grid-template-columns: 96px 1fr 44px; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .graf-fila-lbl { font-size: 12.5px; color: #555; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .graf-fila-pista { background: #f2f2f0; border-radius: 5px; height: 18px; overflow: hidden; }
+  .graf-fila-barra { height: 100%; background: linear-gradient(90deg, #378add, #5aabff); border-radius: 5px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+  .graf-fila-num { font-size: 12.5px; font-weight: 600; color: #1a1a1a; }
+
+  /* Barras verticales: evolución en el tiempo. */
+  .graf-meses { display: flex; align-items: flex-end; gap: 5px; height: 160px; padding-top: 6px; }
+  .graf-mes { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; }
+  .graf-mes-barra { width: 100%; background: linear-gradient(180deg, #5aabff, #378add); border-radius: 4px 4px 0 0; min-height: 2px; transition: height .5s cubic-bezier(.4,0,.2,1); position: relative; }
+  .graf-mes-lbl { font-size: 10px; color: #aaa; white-space: nowrap; }
+  .graf-mes-num { font-size: 10.5px; font-weight: 600; color: #666; }
+  .graf-vacio { color: #bbb; font-size: 13px; padding: 20px 0; text-align: center; }
+
+  [data-theme="dark"] .graf-tarjeta,
+  [data-theme="dark"] .graf-panel { background: #1c1c1e; border-color: #2c2c2e; }
+  [data-theme="dark"] .graf-titulo,
+  [data-theme="dark"] .graf-tarjeta-num,
+  [data-theme="dark"] .graf-fila-num { color: #eee; }
+  [data-theme="dark"] .graf-fila-pista { background: #2c2c2e; }
+  [data-theme="dark"] #grafPeriodo { background: #2c2c2e; border-color: #3a3a3c; color: #eee; }
+
   #view-mensajes { display: none; }
   #view-mensajes.active { display: flex; flex: 1; overflow: hidden; width: 100%; height: 100%; }
 
@@ -1721,6 +1763,10 @@ input:focus, select:focus, textarea:focus {
     <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
     <span class="nav-label-text">Cirugía</span>
   </button>
+  <button class="nav-item" id="nav-graficas" onclick="switchTab('graficas')">
+    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <span class="nav-label-text">Gráficas</span>
+  </button>
   <button class="nav-item" id="nav-revision" onclick="switchTab('revision')">
     <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v1H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2V5a3 3 0 0 0-3-3z"/><path d="M9 13h6"/><path d="M9 17h4"/></svg>
     <span class="nav-label-text">Pacientes para revisión</span>
@@ -2058,6 +2104,32 @@ input:focus, select:focus, textarea:focus {
     </div>
   </div>
 </div>
+<!-- PESTAÑA GRÁFICAS -->
+<div class="view" id="view-graficas">
+  <div class="graf-wrap">
+    <div class="graf-topbar">
+      <div>
+        <div class="graf-titulo">Resumen de actividad</div>
+        <div class="graf-sub" id="grafSub">—</div>
+      </div>
+      <select id="grafPeriodo" onchange="cargarGraficas()"></select>
+    </div>
+
+    <div class="graf-tarjetas" id="grafTarjetas"></div>
+
+    <div class="graf-paneles">
+      <div class="graf-panel">
+        <div class="graf-panel-tit">Estudios realizados por tipo</div>
+        <div id="grafEstudios"></div>
+      </div>
+      <div class="graf-panel">
+        <div class="graf-panel-tit" id="grafMesesTit">Pacientes por mes</div>
+        <div id="grafMeses"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- PESTAÑA PACIENTES PARA REVISIÓN -->
 <div class="view" id="view-revision">
   <div class="search-view">
@@ -2389,11 +2461,11 @@ function toggleSidebar() {
 }
 
 function switchTab(tab) {
-  ['carga','cirugia','buscar','informe','mensajes','revision'].forEach(t => {
+  ['carga','cirugia','buscar','informe','mensajes','revision','graficas'].forEach(t => {
     const el = document.getElementById('nav-'+t);
     if (el) el.classList.toggle('active', t === tab);
   });
-  ['carga','cirugia','buscar','informe','mensajes','revision'].forEach(v => {
+  ['carga','cirugia','buscar','informe','mensajes','revision','graficas'].forEach(v => {
     const el = document.getElementById('view-' + v);
     if (el) el.classList.toggle('active', v === tab);
   });
@@ -2403,6 +2475,7 @@ function switchTab(tab) {
   if (tab==='cirugia') cargarCirugias();
   if (tab==='mensajes') cargarConversaciones();
   if (tab==='revision') buscar({ revision: true });
+  if (tab==='graficas') cargarGraficas();
 }
 
 function setSyncStatus(state) {
@@ -3113,6 +3186,114 @@ async function buscar(opts) {
     </div>`;
 
   document.getElementById(areaId).innerHTML = encabezado + gruposHTML + resumen;
+}
+
+// ── GRÁFICAS ────────────────────────────────────────────────────────────────
+// Todo se calcula con los datos que ya están en la base. No hay números
+// decorativos: si algo no se puede contar de verdad, no se muestra.
+
+const MESES_CORTOS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+function barrasHorizontales(pares) {
+  if (!pares.length) return '<div class="graf-vacio">Sin datos en este período</div>';
+  const max = Math.max(...pares.map(p => p[1]));
+  return pares.map(([lbl, n]) => `
+    <div class="graf-fila">
+      <div class="graf-fila-lbl" title="${escHtml(lbl)}">${escHtml(lbl)}</div>
+      <div class="graf-fila-pista"><div class="graf-fila-barra" style="width:${max ? (n/max*100) : 0}%"></div></div>
+      <div class="graf-fila-num">${n}</div>
+    </div>`).join('');
+}
+
+function barrasVerticales(pares) {
+  if (!pares.length) return '<div class="graf-vacio">Sin datos en este período</div>';
+  const max = Math.max(...pares.map(p => p[1]));
+  return '<div class="graf-meses">' + pares.map(([lbl, n]) => `
+    <div class="graf-mes" title="${escHtml(lbl)}: ${n}">
+      <div class="graf-mes-num">${n || ''}</div>
+      <div class="graf-mes-barra" style="height:${max ? Math.max(n/max*100, n ? 3 : 0) : 0}%"></div>
+      <div class="graf-mes-lbl">${escHtml(lbl)}</div>
+    </div>`).join('') + '</div>';
+}
+
+async function cargarGraficas() {
+  const sel = document.getElementById('grafPeriodo');
+
+  // La primera vez, armar el selector con los años que existen en la base.
+  if (!sel.options.length) {
+    const { data: fechas } = await sb.from('pacientes')
+      .select('fecha').not('fecha', 'is', null)
+      .order('fecha', { ascending: true }).limit(1);
+    const desde = fechas && fechas.length ? new Date(fechas[0].fecha).getFullYear() : new Date().getFullYear();
+    const hasta = new Date().getFullYear();
+    const opciones = [];
+    for (let a = hasta; a >= desde; a--) opciones.push(`<option value="${a}">${a}</option>`);
+    opciones.push('<option value="todo">Todos los años</option>');
+    sel.innerHTML = opciones.join('');
+  }
+
+  const periodo = sel.value || String(new Date().getFullYear());
+  const porAnio = periodo === 'todo';
+
+  let q = sb.from('pacientes').select('estudios, fecha, informe_realizado, enviado');
+  if (medicoActual) q = q.eq('medico', medicoActual);
+  if (!porAnio) q = q.gte('fecha', `${periodo}-01-01`).lte('fecha', `${periodo}-12-31`);
+
+  const { data, error } = await q;
+  if (error) { showToast('No se pudieron cargar las gráficas ✗'); console.error(error); return; }
+
+  const pacientes = data || [];
+
+  // Totales
+  const conInforme = pacientes.filter(p => p.informe_realizado).length;
+  const enviados   = pacientes.filter(p => p.enviado).length;
+  const totalEstudios = pacientes.reduce((n, p) => n + (p.estudios || []).length, 0);
+  const pct = (n) => pacientes.length ? Math.round(n / pacientes.length * 100) : 0;
+
+  document.getElementById('grafSub').textContent =
+    porAnio ? 'Todos los años registrados' : `Año ${periodo}`;
+
+  document.getElementById('grafTarjetas').innerHTML = `
+    <div class="graf-tarjeta"><div class="graf-tarjeta-num">${pacientes.length}</div>
+      <div class="graf-tarjeta-lbl">Pacientes atendidos</div></div>
+    <div class="graf-tarjeta"><div class="graf-tarjeta-num">${totalEstudios}</div>
+      <div class="graf-tarjeta-lbl">Estudios realizados</div>
+      <div class="graf-tarjeta-extra">${pacientes.length ? (totalEstudios/pacientes.length).toFixed(1) : 0} por paciente</div></div>
+    <div class="graf-tarjeta"><div class="graf-tarjeta-num">${conInforme}</div>
+      <div class="graf-tarjeta-lbl">Informes hechos</div>
+      <div class="graf-tarjeta-extra">${pct(conInforme)}% de los pacientes</div></div>
+    <div class="graf-tarjeta"><div class="graf-tarjeta-num">${enviados}</div>
+      <div class="graf-tarjeta-lbl">Estudios enviados</div>
+      <div class="graf-tarjeta-extra">${pct(enviados)}% de los pacientes</div></div>`;
+
+  // Estudios por tipo
+  const porTipo = {};
+  for (const p of pacientes) for (const e of (p.estudios || [])) {
+    const nombre = String(e).trim();
+    if (nombre) porTipo[nombre] = (porTipo[nombre] || 0) + 1;
+  }
+  document.getElementById('grafEstudios').innerHTML =
+    barrasHorizontales(Object.entries(porTipo).sort((a, b) => b[1] - a[1]));
+
+  // Evolución: por mes dentro de un año, por año si se ven todos
+  const conteo = {};
+  for (const p of pacientes) {
+    if (!p.fecha) continue;
+    const d = new Date(p.fecha + 'T12:00:00');
+    const clave = porAnio ? d.getFullYear() : d.getMonth();
+    conteo[clave] = (conteo[clave] || 0) + 1;
+  }
+
+  let serie;
+  if (porAnio) {
+    serie = Object.keys(conteo).map(Number).sort((a, b) => a - b)
+      .map(a => [String(a), conteo[a]]);
+    document.getElementById('grafMesesTit').textContent = 'Pacientes por año';
+  } else {
+    serie = MESES_CORTOS.map((m, i) => [m, conteo[i] || 0]);
+    document.getElementById('grafMesesTit').textContent = `Pacientes por mes · ${periodo}`;
+  }
+  document.getElementById('grafMeses').innerHTML = barrasVerticales(serie);
 }
 
 function marcarTodosRevision(el) {
