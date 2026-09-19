@@ -1086,7 +1086,10 @@
   .logo-icon { width: 28px !important; height: 28px !important; border-radius: 8px !important; }
 
   /* App body container with sidebar */
-  .app-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+  /* Menú en barra horizontal bajo el encabezado, en vez de columna lateral:
+     libera todo el ancho para el contenido, que es lo que necesita la vista
+     de informe con sus tres paneles. */
+  .app-body { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
   .content-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
 
   /* Hide old horizontal tabs */
@@ -1094,39 +1097,36 @@
 
   /* Sidebar navigation */
   .sidebar-nav {
-    width: 200px; min-width: 200px;
+    width: 100%;
     background: white;
-    border-right: 1px solid #e5e5e3;
-    display: flex; flex-direction: column;
-    padding: 10px 8px; gap: 3px;
-    transition: width 0.22s ease, min-width 0.22s ease;
-    overflow: hidden;
+    border-bottom: 1px solid #e5e5e3;
+    display: flex; flex-direction: row; align-items: center;
+    padding: 0 10px; gap: 2px;
+    overflow-x: auto; overflow-y: hidden;
     flex-shrink: 0;
     z-index: 10;
   }
-  .sidebar-nav.collapsed { width: 52px; min-width: 52px; }
-  .sidebar-collapse-btn {
-    display: flex; align-items: center; justify-content: flex-end;
-    padding: 6px 8px; border: none; background: none; cursor: pointer;
-    color: #bbb; font-size: 18px; border-radius: 6px;
-    margin-bottom: 4px; transition: color 0.15s, background 0.15s;
-    width: 100%;
-  }
-  .sidebar-collapse-btn:hover { color: #555; background: #f5f5f3; }
-  .sidebar-nav.collapsed .sidebar-collapse-btn { justify-content: center; }
+  .sidebar-nav::-webkit-scrollbar { height: 0; }
+  /* El botón de colapsar no tiene sentido en una barra horizontal. */
+  .sidebar-collapse-btn { display: none; }
   .nav-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; border-radius: 8px;
-    border: none; background: none; cursor: pointer;
-    color: #666; font-size: 13px; font-weight: 500;
-    transition: all 0.15s; text-align: left; width: 100%;
-    white-space: nowrap;
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 13px; border-radius: 0;
+    border: none; border-bottom: 2px solid transparent; background: none;
+    cursor: pointer; color: #666; font-size: 13px; font-weight: 500;
+    transition: color .15s, border-color .15s, background .15s;
+    text-align: left; width: auto; white-space: nowrap; flex-shrink: 0;
   }
-  .nav-item:hover { background: #f5f5f3; color: #1a1a1a; }
-  .nav-item.active { background: #e8f3ff; color: #185fa5; font-weight: 600; }
-  .nav-icon-svg { width: 18px; height: 18px; flex-shrink: 0; }
-  .nav-label-text { flex: 1; overflow: hidden; }
-  .sidebar-nav.collapsed .nav-label-text { display: none; }
+  .nav-item:hover { background: #f7f7f5; color: #1a1a1a; }
+  .nav-item.active { background: none; color: #185fa5; font-weight: 600; border-bottom-color: #185fa5; }
+  .nav-icon-svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .nav-label-text { overflow: hidden; }
+
+  /* En pantallas angostas quedan solo los iconos y la barra no se desborda. */
+  @media (max-width: 860px) {
+    .nav-label-text { display: none; }
+    .nav-item { padding: 9px 14px; }
+  }
 
   /* Pastel status badges */
   .badge-enviado {
@@ -1391,6 +1391,7 @@
     padding: 16px 20px;
     background: #fff;
   }
+  /* Centro: solo el visor, que es lo que se mira mientras se escribe. */
   .informe-tab-right {
     flex: 1;
     display: flex;
@@ -1399,6 +1400,27 @@
     background: #f8f9fb;
     min-width: 0;
   }
+
+  /* Tercera columna: los estudios del paciente agrupados por año, el más
+     reciente arriba, para comparar la evolución sin salir del informe. */
+  .informe-tab-archivos {
+    width: 280px; min-width: 240px; max-width: 340px;
+    flex-shrink: 0;
+    display: flex; flex-direction: column;
+    border-left: 1px solid #e5e7eb;
+    background: #fff;
+    overflow: hidden;
+  }
+  .it-anios { flex: 1; overflow-y: auto; padding: 6px 10px 14px; }
+  .it-anio-titulo {
+    position: sticky; top: 0; z-index: 1;
+    background: #fff; padding: 9px 4px 6px;
+    font-size: 12px; font-weight: 700; color: #185fa5;
+    border-bottom: 1px solid #eef2f7;
+  }
+  .it-anio-titulo .it-anio-count { float: right; font-weight: 500; color: #bbb; font-size: 11px; }
+  [data-theme="dark"] .informe-tab-archivos { background: #1c1c1e; border-color: #2c2c2e; }
+  [data-theme="dark"] .it-anio-titulo { background: #1c1c1e; color: #5aabff; border-color: #2c2c2e; }
   .informe-tab-header {
     display: flex;
     align-items: center;
@@ -1902,13 +1924,9 @@
         <button class="btn-pdf" id="itBtnGuardar" onclick="guardarYSubirInformeTab()" style="flex:1;">📄 Enviar informe</button>
       </div>
     </div>
-    <!-- Derecha: visor de archivos -->
+    <!-- Centro: visor del archivo elegido -->
     <div class="informe-tab-right">
-      <div class="informe-tab-right-header">Archivos del paciente</div>
-      <div class="informe-tab-files" id="itFilesList" style="height:160px;min-height:60px;max-height:50%;">
-        <div class="hist-loading" id="itFilesLoading">⏳ Buscando archivos...</div>
-      </div>
-      <div class="it-resize-handle" id="itResizeHandle" title="Arrastrar para redimensionar"></div>
+      <div class="informe-tab-right-header" id="itVisorTitulo">Vista previa</div>
       <div class="informe-tab-viewer" id="itViewerArea">
         <div class="hist-viewer-empty" id="itViewerEmpty">
           <div class="hist-viewer-empty-icon">📄</div>
@@ -1916,6 +1934,13 @@
           <div style="font-size:12px;color:#ccc;">Los PDFs e imágenes se muestran aquí</div>
         </div>
         <iframe id="itViewerFrame" src="about:blank"></iframe>
+      </div>
+    </div>
+    <!-- Derecha: estudios del paciente, agrupados por año -->
+    <div class="informe-tab-archivos">
+      <div class="informe-tab-right-header">Estudios del paciente</div>
+      <div class="it-anios" id="itFilesList">
+        <div class="hist-loading" id="itFilesLoading">⏳ Buscando archivos...</div>
       </div>
     </div>
   </div>
@@ -4776,28 +4801,78 @@ async function _itCargarArchivos(dni) {
       filesList.innerHTML = '<div style="font-size:12px;color:#e24b4a;padding:8px;">Error: ' + data.error + '</div>';
       return;
     }
-    const todos = [...(data.informes || []), ...(data.estudios || [])];
+    const informes = (data.informes || []).map(f => ({ ...f, esInforme: true }));
+    const todos = [...informes, ...(data.estudios || [])];
     if (todos.length === 0) {
       filesList.innerHTML = '<div style="font-size:12px;color:#aaa;padding:8px;">Sin archivos en Drive.</div>';
       return;
     }
-    filesList.innerHTML = todos.map(f => {
-      const nameEsc = (f.name||'').replace(/'/g,"\'");
-      const linkEsc = (f.webViewLink||'').replace(/'/g,"\'");
-      return '<div class="it-file-item" onclick="_itAbrirArchivo(this,\'' + f.id + '\',\'' + linkEsc + '\',\'' + nameEsc + '\')">' +
-        '<span class="it-file-icon">📄</span>' +
-        '<span class="it-file-name" title="' + (f.name||'') + '">' + (f.name||'') + '</span>' +
-        '<a class="it-file-open" href="' + (f.webViewLink||'#') + '" target="_blank" onclick="event.stopPropagation()">↗</a>' +
-        '</div>';
-    }).join('');
+    filesList.innerHTML = renderArchivosPorAnio(todos);
   } catch(e) {
     filesList.innerHTML = '<div style="font-size:12px;color:#e24b4a;padding:8px;">Error de conexión.</div>';
   }
 }
 
-function _itAbrirArchivo(el, fileId, viewLink, name) {
+// Los archivos se guardan por id: el onclick solo lleva el id y no hay que
+// escapar nombres con comillas o acentos dentro del atributo.
+let _itArchivos = {};
+
+/** Año del estudio. La fecha de Drive es la fuente fiable; el nombre, el respaldo. */
+function anioDeArchivo(f) {
+  if (f.createdTime) {
+    const y = new Date(f.createdTime).getFullYear();
+    if (y > 2000) return y;
+  }
+  const base = (f.name || '').replace(/\.[a-z0-9]+$/i, '');
+  let m = base.match(/_(20\d{2})\d{4}$/);          // ..._20260728
+  if (m) return Number(m[1]);
+  m = base.match(/_\d{1,2}_\d{1,2}_(20\d{2})$/);   // ..._04_08_2026
+  if (m) return Number(m[1]);
+  return null;
+}
+
+function renderArchivosPorAnio(archivos) {
+  _itArchivos = {};
+
+  const grupos = {};
+  for (const f of archivos) {
+    const a = anioDeArchivo(f) || 'Sin fecha';
+    (grupos[a] = grupos[a] || []).push(f);
+  }
+
+  const anios = Object.keys(grupos).sort((a, b) => {
+    if (a === 'Sin fecha') return 1;
+    if (b === 'Sin fecha') return -1;
+    return Number(b) - Number(a);   // el año más reciente arriba
+  });
+
+  return anios.map(anio => {
+    const items = grupos[anio].sort((x, y) =>
+      new Date(y.createdTime || 0) - new Date(x.createdTime || 0));
+
+    const filas = items.map(f => {
+      _itArchivos[f.id] = f;
+      const icono = f.esInforme ? '📋' : '📄';
+      return `<div class="it-file-item" onclick="_itAbrirArchivo(this,'${f.id}')" title="${escHtml(f.name || '')}">
+                <span class="it-file-icon">${icono}</span>
+                <span class="it-file-name">${escHtml(f.name || '')}</span>
+                <a class="it-file-open" href="${escHtml(f.webViewLink || '#')}" target="_blank"
+                   rel="noopener" onclick="event.stopPropagation()">↗</a>
+              </div>`;
+    }).join('');
+
+    return `<div class="it-anio-titulo">${anio}<span class="it-anio-count">${items.length}</span></div>${filas}`;
+  }).join('');
+}
+
+function _itAbrirArchivo(el, fileId) {
   document.querySelectorAll('.it-file-item').forEach(i => i.classList.remove('active'));
   el.classList.add('active');
+
+  const f = _itArchivos[fileId];
+  const titulo = document.getElementById('itVisorTitulo');
+  if (titulo) titulo.textContent = (f && f.name) ? f.name : 'Vista previa';
+
   const frame = document.getElementById('itViewerFrame');
   const empty = document.getElementById('itViewerEmpty');
   mostrarEnIframe(frame, '/api/ver-archivo?id=' + encodeURIComponent(fileId));
