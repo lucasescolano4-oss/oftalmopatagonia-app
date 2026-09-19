@@ -17,6 +17,9 @@
 
 <!-- Aplica tema antes de renderizar para evitar flash -->
 <script>(function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -1518,6 +1521,110 @@
   .it-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .it-file-open { color: #4a6cf7; text-decoration: none; font-size: 11px; flex-shrink: 0; }
   .pcard-obra-col { font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ASPECTO HUD CELESTE
+   Capa de estilo apoyada sobre lo anterior: solo cambia cómo se ve, ninguna
+   pantalla ni función. Para volver atrás alcanza con borrar este bloque
+   entero y el <link> de las tipografías.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --hud-cyan:      #06b6d4;
+  --hud-cyan-osc:  #0891b2;
+  --hud-cyan-claro:#22d3ee;
+  --hud-cyan-pale: #ecfeff;
+  --hud-cyan-brd:  #a5f3fc;
+  --hud-tinta:     #1e293b;
+  --hud-tenue:     #64748b;
+  --hud-fondo:     #f1f7fb;
+  --hud-linea:     #e2e8f0;
+  --hud-r:         16px;   /* radio de las islas */
+  --hud-sombra:    0 1px 3px rgba(15,23,42,.05), 0 8px 24px -12px rgba(6,182,212,.18);
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: linear-gradient(170deg, #eef7fc 0%, var(--hud-fondo) 45%, #f7fbfd 100%);
+  color: var(--hud-tinta);
+}
+h1, h2, h3, .logo-text, .graf-titulo, .pcard-nombre, .detalle-nombre {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; letter-spacing: -.01em;
+}
+/* Los datos duros —DNI, teléfono, fecha— en monoespaciada: alinean y se leen
+   de un vistazo, que es como los mira uno cuando busca un paciente. */
+.pcard-sub, .pcard-cel, .detalle-row-val, .msj-conv-tel, .numero-orden {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Encabezado e islas ── */
+.header {
+  background: rgba(255,255,255,.82);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--hud-linea);
+}
+.logo-icon { border-radius: 50%; background: linear-gradient(135deg, var(--hud-cyan), #0369a1); color: #fff; }
+.logo-text { font-weight: 700; letter-spacing: -.02em; }
+
+/* ── Menú de píldoras ── */
+.sidebar-nav {
+  background: transparent; border-bottom: 1px solid var(--hud-linea);
+  padding: 9px 14px; gap: 6px;
+}
+.nav-item {
+  border-radius: 999px; border: 1px solid transparent; border-bottom: 1px solid transparent;
+  padding: 8px 15px; color: var(--hud-tenue); background: rgba(255,255,255,.7);
+  font-weight: 500;
+}
+.nav-item:hover { background: #fff; color: var(--hud-cyan-osc); border-color: var(--hud-cyan-brd); }
+.nav-item.active {
+  background: linear-gradient(135deg, var(--hud-cyan), var(--hud-cyan-osc));
+  color: #fff; border-color: transparent; font-weight: 600;
+  box-shadow: 0 2px 10px -2px rgba(6,182,212,.5);
+}
+
+/* ── Tarjetas de paciente ── */
+.res-card, .graf-tarjeta, .graf-panel, .msj-sidebar, .informe-tab-archivos {
+  border-radius: var(--hud-r); border-color: var(--hud-linea);
+}
+.res-card { box-shadow: var(--hud-sombra); transition: transform .18s, box-shadow .18s, border-color .18s; }
+.res-card:hover { border-color: var(--hud-cyan-brd); box-shadow: 0 2px 6px rgba(15,23,42,.06), 0 14px 32px -14px rgba(6,182,212,.35); }
+.numero-orden {
+  background: linear-gradient(135deg, var(--hud-cyan), var(--hud-cyan-osc));
+  color: #fff; border-radius: 12px; font-weight: 700;
+}
+.estudio-tag {
+  background: var(--hud-cyan-pale); border-color: var(--hud-cyan-brd);
+  color: var(--hud-cyan-osc); font-weight: 500;
+}
+.pcard-nombre { font-weight: 700; color: var(--hud-tinta); }
+
+/* ── Controles ── */
+input[type=text], input[type=date], input[type=tel], input[type=search],
+input[type=email], select, textarea {
+  border-radius: 11px; border-color: var(--hud-linea);
+  font-family: inherit;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--hud-cyan) !important;
+  box-shadow: 0 0 0 3px rgba(6,182,212,.13);
+}
+.btn-buscar, .btn-pdf, .dbtn-wa {
+  border-radius: 11px;
+  background: linear-gradient(135deg, var(--hud-cyan), var(--hud-cyan-osc));
+  border: none; color: #fff;
+}
+.btn-buscar:hover, .btn-pdf:hover, .dbtn-wa:hover { filter: brightness(1.06); }
+.graf-fila-barra, .graf-mes-barra { background: linear-gradient(90deg, var(--hud-cyan), var(--hud-cyan-claro)); }
+
+/* ── Oscuro ── */
+[data-theme="dark"] body { background: linear-gradient(170deg,#0a1520 0%,#0c1a26 50%,#0a1520 100%); color: #e2e8f0; }
+[data-theme="dark"] .header { background: rgba(12,26,38,.85); border-color: #17303f; }
+[data-theme="dark"] .sidebar-nav { border-color: #17303f; }
+[data-theme="dark"] .nav-item { background: rgba(255,255,255,.04); color: #7d9cb0; }
+[data-theme="dark"] .nav-item:hover { background: rgba(6,182,212,.12); color: var(--hud-cyan-claro); border-color: #155e75; }
+[data-theme="dark"] .res-card, [data-theme="dark"] .graf-tarjeta, [data-theme="dark"] .graf-panel { border-color: #17303f; }
+[data-theme="dark"] .estudio-tag { background: rgba(6,182,212,.12); border-color: #155e75; color: var(--hud-cyan-claro); }
+[data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { border-color: #17303f; }
 </style>
 <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
 </head>
