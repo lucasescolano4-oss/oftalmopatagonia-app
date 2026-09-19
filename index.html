@@ -1323,6 +1323,12 @@
   /* Sidebar */
   .msj-sidebar { width: 300px; min-width: 300px; background: white; border-right: 1px solid #e5e5e3; display: flex; flex-direction: column; overflow: hidden; }
   .msj-sidebar-header { padding: 14px 16px; border-bottom: 1px solid #f0f0ee; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #888; display: flex; justify-content: space-between; align-items: center; }
+  /* Girar mientras actualiza: sin esto no se distingue un clic que funcionó
+     de uno que no hizo nada. */
+  @keyframes msj-girar { to { transform: rotate(360deg); } }
+  #msjRefrescar.girando { animation: msj-girar .7s linear infinite; }
+  #msjRefrescar:disabled { opacity: .5; cursor: default; }
+
   .msj-buscador { padding: 8px 12px; border-bottom: 1px solid #f0f0ee; }
   .msj-buscador input { width: 100%; padding: 7px 11px; font-size: 13px; border: 1px solid #e0e0e0; border-radius: 18px; background: #f8f8f8; outline: none; }
   .msj-buscador input:focus { border-color: #378add; background: white; }
@@ -1966,7 +1972,7 @@
     <div class="msj-sidebar">
       <div class="msj-sidebar-header">
         <span>Conversaciones</span>
-        <button onclick="cargarConversaciones()" title="Actualizar" style="background:none;border:none;cursor:pointer;color:#888;font-size:16px;">↻</button>
+        <button id="msjRefrescar" onclick="cargarConversaciones()" title="Actualizar" style="background:none;border:none;cursor:pointer;color:#888;font-size:16px;">↻</button>
       </div>
       <div class="msj-buscador">
         <input type="search" id="msjBuscar" placeholder="Buscar por nombre o número..." oninput="filtrarConversaciones()">
@@ -2085,7 +2091,14 @@
 <script>
 const SUPABASE_URL = 'https://jxhxitgyvssxhmfpzzlt.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_GR173HjCr2rpSxiQbOLzEA_KXKfFMnA';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  global: {
+    // Sin esto el navegador puede responder desde su caché y la pantalla se
+    // queda con datos viejos: era lo que hacía que el botón de actualizar la
+    // bandeja no trajera nada y hubiera que recargar la página entera.
+    fetch: (url, opts = {}) => fetch(url, { ...opts, cache: 'no-store' })
+  }
+});
 
 // Texto escrito por pacientes o cargado a mano: nunca va crudo al DOM.
 function escHtml(s) {
@@ -5108,19 +5121,35 @@ async function cargarIndiceNombres() {
 
 async function cargarConversaciones() {
   const el = document.getElementById('listaConversaciones');
-  const [{ data, error }] = await Promise.all([
-    sb.from('mensajes_conversaciones')
-      .select('numero, contenido, direccion, created_at')
-      .order('created_at', { ascending: false }),
-    cargarIndiceNombres()
-  ]);
+  const btn = document.getElementById('msjRefrescar');
+  if (btn) { btn.disabled = true; btn.classList.add('girando'); }
 
-  if (error || !data) { el.innerHTML = '<div style="padding:16px;color:#aaa;font-size:13px;">Error al cargar</div>'; return; }
+  try {
+    const [{ data, error }] = await Promise.all([
+      sb.from('mensajes_conversaciones')
+        .select('numero, contenido, direccion, created_at')
+        .order('created_at', { ascending: false })
+        .limit(2000),
+      cargarIndiceNombres()
+    ]);
 
-  const map = {};
-  for (const m of data) { if (!map[m.numero]) map[m.numero] = m; }
-  _convLista = Object.values(map).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  renderConversaciones();
+    if (error) throw new Error(error.message);
+    if (!data) throw new Error('Sin datos');
+
+    const map = {};
+    for (const m of data) { if (!map[m.numero]) map[m.numero] = m; }
+    _convLista = Object.values(map).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    renderConversaciones();
+  } catch (e) {
+    // Antes un error dejaba la lista intacta y parecía que el botón no hacía nada.
+    console.error('[bandeja]', e);
+    showToast('No se pudieron actualizar las conversaciones ✗');
+    if (!_convLista.length) {
+      el.innerHTML = '<div style="padding:16px;color:#e24b4a;font-size:13px;">Error al cargar</div>';
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.classList.remove('girando'); }
+  }
 }
 
 function filtrarConversaciones() { renderConversaciones(); }
