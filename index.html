@@ -1607,22 +1607,111 @@ h1, h2, h3, .logo-text, .graf-titulo, .pcard-nombre, .detalle-nombre {
 .logo-icon { border-radius: 50%; background: linear-gradient(135deg, var(--hud-cyan), #0369a1); color: #fff; }
 .logo-text { font-weight: 700; letter-spacing: -.02em; }
 
-/* ── Menú de píldoras ── */
-.sidebar-nav {
-  background: transparent; border-bottom: 1px solid var(--hud-linea);
-  padding: 9px 14px; gap: 6px;
+/* ── Dock de píldoras ──────────────────────────────────────────────────────
+   El contenedor exterior centra; el interior es la cápsula de cristal. */
+.pill-dock-wrap {
+  display: flex; justify-content: center;
+  padding: 10px 12px 12px; flex-shrink: 0;
+  position: sticky; top: 0; z-index: 20;
 }
+.sidebar-nav.pill-dock {
+  width: auto; max-width: 100%;
+  background: rgba(255,255,255,.62);
+  backdrop-filter: blur(22px) saturate(1.6);
+  -webkit-backdrop-filter: blur(22px) saturate(1.6);
+  border: 1px solid rgba(6,182,212,.35);
+  border-radius: 999px;
+  box-shadow: 0 8px 28px -10px rgba(6,182,212,.35), 0 2px 8px rgba(15,23,42,.06);
+  padding: 5px; gap: 3px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.sidebar-nav.pill-dock::-webkit-scrollbar { display: none; }
+
 .nav-item {
+  position: relative; overflow: hidden;
   border-radius: 999px; border: 1px solid transparent; border-bottom: 1px solid transparent;
-  padding: 8px 15px; color: var(--hud-tenue); background: rgba(255,255,255,.7);
-  font-weight: 500;
+  padding: 8px 16px; gap: 7px;
+  color: #0e7490; background: rgba(236,254,255,.7);
+  font-weight: 500; font-size: 12.5px;
+  transition: transform .16s cubic-bezier(.34,1.56,.64,1), background .16s, color .16s, box-shadow .16s;
 }
-.nav-item:hover { background: #fff; color: var(--hud-cyan-osc); border-color: var(--hud-cyan-brd); }
+.nav-item:hover { transform: translateY(-1px) scale(1.03); background: #fff; box-shadow: 0 4px 12px -4px rgba(6,182,212,.4); }
+.nav-item:active { transform: scale(.96); }
 .nav-item.active {
-  background: linear-gradient(135deg, var(--hud-cyan), var(--hud-cyan-osc));
+  background: linear-gradient(90deg, #0891b2, #0284c7 55%, #2563eb);
   color: #fff; border-color: transparent; font-weight: 600;
-  box-shadow: 0 2px 10px -2px rgba(6,182,212,.5);
+  box-shadow: 0 4px 16px -3px rgba(6,182,212,.55);
 }
+.nav-item.active:hover { background: linear-gradient(90deg, #0891b2, #0284c7 55%, #2563eb); }
+
+/* La flecha solo aparece en la pestaña abierta. */
+.pill-chevron { width: 13px; height: 13px; flex-shrink: 0; opacity: 0; width: 0; transition: opacity .18s, width .18s; }
+.nav-item.active .pill-chevron { opacity: .95; width: 13px; }
+
+/* Badges */
+.pill-badge {
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; line-height: 18px; text-align: center;
+  flex-shrink: 0; font-variant-numeric: tabular-nums;
+}
+.pill-badge-cyan  { background: rgba(6,182,212,.18);  color: #0e7490; }
+.pill-badge-verde { background: rgba(16,185,129,.2);  color: #047857; }
+.pill-badge-ambar { background: rgba(245,158,11,.22); color: #b45309; }
+.nav-item.active .pill-badge { background: rgba(255,255,255,.25); color: #fff; }
+
+/* Onda expansiva al tocar */
+.pill-onda {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255,255,255,.85) 0%, rgba(34,211,238,.35) 45%, transparent 70%);
+  transform: translate(-50%, -50%) scale(0); opacity: .9;
+  animation: pill-onda .55s cubic-bezier(.22,.61,.36,1) forwards;
+}
+@keyframes pill-onda { to { transform: translate(-50%,-50%) scale(1); opacity: 0; } }
+
+/* La vista se despliega desde el botón que se tocó: el origen lo fija el JS
+   en --origen-x según dónde estaba la píldora. */
+.view.entrando {
+  animation: vista-entra .34s cubic-bezier(.22,.9,.3,1.02) both;
+  transform-origin: var(--origen-x, 50%) 0;
+}
+@keyframes vista-entra {
+  from { opacity: 0; transform: scale(.88) translateY(-10px); filter: blur(3px); }
+  to   { opacity: 1; transform: scale(1) translateY(0);       filter: blur(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .view.entrando { animation: none; }
+  .pill-onda { display: none; }
+  .nav-item:hover { transform: none; }
+}
+
+/* ── Acciones de la tarjeta ── */
+.pcard-btn-wa {
+  padding: 8px; border-radius: 12px; border: 1px solid rgba(6,182,212,.3);
+  background: linear-gradient(135deg, var(--hud-cyan), var(--hud-cyan-osc));
+  color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: transform .15s, box-shadow .15s; flex-shrink: 0;
+}
+.pcard-btn-wa svg { width: 15px; height: 15px; }
+.pcard-btn-wa:hover { transform: scale(1.08); box-shadow: 0 4px 12px -2px rgba(6,182,212,.5); }
+.pcard-btn-col { display: flex; flex-direction: column; gap: 4px; }
+.pcard-btn-ficha, .pcard-btn-estudios {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: 9px; cursor: pointer;
+  font-size: 11px; font-weight: 700; font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  white-space: nowrap; transition: background .15s, transform .15s;
+}
+.pcard-btn-ficha svg, .pcard-btn-estudios svg { width: 12px; height: 12px; flex-shrink: 0; }
+.pcard-btn-ficha { background: rgba(6,182,212,.1); border: 1px solid rgba(6,182,212,.25); color: #0e7490; }
+.pcard-btn-estudios { background: rgba(14,165,233,.15); border: 1px solid rgba(14,165,233,.28); color: #0369a1; }
+.pcard-btn-ficha:hover, .pcard-btn-estudios:hover { transform: translateX(-1px); filter: brightness(.97); }
+[data-theme="dark"] .pcard-btn-ficha { background: rgba(6,182,212,.14); color: #67e8f9; border-color: #155e75; }
+[data-theme="dark"] .pcard-btn-estudios { background: rgba(14,165,233,.16); color: #7dd3fc; border-color: #0c4a6e; }
+
+/* Tarjetas más compactas: entran más pacientes sin scrollear. */
+.res-card { border-radius: 18px; }
+.res-cards-grid { gap: 9px; }
+.paciente-card-v2 { padding: 10px 14px; }
+.pcard-sub { font-size: 11.5px; }
 
 /* ── Tarjetas de paciente ── */
 .res-card, .graf-tarjeta, .graf-panel, .msj-sidebar, .informe-tab-archivos {
@@ -1741,36 +1830,57 @@ input:focus, select:focus, textarea:focus {
   <button class="tab" id="tab-informe" onclick="switchTab('informe')" style="display:none;"></button>
 </div>
 <div class="app-body">
-<nav class="sidebar-nav" id="sidebarNav">
+<!-- Dock de píldoras. Los iconos son los de Lucide, dibujados directo como SVG
+     para no cargar una librería entera por seis iconos. -->
+<nav class="pill-dock-wrap">
+ <nav class="sidebar-nav pill-dock" id="sidebarNav">
   <button class="sidebar-collapse-btn" onclick="toggleSidebar()" title="Colapsar menú">&#8249;</button>
-  <button class="nav-item active" id="nav-carga" onclick="switchTab('carga')">
-    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/></svg>
+
+  <button class="nav-item active" id="nav-carga" onclick="switchTab('carga', this)">
+    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
     <span class="nav-label-text">Carga del día</span>
+    <span class="pill-badge pill-badge-cyan" id="badgeCarga" hidden>0</span>
+    <svg class="pill-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
   </button>
-  <button class="nav-item" id="nav-buscar" onclick="switchTab('buscar')">
-    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+
+  <button class="nav-item" id="nav-buscar" onclick="switchTab('buscar', this)">
+    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     <span class="nav-label-text">Buscar pacientes</span>
+    <svg class="pill-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
   </button>
-  <button class="nav-item" id="nav-informe" onclick="switchTab('informe')" style="display:none;">
-    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+
+  <button class="nav-item" id="nav-informe" onclick="switchTab('informe', this)" style="display:none;">
+    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
     <span class="nav-label-text">Informe</span>
+    <svg class="pill-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
   </button>
-  <button class="nav-item" id="nav-mensajes" onclick="switchTab('mensajes')">
-    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    <span class="nav-label-text">Mensajes</span>
+
+  <button class="nav-item" id="nav-mensajes" onclick="switchTab('mensajes', this)">
+    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span class="nav-label-text">Mensajes Bot</span>
+    <span class="pill-badge pill-badge-verde" id="badgeMensajes" hidden>0</span>
+    <svg class="pill-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
   </button>
-  <button class="nav-item" id="nav-cirugia" onclick="switchTab('cirugia')">
-    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-    <span class="nav-label-text">Cirugía</span>
+
+  <button class="nav-item" id="nav-cirugia" onclick="switchTab('cirugia', this)">
+    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+    <span class="nav-label-text">Cirugía &amp; Pre-Op</span>
+    <svg class="pill-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
   </button>
-  <button class="nav-item" id="nav-graficas" onclick="switchTab('graficas')">
-    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-    <span class="nav-label-text">Gráficas</span>
-  </button>
-  <button class="nav-item" id="nav-revision" onclick="switchTab('revision')">
-    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v1H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2V5a3 3 0 0 0-3-3z"/><path d="M9 13h6"/><path d="M9 17h4"/></svg>
+
+  <button class="nav-item" id="nav-revision" onclick="switchTab('revision', this)">
+    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h4"/></svg>
     <span class="nav-label-text">Pacientes para revisión</span>
+    <span class="pill-badge pill-badge-ambar" id="badgeRevision" hidden>0</span>
+    <svg class="pill-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
   </button>
+
+  <button class="nav-item" id="nav-graficas" onclick="switchTab('graficas', this)">
+    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <span class="nav-label-text">Gráficas &amp; Reportes</span>
+    <svg class="pill-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+ </nav>
 </nav>
 <div class="content-area">
 
@@ -2460,22 +2570,86 @@ function toggleSidebar() {
   if (btn) btn.innerHTML = nav.classList.contains('collapsed') ? '&#8250;' : '&#8249;';
 }
 
-function switchTab(tab) {
-  ['carga','cirugia','buscar','informe','mensajes','revision','graficas'].forEach(t => {
+const PESTANAS = ['carga','cirugia','buscar','informe','mensajes','revision','graficas'];
+
+/** Aro de luz que se expande desde el punto donde se tocó la píldora. */
+function ondaEnPildora(boton, evento) {
+  if (!boton) return;
+  const r = boton.getBoundingClientRect();
+  const onda = document.createElement('span');
+  onda.className = 'pill-onda';
+  const lado = Math.max(r.width, r.height) * 2.2;
+  onda.style.width = onda.style.height = lado + 'px';
+  onda.style.left = ((evento && evento.clientX ? evento.clientX - r.left : r.width / 2)) + 'px';
+  onda.style.top  = ((evento && evento.clientY ? evento.clientY - r.top  : r.height / 2)) + 'px';
+  boton.appendChild(onda);
+  onda.addEventListener('animationend', () => onda.remove());
+}
+
+function switchTab(tab, boton) {
+  // La vista se despliega desde donde está la píldora tocada: se toma el
+  // centro del botón y se pasa como origen de la transformación.
+  const origen = boton
+    ? ((boton.getBoundingClientRect().left + boton.getBoundingClientRect().width / 2) / window.innerWidth) * 100
+    : 50;
+
+  if (boton) ondaEnPildora(boton, window.event);
+
+  PESTANAS.forEach(t => {
     const el = document.getElementById('nav-'+t);
     if (el) el.classList.toggle('active', t === tab);
   });
-  ['carga','cirugia','buscar','informe','mensajes','revision','graficas'].forEach(v => {
+  PESTANAS.forEach(v => {
     const el = document.getElementById('view-' + v);
-    if (el) el.classList.toggle('active', v === tab);
+    if (!el) return;
+    const activa = v === tab;
+    el.classList.toggle('active', activa);
+    if (activa) {
+      el.style.setProperty('--origen-x', origen.toFixed(1) + '%');
+      el.classList.remove('entrando');
+      void el.offsetWidth;            // reinicia la animación
+      el.classList.add('entrando');
+    } else {
+      el.classList.remove('entrando');
+    }
   });
+
   document.getElementById('actionsBar').style.display = tab==='carga' ? 'flex' : 'none';
   document.getElementById('actionsBarCirugia').style.display = tab==='cirugia' ? 'flex' : 'none';
   if (tab==='buscar') buscar();
   if (tab==='cirugia') cargarCirugias();
   if (tab==='mensajes') cargarConversaciones();
   if (tab==='revision') buscar({ revision: true });
-  if (tab==='graficas') cargarGraficas();
+  if (tab==='graficas' && typeof cargarGraficas === 'function') cargarGraficas();
+}
+
+/** Contadores de las píldoras. Se ocultan solos cuando están en cero. */
+function ponerBadge(id, n) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = n > 99 ? '99+' : n;
+  el.hidden = !n;
+}
+
+async function actualizarBadgesDock() {
+  try {
+    ponerBadge('badgeCarga', (pacientesHoy || []).length);
+
+    // Pacientes marcados para revisar
+    let q = sb.from('pacientes').select('id', { count: 'exact', head: true }).eq('para_revision', true);
+    if (medicoActual) q = q.eq('medico', medicoActual);
+    const { count: revision } = await q;
+    ponerBadge('badgeRevision', revision || 0);
+
+    // Mensajes de pacientes de las últimas 24 h
+    const desde = new Date(Date.now() - 24*3600*1000).toISOString();
+    const { count: entrantes } = await sb.from('mensajes_conversaciones')
+      .select('id', { count: 'exact', head: true })
+      .eq('direccion', 'entrante').gte('created_at', desde);
+    ponerBadge('badgeMensajes', entrantes || 0);
+  } catch (e) {
+    console.error('[badges]', e);   // un badge no debe romper la pantalla
+  }
 }
 
 function setSyncStatus(state) {
@@ -2490,7 +2664,7 @@ async function cargarPacientesHoy() {
   const hoy = fechaLocalStr();
   if (!medicoActual) return;
   const { data, error } = await sb.from('pacientes').select('*').eq('fecha', hoy).eq('medico', medicoActual).order('created_at', { ascending: true });
-  if (!error && data) { pacientesHoy = data; renderLista(); }
+  if (!error && data) { pacientesHoy = data; renderLista(); actualizarBadgesDock(); }
 }
 
 function toggleOrden() {
@@ -3130,9 +3304,19 @@ async function buscar(opts) {
       </div>
       <!-- Col 5: Acciones -->
       <div class="pcard-actions">
-        <button class="pcard-btn-ojo" onclick="event.stopPropagation();abrirHistorial('${p.id}')" title="Ver historial">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <button class="pcard-btn-wa" onclick="event.stopPropagation();abrirArchivosDrive({dni:'${p.dni}',numero:'${(p.celular||'').replace(/\D/g,'')}',nombre:${JSON.stringify(p.nombre_completo||'')}})" title="Enviar archivos por WhatsApp">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
         </button>
+        <div class="pcard-btn-col">
+          <button class="pcard-btn-ficha" onclick="event.stopPropagation();abrirHistorial('${p.id}')" title="Historia clínica del paciente">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Historia Clínica
+          </button>
+          <button class="pcard-btn-estudios" onclick="event.stopPropagation();abrirHistorial('${p.id}')" title="Estudios complementarios">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Estudios Compl.
+          </button>
+        </div>
       </div>
       <!-- Hidden elements for JS compat -->
       <div class="res-card-informe" style="display:none;" onclick="toggleInformeResultado('${p.id}', this)">
