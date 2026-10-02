@@ -1407,17 +1407,36 @@
     min-width: 0;
   }
 
-  /* Tercera columna: los estudios del paciente agrupados por año, el más
-     reciente arriba, para comparar la evolución sin salir del informe. */
-  .informe-tab-archivos {
-    width: 280px; min-width: 240px; max-width: 340px;
-    flex-shrink: 0;
-    display: flex; flex-direction: column;
-    border-left: 1px solid #e5e7eb;
-    background: #fff;
-    overflow: hidden;
+  /* Selector de estudios sobre el visor. Reemplaza a la columna lateral: con
+     la pantalla partida en dos, esos 280 px de lista dejaban el PDF ilegible. */
+  .it-selector { position: relative; flex-shrink: 0; border-bottom: 1px solid #e5e7eb; background: #fff; z-index: 30; }
+  .it-selector-btn {
+    width: 100%; display: flex; align-items: center; gap: 9px;
+    padding: 9px 14px; background: none; border: none; cursor: pointer;
+    font: inherit; text-align: left; color: #1a1a1a;
+    transition: background .14s;
   }
-  .it-anios { flex: 1; overflow-y: auto; padding: 6px 10px 14px; }
+  .it-selector-btn:hover { background: #f6f9fc; }
+  .it-sel-ico { width: 15px; height: 15px; color: #888; flex-shrink: 0; }
+  .it-sel-nombre {
+    flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .it-sel-fecha {
+    font-size: 11.5px; font-weight: 600; color: #185fa5; flex-shrink: 0;
+    background: #eef4ff; padding: 2px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .it-sel-chev { width: 15px; height: 15px; color: #999; flex-shrink: 0; transition: transform .18s; }
+  .it-selector.abierto .it-sel-chev { transform: rotate(180deg); }
+
+  .it-selector-menu {
+    position: absolute; top: 100%; left: 0; right: 0;
+    max-height: 60vh; overflow-y: auto;
+    background: #fff; border: 1px solid #e5e7eb; border-top: none;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 14px 34px -10px rgba(15,23,42,.25);
+    padding: 4px 8px 10px;
+  }
   .it-anio-titulo {
     position: sticky; top: 0; z-index: 1;
     background: #fff; padding: 9px 4px 6px;
@@ -1425,7 +1444,13 @@
     border-bottom: 1px solid #eef2f7;
   }
   .it-anio-titulo .it-anio-count { float: right; font-weight: 500; color: #bbb; font-size: 11px; }
-  [data-theme="dark"] .informe-tab-archivos { background: #1c1c1e; border-color: #2c2c2e; }
+  .it-file-fecha { font-size: 10.5px; color: #aaa; flex-shrink: 0; margin-left: auto; padding-left: 8px; }
+
+  [data-theme="dark"] .it-selector,
+  [data-theme="dark"] .it-selector-menu { background: #1c1c1e; border-color: #2c2c2e; }
+  [data-theme="dark"] .it-selector-btn { color: #eee; }
+  [data-theme="dark"] .it-selector-btn:hover { background: #242426; }
+  [data-theme="dark"] .it-sel-fecha { background: #1a2840; color: #5aabff; }
   [data-theme="dark"] .it-anio-titulo { background: #1c1c1e; color: #5aabff; border-color: #2c2c2e; }
   .informe-tab-header {
     display: flex;
@@ -1930,23 +1955,27 @@
         <button class="btn-pdf" id="itBtnGuardar" onclick="guardarYSubirInformeTab()" style="flex:1;">📄 Enviar informe</button>
       </div>
     </div>
-    <!-- Centro: visor del archivo elegido -->
+    <!-- Derecha: visor a todo el ancho. Los estudios se eligen desde el
+         desplegable del encabezado, así el PDF no pierde espacio. -->
     <div class="informe-tab-right">
-      <div class="informe-tab-right-header" id="itVisorTitulo">Vista previa</div>
+      <div class="it-selector" id="itSelector">
+        <button class="it-selector-btn" id="itSelectorBtn" onclick="toggleSelectorArchivos(event)" aria-expanded="false">
+          <svg class="it-sel-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span class="it-sel-nombre" id="itSelNombre">Elegí un estudio</span>
+          <span class="it-sel-fecha" id="itSelFecha"></span>
+          <svg class="it-sel-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="it-selector-menu" id="itFilesList" hidden>
+          <div class="hist-loading" id="itFilesLoading">⏳ Buscando archivos...</div>
+        </div>
+      </div>
       <div class="informe-tab-viewer" id="itViewerArea">
         <div class="hist-viewer-empty" id="itViewerEmpty">
           <div class="hist-viewer-empty-icon">📄</div>
-          <div style="font-size:14px;color:#bbb;">Tocá un archivo para previsualizarlo</div>
+          <div style="font-size:14px;color:#bbb;">Elegí un estudio del desplegable</div>
           <div style="font-size:12px;color:#ccc;">Los PDFs e imágenes se muestran aquí</div>
         </div>
         <iframe id="itViewerFrame" src="about:blank"></iframe>
-      </div>
-    </div>
-    <!-- Derecha: estudios del paciente, agrupados por año -->
-    <div class="informe-tab-archivos">
-      <div class="informe-tab-right-header">Estudios del paciente</div>
-      <div class="it-anios" id="itFilesList">
-        <div class="hist-loading" id="itFilesLoading">⏳ Buscando archivos...</div>
       </div>
     </div>
   </div>
@@ -4807,6 +4836,13 @@ async function _itCargarArchivos(dni) {
   document.getElementById('itViewerEmpty').style.display = 'flex';
   document.getElementById('itViewerFrame').style.display = 'none';
 
+  // Paciente nuevo: el selector vuelve a cero.
+  cerrarSelectorArchivos();
+  const nom = document.getElementById('itSelNombre');
+  const fec = document.getElementById('itSelFecha');
+  if (nom) { nom.textContent = 'Elegí un estudio'; nom.title = ''; }
+  if (fec) fec.textContent = '';
+
   try {
     const resp = await fetch('/api/buscar-archivos?dni=' + encodeURIComponent(dni), { headers: await authHeaders() });
     const data = await resp.json();
@@ -4844,6 +4880,24 @@ function anioDeArchivo(f) {
   return null;
 }
 
+const MESES_ABREV = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+/** El DNI ya se ve en la ficha: sacarlo del nombre deja a la vista el estudio. */
+function nombreCortoArchivo(f) {
+  const n = (f && f.name) ? f.name : '';
+  return n.replace(/\.[a-z0-9]+$/i, '').replace(/^\d{6,9}[_-]/, '') || n;
+}
+
+/** "Oct 2026" a partir de la fecha del archivo. */
+function mesAnioDeArchivo(f) {
+  if (f && f.createdTime) {
+    const d = new Date(f.createdTime);
+    if (!isNaN(d)) return `${MESES_ABREV[d.getMonth()]} ${d.getFullYear()}`;
+  }
+  const a = anioDeArchivo(f || {});
+  return a ? String(a) : '';
+}
+
 function renderArchivosPorAnio(archivos) {
   _itArchivos = {};
 
@@ -4869,6 +4923,7 @@ function renderArchivosPorAnio(archivos) {
       return `<div class="it-file-item" onclick="_itAbrirArchivo(this,'${f.id}')" title="${escHtml(f.name || '')}">
                 <span class="it-file-icon">${icono}</span>
                 <span class="it-file-name">${escHtml(f.name || '')}</span>
+                <span class="it-file-fecha">${escHtml(mesAnioDeArchivo(f))}</span>
                 <a class="it-file-open" href="${escHtml(f.webViewLink || '#')}" target="_blank"
                    rel="noopener" onclick="event.stopPropagation()">↗</a>
               </div>`;
@@ -4878,13 +4933,47 @@ function renderArchivosPorAnio(archivos) {
   }).join('');
 }
 
+function toggleSelectorArchivos(ev) {
+  if (ev) ev.stopPropagation();
+  const cont = document.getElementById('itSelector');
+  const menu = document.getElementById('itFilesList');
+  const btn  = document.getElementById('itSelectorBtn');
+  if (!cont || !menu) return;
+  const abrir = menu.hidden;
+  menu.hidden = !abrir;
+  cont.classList.toggle('abierto', abrir);
+  if (btn) btn.setAttribute('aria-expanded', String(abrir));
+}
+
+function cerrarSelectorArchivos() {
+  const menu = document.getElementById('itFilesList');
+  const cont = document.getElementById('itSelector');
+  if (menu && !menu.hidden) {
+    menu.hidden = true;
+    if (cont) cont.classList.remove('abierto');
+    const btn = document.getElementById('itSelectorBtn');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+}
+
+// Cerrar al tocar fuera o con Escape, como cualquier desplegable.
+document.addEventListener('click', e => {
+  const cont = document.getElementById('itSelector');
+  if (cont && !cont.contains(e.target)) cerrarSelectorArchivos();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarSelectorArchivos(); });
+
 function _itAbrirArchivo(el, fileId) {
   document.querySelectorAll('.it-file-item').forEach(i => i.classList.remove('active'));
-  el.classList.add('active');
+  if (el) el.classList.add('active');
 
   const f = _itArchivos[fileId];
-  const titulo = document.getElementById('itVisorTitulo');
-  if (titulo) titulo.textContent = (f && f.name) ? f.name : 'Vista previa';
+  const nom = document.getElementById('itSelNombre');
+  const fec = document.getElementById('itSelFecha');
+  if (nom) { nom.textContent = nombreCortoArchivo(f) || 'Estudio'; nom.title = (f && f.name) || ''; }
+  if (fec) fec.textContent = mesAnioDeArchivo(f);
+
+  cerrarSelectorArchivos();
 
   const frame = document.getElementById('itViewerFrame');
   const empty = document.getElementById('itViewerEmpty');
