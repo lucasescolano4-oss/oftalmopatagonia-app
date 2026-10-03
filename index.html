@@ -1315,6 +1315,40 @@
   .card-revision-vacia { font-style: italic; color: #b09a6a; }
   [data-theme="dark"] .card-revision { background: #2a2620; color: #d8c758; }
 
+  /* Barra de acciones de la búsqueda: flota sobre la lista y solo aparece
+     cuando hay pacientes marcados. */
+  .barra-seleccion {
+    position: absolute; left: 50%; bottom: 18px; transform: translate(-50%, 120%);
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 10px 9px 18px; border-radius: 999px;
+    background: rgba(26,26,26,.94);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 10px 34px -8px rgba(0,0,0,.45);
+    opacity: 0; pointer-events: none; z-index: 40;
+    transition: transform .26s cubic-bezier(.22,1,.36,1), opacity .2s;
+  }
+  .barra-seleccion.visible { transform: translate(-50%, 0); opacity: 1; pointer-events: all; }
+  .barra-sel-texto { color: #fff; font-size: 13px; font-weight: 500; white-space: nowrap; }
+  .barra-sel-limpiar {
+    background: none; border: none; color: #aaa; font-size: 12.5px; cursor: pointer;
+    padding: 6px 4px; white-space: nowrap;
+  }
+  .barra-sel-limpiar:hover { color: #fff; text-decoration: underline; }
+  .barra-sel-enviar {
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 18px; border-radius: 999px; border: none; cursor: pointer;
+    background: #25D366; color: #fff; font-size: 13px; font-weight: 600;
+    white-space: nowrap; transition: background .15s;
+  }
+  .barra-sel-enviar:hover { background: #1ebe5d; }
+  .barra-sel-enviar:disabled { background: #888; cursor: default; }
+  .search-view { position: relative; }
+  @media (max-width: 560px) {
+    .barra-seleccion { left: 12px; right: 12px; transform: translateY(120%); }
+    .barra-seleccion.visible { transform: translateY(0); }
+    .barra-sel-limpiar { display: none; }
+  }
+
   #view-mensajes { display: none; }
   #view-mensajes.active { display: flex; flex: 1; overflow: hidden; width: 100%; height: 100%; }
 
@@ -1913,6 +1947,17 @@
     <div id="hintNuevaObra" style="display:none;padding:6px 14px;font-size:12px;color:#378add;cursor:pointer;background:#f0f7ff;border:1px solid #c5d9f0;border-radius:8px;margin-top:4px;width:fit-content;" onclick="agregarNuevaObraSocial()">
       ➕ Agregar "<span id="hintNuevaObraTexto"></span>" como nueva obra social
     </div>
+    <!-- Aparece al marcar pacientes: el botón de arriba quedaba fuera de
+         pantalla al bajar por la lista. -->
+    <div class="barra-seleccion" id="barraSeleccion">
+      <span class="barra-sel-texto" id="barraSeleccionTexto">0 pacientes seleccionados</span>
+      <button class="barra-sel-limpiar" onclick="desmarcarResultados()">Quitar selección</button>
+      <button class="barra-sel-enviar" onclick="reenviarDesdeResultados()">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Enviar estudios
+      </button>
+    </div>
+
     <div class="results-area" id="resultsArea">
       <div class="empty-state"><div class="empty-icon">🔍</div>Usá los filtros para buscar pacientes.</div>
     </div>
@@ -2321,6 +2366,7 @@ function switchTab(tab) {
   });
   document.getElementById('actionsBar').style.display = tab==='carga' ? 'flex' : 'none';
   document.getElementById('actionsBarCirugia').style.display = tab==='cirugia' ? 'flex' : 'none';
+  if (typeof actualizarBarraSeleccion === 'function') actualizarBarraSeleccion();
   if (tab==='buscar') buscar();
   if (tab==='cirugia') cargarCirugias();
   if (tab==='mensajes') cargarConversaciones();
@@ -3035,6 +3081,8 @@ async function buscar(opts) {
     </div>`;
 
   document.getElementById(areaId).innerHTML = encabezado + gruposHTML + resumen;
+  // Lista nueva: nada queda marcado, así que la barra se esconde.
+  if (typeof actualizarBarraSeleccion === 'function') actualizarBarraSeleccion();
 }
 
 function marcarTodosRevision(el) {
@@ -3094,16 +3142,61 @@ async function toggleInformeResultado(id, el) {
 function toggleTodosResultados() {
   const checked = document.getElementById('checkTodosResultados').checked;
   document.querySelectorAll('.check-resultado').forEach(c => c.checked = checked);
+  actualizarBarraSeleccion();
 }
 
+function desmarcarResultados() {
+  document.querySelectorAll('#resultsArea .check-resultado, #resultsArea .check-grupo')
+    .forEach(c => c.checked = false);
+  const todos = document.getElementById('checkTodosResultados');
+  if (todos) todos.checked = false;
+  actualizarBarraSeleccion();
+}
+
+/** Barra flotante con las acciones: aparece recién cuando hay algo marcado. */
+function actualizarBarraSeleccion() {
+  const barra = document.getElementById('barraSeleccion');
+  if (!barra) return;
+  const vistaBuscar = document.getElementById('view-buscar');
+  const activa = vistaBuscar && vistaBuscar.classList.contains('active');
+  const n = document.querySelectorAll('#resultsArea .check-resultado:checked').length;
+
+  barra.classList.toggle('visible', activa && n > 0);
+  const lbl = document.getElementById('barraSeleccionTexto');
+  if (lbl) lbl.textContent = `${n} paciente${n !== 1 ? 's' : ''} seleccionado${n !== 1 ? 's' : ''}`;
+}
+
+// Un solo oyente para toda la lista: sirve también para las tarjetas que se
+// dibujan después de una búsqueda nueva.
+document.addEventListener('change', e => {
+  if (e.target && e.target.classList && e.target.classList.contains('check-resultado')) {
+    actualizarBarraSeleccion();
+  }
+});
+
 async function reenviarDesdeResultados() {
-  const checks = [...document.querySelectorAll('.check-resultado:checked')];
-  if (checks.length === 0) { showToast('Selecciona al menos un paciente'); return; }
+  const checks = [...document.querySelectorAll('#resultsArea .check-resultado:checked')];
+  if (checks.length === 0) { showToast('Seleccioná al menos un paciente'); return; }
 
   const lista = checks.map(c => {
     const card = c.closest('.res-card');
     return { nombre: card.dataset.nombre, dni: card.dataset.dni, celular: card.dataset.celular };
   });
+
+  // Avisar si alguno ya los recibió, para no mandarle lo mismo dos veces.
+  const yaEnviados = checks
+    .filter(c => c.closest('.res-card').dataset.enviado === '1')
+    .map(c => c.closest('.res-card').dataset.nombre);
+
+  if (yaEnviados.length) {
+    const quienes = yaEnviados.length <= 6
+      ? yaEnviados.join('\n· ')
+      : yaEnviados.slice(0, 6).join('\n· ') + `\n· …y ${yaEnviados.length - 6} más`;
+    const msg = yaEnviados.length === lista.length
+      ? `Estos pacientes ya recibieron sus estudios:\n\n· ${quienes}\n\n¿Se los volvemos a enviar?`
+      : `${yaEnviados.length} de los ${lista.length} seleccionados ya recibieron sus estudios:\n\n· ${quienes}\n\n¿Se los volvemos a enviar a todos igual?`;
+    if (!confirm(msg)) return;
+  }
 
   const btn = document.querySelector('[onclick="reenviarDesdeResultados()"]');
   if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
@@ -3224,6 +3317,7 @@ function toggleGrupo(checkEl, fecha) {
   const grid = document.querySelector(`.res-cards-grid[data-fecha-grid="${fecha}"]`);
   if (!grid) return;
   grid.querySelectorAll('.check-resultado').forEach(c => c.checked = checkEl.checked);
+  actualizarBarraSeleccion();
 }
 
 function limpiarBusqueda() {
