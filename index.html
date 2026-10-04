@@ -1602,6 +1602,90 @@
   .it-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .it-file-open { color: #4a6cf7; text-decoration: none; font-size: 11px; flex-shrink: 0; }
   .pcard-obra-col { font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MODO OSCURO — partes que habían quedado claras
+   Pantallas agregadas después (bandeja de mensajes, pestaña Informe) nunca
+   recibieron su versión oscura y quedaban en blanco sobre fondo negro.
+   ══════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  --osc-fondo:   #121214;   /* fondo general */
+  --osc-panel:   #1c1c1e;   /* paneles y tarjetas */
+  --osc-elev:    #242426;   /* algo elevado: burbujas, campos */
+  --osc-borde:   #2c2c2e;
+  --osc-texto:   #e4e4e6;
+  --osc-tenue:   #9a9aa0;
+}
+
+/* Tarjetas de totales del día. Tenían el fondo escrito en el HTML, que gana
+   sobre cualquier regla y por eso quedaban blancas en modo oscuro. */
+.metric-card { background: white; border: 1px solid #e8e8e6; border-radius: 10px; padding: 10px 14px; }
+[data-theme="dark"] .metric-card { background: var(--osc-panel); border-color: var(--osc-borde); }
+[data-theme="dark"] #metricTotal { color: var(--osc-texto); }
+
+/* El resto de los inline del formulario: acá sí hace falta forzar. */
+[data-theme="dark"] #ordenCheck { background: var(--osc-elev) !important; border-color: #3a3a3c !important; }
+[data-theme="dark"] #btnEditarFecha { background: var(--osc-elev) !important; color: var(--osc-texto) !important; }
+[data-theme="dark"] #fecha { background: var(--osc-elev) !important; color: var(--osc-texto) !important; }
+[data-theme="dark"] .form-group[style*="background"] { background: var(--osc-panel) !important; }
+
+/* ── Bandeja de mensajes ── */
+[data-theme="dark"] .msj-sidebar,
+[data-theme="dark"] .msj-chat-header,
+[data-theme="dark"] .msj-input-bar { background: var(--osc-panel); border-color: var(--osc-borde); }
+[data-theme="dark"] .msj-chat { background: var(--osc-fondo); }
+[data-theme="dark"] .msj-conv-item { border-color: var(--osc-borde); }
+[data-theme="dark"] .msj-conv-item:hover { background: var(--osc-elev); }
+[data-theme="dark"] .msj-conv-item.selected { background: #1a2840; }
+[data-theme="dark"] .msj-conv-nombre { color: var(--osc-texto); }
+[data-theme="dark"] .msj-conv-preview,
+[data-theme="dark"] .msj-conv-tel,
+[data-theme="dark"] .msj-conv-time { color: var(--osc-tenue); }
+[data-theme="dark"] .msj-bubble.in { background: var(--osc-elev); color: var(--osc-texto); }
+[data-theme="dark"] .msj-bubble.out { background: #184d2c; color: #d8f5e0; }
+[data-theme="dark"] .msj-time { color: #8a8a90; }
+[data-theme="dark"] .msj-input { background: var(--osc-elev); border-color: var(--osc-borde); color: var(--osc-texto); }
+[data-theme="dark"] .msj-input:focus { background: #2c2c2e; border-color: #378add; }
+[data-theme="dark"] .msj-input::placeholder { color: #7a7a80; }
+[data-theme="dark"] .msj-clip-btn:hover { background: var(--osc-elev); }
+[data-theme="dark"] .msj-empty-chat,
+[data-theme="dark"] #msjNumero { color: var(--osc-texto); }
+
+/* ── Pestaña Informe ── */
+[data-theme="dark"] .informe-tab-left,
+[data-theme="dark"] .informe-tab-right-header,
+[data-theme="dark"] .informe-tab-files,
+[data-theme="dark"] .it-selector,
+[data-theme="dark"] .it-selector-menu { background: var(--osc-panel); border-color: var(--osc-borde); }
+[data-theme="dark"] .informe-tab-right { background: var(--osc-fondo); }
+[data-theme="dark"] .informe-tab-volver { background: var(--osc-elev); border-color: var(--osc-borde); color: var(--osc-texto); }
+[data-theme="dark"] .informe-tab-volver:hover { background: #2c2c2e; }
+[data-theme="dark"] .informe-tab-nombre { color: var(--osc-texto); }
+[data-theme="dark"] .it-file-item { color: var(--osc-texto); }
+[data-theme="dark"] .it-file-item:hover { background: var(--osc-elev); border-color: #3a3a3c; }
+[data-theme="dark"] .it-file-item.active { background: #1a2840; border-color: #2a5a9f; color: #7db8ff; }
+[data-theme="dark"] .it-resize-handle { background: var(--osc-borde); }
+[data-theme="dark"] .informe-textarea { background: var(--osc-elev); border-color: var(--osc-borde); color: var(--osc-texto); }
+
+/* ── Controles sueltos ── */
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus { background: #2c2c2e; }
+[data-theme="dark"] #btnSoloPendientes { background: #2e2714; border-color: #5c4f33; color: #e0c063; }
+[data-theme="dark"] #btnSoloPendientes:hover { background: #3a3119; }
+[data-theme="dark"] .dbtn-marcar { background: var(--osc-elev); border-color: var(--osc-borde); color: var(--osc-texto); }
+[data-theme="dark"] .dbtn-marcar:hover { background: #2c2c2e; }
+
+/* El calendario nativo de los campos de fecha viene en claro por defecto. */
+[data-theme="dark"] input[type=date] { color-scheme: dark; }
+[data-theme="dark"] input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.8); }
+
+/* Etiquetas y textos que quedaban demasiado apagados para leerse. */
+[data-theme="dark"] .form-label,
+[data-theme="dark"] .section-label,
+[data-theme="dark"] .informe-section-label { color: #b4b4ba; }
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder { color: #76767c; }
 </style>
 <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
 </head>
@@ -1840,19 +1924,19 @@
     <div class="panel-list">
       <!-- Fila de métricas -->
       <div id="metricsRow" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
-        <div style="background:white;border:1px solid #e8e8e6;border-radius:10px;padding:10px 14px;">
+        <div class="metric-card">
           <div style="font-size:22px;font-weight:600;line-height:1;" id="metricTotal">0</div>
           <div style="font-size:11px;color:#aaa;margin-top:3px;">Pacientes</div>
         </div>
-        <div style="background:white;border:1px solid #e8e8e6;border-radius:10px;padding:10px 14px;">
+        <div class="metric-card">
           <div style="font-size:22px;font-weight:600;line-height:1;color:#1a7a45;" id="metricEnviados">0</div>
           <div style="font-size:11px;color:#aaa;margin-top:3px;">Enviados</div>
         </div>
-        <div style="background:white;border:1px solid #e8e8e6;border-radius:10px;padding:10px 14px;">
+        <div class="metric-card">
           <div style="font-size:22px;font-weight:600;line-height:1;color:#9a6b00;" id="metricPendientes">0</div>
           <div style="font-size:11px;color:#aaa;margin-top:3px;">Pendientes</div>
         </div>
-        <div style="background:white;border:1px solid #e8e8e6;border-radius:10px;padding:10px 14px;">
+        <div class="metric-card">
           <div style="font-size:22px;font-weight:600;line-height:1;color:#c0392b;" id="metricSinOrden">0</div>
           <div style="font-size:11px;color:#aaa;margin-top:3px;">Sin orden</div>
         </div>
