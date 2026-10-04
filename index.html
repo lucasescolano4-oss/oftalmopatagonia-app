@@ -2665,10 +2665,16 @@ function esExactamenteElCombo(combo) {
       && combo.estudios.every(e => estudiosSeleccionados.has(e));
 }
 
-/** Marca de una vez los estudios del combo; si ya está puesto tal cual, lo saca. */
+/**
+ * Deja marcados exactamente los estudios del combo. Reemplaza en vez de sumar:
+ * pasar de Catarata a Glaucoma dejaba los de los dos mezclados. Después del
+ * combo se pueden marcar o desmarcar chips sueltos a mano.
+ * Si el combo ya está puesto tal cual, vuelve a tocarlo lo limpia.
+ */
 function aplicarCombo(combo) {
   const quitar = esExactamenteElCombo(combo);
-  combo.estudios.forEach(e => quitar ? estudiosSeleccionados.delete(e) : estudiosSeleccionados.add(e));
+  estudiosSeleccionados.clear();
+  if (!quitar) combo.estudios.forEach(e => estudiosSeleccionados.add(e));
 
   document.querySelectorAll('#estudiosGrid .estudio-chip').forEach(chip => {
     chip.classList.toggle('active', estudiosSeleccionados.has(chip.dataset.estudio));
