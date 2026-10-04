@@ -1097,11 +1097,12 @@
 
   /* Sidebar navigation */
   .sidebar-nav {
+    position: relative;
     width: 100%;
     background: white;
     border-bottom: 1px solid #e5e5e3;
     display: flex; flex-direction: row; align-items: center;
-    padding: 0 10px; gap: 2px;
+    padding: 5px 10px; gap: 2px;
     overflow-x: auto; overflow-y: hidden;
     flex-shrink: 0;
     z-index: 10;
@@ -1109,16 +1110,40 @@
   .sidebar-nav::-webkit-scrollbar { height: 0; }
   /* El botón de colapsar no tiene sentido en una barra horizontal. */
   .sidebar-collapse-btn { display: none; }
+
+  /* Una sola pastilla que se desliza de pestaña a pestaña, en vez de que el
+     fondo aparezca y desaparezca en cada una. El movimiento continuo es lo
+     que hace que se sienta Apple. */
+  .nav-pastilla {
+    position: absolute; top: 5px; bottom: 5px; left: 0; width: 0;
+    background: #eef4ff; border-radius: 10px;
+    opacity: 0; pointer-events: none; z-index: 0;
+    transition: left .42s cubic-bezier(.22,1,.36,1),
+                width .42s cubic-bezier(.22,1,.36,1),
+                background .25s ease, opacity .22s ease;
+  }
+  .nav-pastilla.en-hover { background: #f4f5f7; }
+
   .nav-item {
+    position: relative; z-index: 1;
     display: flex; align-items: center; gap: 7px;
-    padding: 9px 13px; border-radius: 0;
-    border: none; border-bottom: 2px solid transparent; background: none;
+    padding: 8px 13px; border-radius: 10px;
+    border: none; background: none;
     cursor: pointer; color: #666; font-size: 13px; font-weight: 500;
-    transition: color .15s, border-color .15s, background .15s;
+    transition: color .22s ease;
     text-align: left; width: auto; white-space: nowrap; flex-shrink: 0;
   }
-  .nav-item:hover { background: #f7f7f5; color: #1a1a1a; }
-  .nav-item.active { background: none; color: #185fa5; font-weight: 600; border-bottom-color: #185fa5; }
+  .nav-item:hover { color: #1a1a1a; }
+  .nav-item.active { color: #185fa5; font-weight: 600; }
+  .nav-icon-svg { transition: transform .3s cubic-bezier(.22,1,.36,1); }
+  .nav-item.active .nav-icon-svg { transform: scale(1.06); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-pastilla { transition: opacity .15s; }
+    .nav-icon-svg { transition: none; }
+  }
+  [data-theme="dark"] .nav-pastilla { background: #1a2840; }
+  [data-theme="dark"] .nav-pastilla.en-hover { background: #2c2c2e; }
   .nav-icon-svg { width: 16px; height: 16px; flex-shrink: 0; }
   .nav-label-text { overflow: hidden; }
 
@@ -1652,6 +1677,7 @@
 </div>
 <div class="app-body">
 <nav class="sidebar-nav" id="sidebarNav">
+  <span class="nav-pastilla" id="navPastilla"></span>
   <button class="sidebar-collapse-btn" onclick="toggleSidebar()" title="Colapsar menú">&#8249;</button>
   <button class="nav-item active" id="nav-carga" onclick="switchTab('carga')">
     <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/></svg>
@@ -2355,6 +2381,47 @@ function toggleSidebar() {
   if (btn) btn.innerHTML = nav.classList.contains('collapsed') ? '&#8250;' : '&#8249;';
 }
 
+// ── Pastilla deslizante del menú ────────────────────────────────────────────
+// Un único fondo que viaja entre pestañas. Al pasar el mouse acompaña, y al
+// salir vuelve sola a la pestaña abierta.
+
+function moverPastillaA(destino, esHover) {
+  const nav = document.getElementById('sidebarNav');
+  const pastilla = document.getElementById('navPastilla');
+  if (!nav || !pastilla) return;
+
+  if (!destino) { pastilla.style.opacity = '0'; return; }
+
+  const n = nav.getBoundingClientRect();
+  const d = destino.getBoundingClientRect();
+  pastilla.style.left  = (d.left - n.left + nav.scrollLeft) + 'px';
+  pastilla.style.width = d.width + 'px';
+  pastilla.style.opacity = '1';
+  pastilla.classList.toggle('en-hover', !!esHover);
+}
+
+function pastillaAlActivo() {
+  const activo = document.querySelector('#sidebarNav .nav-item.active');
+  moverPastillaA(activo, false);
+}
+
+(function prepararPastilla() {
+  const nav = document.getElementById('sidebarNav');
+  if (!nav) return;
+
+  nav.addEventListener('mouseover', e => {
+    const item = e.target.closest ? e.target.closest('.nav-item') : null;
+    if (item && item.offsetParent !== null) moverPastillaA(item, !item.classList.contains('active'));
+  });
+  nav.addEventListener('mouseleave', pastillaAlActivo);
+  nav.addEventListener('scroll', pastillaAlActivo, { passive: true });
+  window.addEventListener('resize', pastillaAlActivo);
+
+  // Las fuentes cambian el ancho de los botones al terminar de cargar.
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(pastillaAlActivo);
+  requestAnimationFrame(pastillaAlActivo);
+})();
+
 function switchTab(tab) {
   ['carga','cirugia','buscar','informe','mensajes','revision'].forEach(t => {
     const el = document.getElementById('nav-'+t);
@@ -2366,6 +2433,7 @@ function switchTab(tab) {
   });
   document.getElementById('actionsBar').style.display = tab==='carga' ? 'flex' : 'none';
   document.getElementById('actionsBarCirugia').style.display = tab==='cirugia' ? 'flex' : 'none';
+  pastillaAlActivo();
   if (typeof actualizarBarraSeleccion === 'function') actualizarBarraSeleccion();
   if (tab==='buscar') buscar();
   if (tab==='cirugia') cargarCirugias();
