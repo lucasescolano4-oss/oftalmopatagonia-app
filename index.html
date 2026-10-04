@@ -1283,20 +1283,18 @@
 
   /* El informe se abría clickeando un círculo de 20 px sin nada que indicara
      que era un botón. Ahora el círculo y su etiqueta son un solo blanco. */
+  /* Mismo formato que la fila de ESTUDIOS: círculo a la izquierda y texto al
+     lado. Sin borde: el área clickeable se insinúa al pasar el mouse. */
   .pcard-informe-btn {
-    display: flex; flex-direction: column; align-items: center; gap: 3px;
-    padding: 5px 14px; border: 1px solid #e0e0e0; border-radius: 10px;
-    background: white; cursor: pointer; font: inherit;
-    transition: border-color .15s, background .15s, box-shadow .15s;
+    display: flex; flex-direction: row; align-items: center; gap: 6px;
+    padding: 3px 6px; border: none; border-radius: 7px;
+    background: none; cursor: pointer; font: inherit;
+    transition: background .15s;
   }
-  .pcard-informe-btn:hover {
-    border-color: #378add; background: #f2f8ff;
-    box-shadow: 0 1px 4px rgba(55,138,221,.15);
-  }
+  .pcard-informe-btn:hover { background: rgba(55,138,221,.09); }
   .pcard-informe-btn:active { transform: translateY(1px); }
   .pcard-informe-btn .pcard-status-lbl { white-space: nowrap; }
-  [data-theme="dark"] .pcard-informe-btn { background: #1c1c1e; border-color: #3a3a3c; }
-  [data-theme="dark"] .pcard-informe-btn:hover { background: #1a2840; border-color: #5aabff; }
+  [data-theme="dark"] .pcard-informe-btn:hover { background: rgba(90,171,255,.14); }
 
   .pcard-actions { display: flex; flex-direction: column; align-items: center; gap: 4px; }
   .pcard-btn-ojo {
