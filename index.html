@@ -749,8 +749,19 @@
   .header {
     background: white;
     border-bottom: 1px solid var(--gris-borde);
-    padding: 0.75rem 1.5rem;
+    padding: 0.6rem 1.25rem;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    gap: 16px;
+  }
+  /* Logo y controles ceden el ancho sobrante; la isla se queda con el centro. */
+  .header > .logo { flex-shrink: 0; }
+  .header > div:last-child { flex-shrink: 0; }
+
+  /* Debajo de esto el encabezado no da para las tres cosas: la isla baja a su
+     propia fila, centrada, en lugar de apretar el logo contra los controles. */
+  @media (max-width: 1100px) {
+    .header { flex-wrap: wrap; justify-content: space-between; }
+    .header .sidebar-nav { order: 3; width: 100%; margin: 8px 0 0; justify-content: flex-start; }
   }
   .logo-text { font-size: 15px; font-weight: 600; color: #1a1a1a; }
   .logo-sub { font-size: 11px; color: #aaa; }
@@ -1096,21 +1107,19 @@
   .tabs { display: none !important; }
 
   /* Sidebar navigation */
-  /* Isla flotante centrada, en vez de una barra de borde a borde. */
+  /* La isla vive dentro del encabezado: una sola fila en vez de dos, que es
+     altura ganada para la lista de pacientes. */
   .sidebar-nav {
     position: relative;
-    width: fit-content; max-width: calc(100% - 24px);
-    margin: 10px auto 12px;
-    background: rgba(255,255,255,.78);
-    backdrop-filter: blur(18px) saturate(1.5);
-    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    margin: 0 auto;
+    min-width: 0;                      /* permite encogerse antes que desbordar */
+    background: #f5f6f8;
     border: 1px solid #e8e8e6;
     border-radius: 999px;
-    box-shadow: 0 4px 20px -6px rgba(15,23,42,.14), 0 1px 3px rgba(15,23,42,.05);
     display: flex; flex-direction: row; align-items: center;
-    padding: 5px 6px; gap: 2px;
+    padding: 4px 5px; gap: 2px;
     overflow-x: auto; overflow-y: hidden;
-    flex-shrink: 0;
+    flex-shrink: 1;
     z-index: 10;
   }
   .sidebar-nav::-webkit-scrollbar { height: 0; }
@@ -1770,28 +1779,6 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
       <div class="logo-sub">Gestión de estudios</div>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:14px;">
-    <div class="sync-status" id="syncStatus">
-      <div class="sync-dot" id="syncDot"></div>
-      <span id="syncText">Conectado</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <button id="btnConfig" onclick="abrirConfig()" title="Configuración" style="display:none;padding:5px 9px;font-size:16px;border:1px solid #ddd;border-radius:8px;background:white;color:#555;cursor:pointer;transition:all 0.15s;">⚙️</button>
-      <button class="btn-theme" id="btnTheme" onclick="toggleTheme()" title="Cambiar tema"></button>
-      <span class="medico-badge" id="medicoBadge"></span>
-      <button class="btn-logout" id="btnLogout" onclick="doLogout()" style="display:none;">Salir</button>
-      <div class="fecha-hoy" id="fechaHoy"></div>
-    </div>
-  </div>
-</div>
-
-<div class="tabs" style="display:none;">
-  <button class="tab active" id="tab-carga" onclick="switchTab('carga')"></button>
-  <button class="tab" id="tab-cirugia" onclick="switchTab('cirugia')"></button>
-  <button class="tab" id="tab-buscar" onclick="switchTab('buscar')"></button>
-  <button class="tab" id="tab-informe" onclick="switchTab('informe')" style="display:none;"></button>
-</div>
-<div class="app-body">
 <nav class="sidebar-nav" id="sidebarNav">
   <span class="nav-pastilla" id="navPastilla"></span>
   <button class="sidebar-collapse-btn" onclick="toggleSidebar()" title="Colapsar menú">&#8249;</button>
@@ -1820,6 +1807,28 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
     <span class="nav-label-text">Pacientes para revisión</span>
   </button>
 </nav>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div class="sync-status" id="syncStatus">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncText">Conectado</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="btnConfig" onclick="abrirConfig()" title="Configuración" style="display:none;padding:5px 9px;font-size:16px;border:1px solid #ddd;border-radius:8px;background:white;color:#555;cursor:pointer;transition:all 0.15s;">⚙️</button>
+      <button class="btn-theme" id="btnTheme" onclick="toggleTheme()" title="Cambiar tema"></button>
+      <span class="medico-badge" id="medicoBadge"></span>
+      <button class="btn-logout" id="btnLogout" onclick="doLogout()" style="display:none;">Salir</button>
+      <div class="fecha-hoy" id="fechaHoy"></div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs" style="display:none;">
+  <button class="tab active" id="tab-carga" onclick="switchTab('carga')"></button>
+  <button class="tab" id="tab-cirugia" onclick="switchTab('cirugia')"></button>
+  <button class="tab" id="tab-buscar" onclick="switchTab('buscar')"></button>
+  <button class="tab" id="tab-informe" onclick="switchTab('informe')" style="display:none;"></button>
+</div>
+<div class="app-body">
 <div class="content-area">
 
 <!-- PESTAÑA CARGA -->
