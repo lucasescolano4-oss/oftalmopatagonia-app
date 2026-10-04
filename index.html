@@ -1096,13 +1096,19 @@
   .tabs { display: none !important; }
 
   /* Sidebar navigation */
+  /* Isla flotante centrada, en vez de una barra de borde a borde. */
   .sidebar-nav {
     position: relative;
-    width: 100%;
-    background: white;
-    border-bottom: 1px solid #e5e5e3;
+    width: fit-content; max-width: calc(100% - 24px);
+    margin: 10px auto 12px;
+    background: rgba(255,255,255,.78);
+    backdrop-filter: blur(18px) saturate(1.5);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    border: 1px solid #e8e8e6;
+    border-radius: 999px;
+    box-shadow: 0 4px 20px -6px rgba(15,23,42,.14), 0 1px 3px rgba(15,23,42,.05);
     display: flex; flex-direction: row; align-items: center;
-    padding: 5px 10px; gap: 2px;
+    padding: 5px 6px; gap: 2px;
     overflow-x: auto; overflow-y: hidden;
     flex-shrink: 0;
     z-index: 10;
@@ -1116,7 +1122,7 @@
      que hace que se sienta Apple. */
   .nav-pastilla {
     position: absolute; top: 5px; bottom: 5px; left: 0; width: 0;
-    background: #eef4ff; border-radius: 10px;
+    background: #eef4ff; border-radius: 999px;
     opacity: 0; pointer-events: none; z-index: 0;
     transition: left .42s cubic-bezier(.22,1,.36,1),
                 width .42s cubic-bezier(.22,1,.36,1),
@@ -1127,7 +1133,7 @@
   .nav-item {
     position: relative; z-index: 1;
     display: flex; align-items: center; gap: 7px;
-    padding: 8px 13px; border-radius: 10px;
+    padding: 8px 15px; border-radius: 999px;
     border: none; background: none;
     cursor: pointer; color: #666; font-size: 13px; font-weight: 500;
     transition: color .22s ease;
@@ -1602,6 +1608,32 @@
   .it-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .it-file-open { color: #4a6cf7; text-decoration: none; font-size: 11px; flex-shrink: 0; }
   .pcard-obra-col { font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CAMPOS REDONDEADOS
+   Los campos de una línea llevan los extremos completos; las áreas de varias
+   líneas, una curva marcada — un óvalo en un bloque de texto queda raro.
+   ══════════════════════════════════════════════════════════════════════════ */
+input[type=text], input[type=tel], input[type=search],
+input[type=email], input[type=password], input[type=number],
+select, .tel-prefix {
+  border-radius: 999px;
+  padding-left: 14px; padding-right: 14px;
+}
+input[type=date], input[type=time] { border-radius: 999px; padding-left: 14px; }
+textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px 14px; }
+
+/* Botones y cápsulas al mismo lenguaje. */
+.btn-buscar, .btn-limpiar, .btn-select-all, .btn-export, .btn-reenviar,
+.btn-agregar, .btn-pdf, .dbtn-edit, .dbtn-del, .dbtn-wa, .dbtn-informe,
+.dbtn-cirugia, .dbtn-marcar, #btnSoloPendientes, .informe-tab-volver {
+  border-radius: 999px;
+}
+.estudio-chip, .opcion-chip { border-radius: 999px; }
+
+/* Los contenedores siguen con esquinas suaves, no ovaladas. */
+.res-card, .metric-card, .graf-panel, .graf-tarjeta,
+.modal-box, .detalle-sidebar { border-radius: 16px; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    MODO OSCURO — partes que habían quedado claras
