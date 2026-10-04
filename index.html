@@ -1374,6 +1374,21 @@
     padding: 6px 4px; white-space: nowrap;
   }
   .barra-sel-limpiar:hover { color: #fff; text-decoration: underline; }
+  /* Encabezado de resultados: una línea delgada, sin botones. */
+  .res-encabezado {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 7px; font-size: 12.5px; color: #999;
+  }
+  .res-sel-todos { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  .res-sel-todos input { accent-color: #378add; margin: 0; width: 14px; height: 14px; cursor: pointer; }
+
+  .barra-sel-eliminar {
+    padding: 8px 14px; border-radius: 999px; cursor: pointer;
+    background: rgba(226,75,74,.16); border: 1px solid rgba(226,75,74,.35);
+    color: #ff9a99; font-size: 12.5px; font-weight: 500; white-space: nowrap;
+    transition: background .15s, color .15s;
+  }
+  .barra-sel-eliminar:hover { background: rgba(226,75,74,.3); color: #fff; }
   .barra-sel-reasignar {
     padding: 8px 14px; border-radius: 999px; cursor: pointer;
     background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22);
@@ -1390,10 +1405,19 @@
   .barra-sel-enviar:hover { background: #1ebe5d; }
   .barra-sel-enviar:disabled { background: #888; cursor: default; }
   .search-view { position: relative; }
-  @media (max-width: 560px) {
-    .barra-seleccion { left: 12px; right: 12px; transform: translateY(120%); }
+  /* Con cuatro acciones la barra no entra en pantallas chicas: se acortan los
+     textos y, más abajo, se cae lo prescindible. */
+  @media (max-width: 900px) {
+    .barra-seleccion { padding-left: 14px; gap: 8px; }
+    .barra-sel-reasignar { font-size: 0; padding: 8px 12px; }
+    .barra-sel-reasignar::after { content: '↔'; font-size: 14px; }
+  }
+  @media (max-width: 680px) {
+    .barra-seleccion { left: 12px; right: 12px; transform: translateY(120%); justify-content: space-between; }
     .barra-seleccion.visible { transform: translateY(0); }
     .barra-sel-limpiar { display: none; }
+    .barra-sel-eliminar { font-size: 0; padding: 8px 12px; }
+    .barra-sel-eliminar::after { content: '🗑'; font-size: 13px; }
   }
 
   #view-mensajes { display: none; }
@@ -2128,6 +2152,9 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
     <div class="barra-seleccion" id="barraSeleccion">
       <span class="barra-sel-texto" id="barraSeleccionTexto">0 pacientes seleccionados</span>
       <button class="barra-sel-limpiar" onclick="desmarcarResultados()">Quitar selección</button>
+      <button class="barra-sel-eliminar" onclick="eliminarDesdeResultadosBulk()" title="Eliminar los seleccionados">
+        🗑 Eliminar
+      </button>
       <button class="barra-sel-reasignar" onclick="abrirModalReasignar()" title="Pasar los seleccionados al otro médico">
         ↔ Reasignar médico
       </button>
@@ -3347,12 +3374,11 @@ async function buscar(opts) {
         ✓ Sacar de la lista
       </button>
     </div>`
-    : `<div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:13px;color:#888;">${data.length} resultado${data.length!==1?'s':''} · <label style="font-size:13px;color:#888;cursor:pointer;"><input type="checkbox" id="checkTodosResultados" onclick="toggleTodosResultados()" style="margin-right:4px;accent-color:#378add;">Seleccionar todos</label></div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="eliminarDesdeResultadosBulk()" style="padding:7px 14px;font-size:13px;font-weight:500;background:white;color:#e24b4a;border:1px solid #fcc;border-radius:8px;cursor:pointer;">🗑 Eliminar</button>
-        <button onclick="reenviarDesdeResultados()" style="padding:7px 16px;font-size:13px;font-weight:500;background:#25D366;color:white;border:none;border-radius:8px;cursor:pointer;">📤 Enviar seleccionados</button>
-      </div>
+    // Las acciones viven en la barra flotante, que aparece al marcar pacientes.
+    // Acá arriba queda solo el conteo y el selector, en una línea delgada.
+    : `<div class="res-encabezado">
+      <span>${data.length} resultado${data.length!==1?'s':''}</span>
+      <label class="res-sel-todos"><input type="checkbox" id="checkTodosResultados" onclick="toggleTodosResultados()">Seleccionar todos</label>
     </div>`;
 
   const resumen = soloRevision ? '' : `
@@ -3614,6 +3640,8 @@ async function eliminarDesdeResultadosBulk() {
   // Quitar de pacientesHoy si estaban ahí
   pacientesHoy = pacientesHoy.filter(p => !ids.includes(p.id));
   showToast(`✓ ${ids.length} paciente${ids.length!==1?'s':''} eliminado${ids.length!==1?'s':''}`);
+  // Ya no queda nada marcado: la barra se esconde sola.
+  if (typeof actualizarBarraSeleccion === 'function') actualizarBarraSeleccion();
 }
 
 function toggleGrupo(checkEl, fecha) {
