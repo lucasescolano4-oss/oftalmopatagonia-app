@@ -1630,6 +1630,14 @@ select, .tel-prefix {
   padding-left: 14px; padding-right: 14px;
 }
 input[type=date], input[type=time] { border-radius: 999px; padding-left: 14px; }
+
+/* El texto de adentro ahora nombra al campo, así que necesita leerse mejor que
+   un ejemplo al pasar, pero sin confundirse con algo ya escrito. */
+#dni::placeholder, #nombreCompleto::placeholder, #telNumero::placeholder,
+#obraSocial::placeholder, #emailPaciente::placeholder { color: #8a8a8f; opacity: 1; }
+[data-theme="dark"] #dni::placeholder, [data-theme="dark"] #nombreCompleto::placeholder,
+[data-theme="dark"] #telNumero::placeholder, [data-theme="dark"] #obraSocial::placeholder,
+[data-theme="dark"] #emailPaciente::placeholder { color: #8e8e95; }
 textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px 14px; }
 
 /* Botones y cápsulas al mismo lenguaje. */
@@ -1854,16 +1862,13 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
       </div>
 
       <div class="form-group">
-        <label class="form-label">DNI</label>
-        <input type="text" id="dni" placeholder="12345678" maxlength="8" oninput="onDniInput(this.value)">
+        <input type="text" id="dni" aria-label="DNI" placeholder="DNI" maxlength="8" oninput="onDniInput(this.value)">
         <div id="dniSugerencia" style="display:none;margin-top:8px;padding:12px;border:1.5px solid #378add;border-radius:10px;background:#f0f7ff;font-size:13px;"></div>
       </div>
       <div class="form-group">
-        <label class="form-label">Nombre y apellido</label>
-        <input type="text" id="nombreCompleto" placeholder="Ej: Juan Pérez">
+        <input type="text" id="nombreCompleto" aria-label="Nombre y apellido" placeholder="Nombre y apellido">
       </div>
       <div class="form-group">
-        <label class="form-label">Celular</label>
         <div class="tel-wrap">
           <select id="paisCodigo" onchange="actualizarPrefijo()">
             <option value="549" selected>🇦🇷 +549</option>
@@ -1876,12 +1881,11 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
             <option value="1">🇺🇸 +1</option>
           </select>
           <div class="tel-prefix" id="telPrefijo">+549</div>
-          <input type="tel" id="telNumero" placeholder="2945 590047" maxlength="15">
+          <input type="tel" id="telNumero" aria-label="Celular" placeholder="Celular" maxlength="15">
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Obra social</label>
-        <input type="text" id="obraSocial" placeholder="Escribí o seleccioná..." list="listaObrasSociales" autocomplete="off" oninput="chkNuevaObraCarga(this)">
+        <input type="text" id="obraSocial" aria-label="Obra social" placeholder="Obra social" list="listaObrasSociales" autocomplete="off" oninput="chkNuevaObraCarga(this)">
         <div id="hintNuevaObraCarga" style="display:none;padding:5px 12px;font-size:12px;color:#378add;cursor:pointer;background:#f0f7ff;border:1px solid #c5d9f0;border-radius:8px;margin-top:4px;" onclick="agregarNuevaObraCarga()">
           ➕ Agregar "<span id="hintNuevaObraTextoCarga"></span>" como nueva
         </div>
@@ -1940,8 +1944,7 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
         </datalist>
       </div>
       <div class="form-group">
-        <label class="form-label">Email <span style="font-size:11px;color:#aaa;">(opcional)</span></label>
-        <input type="email" id="emailPaciente" placeholder="ejemplo@mail.com">
+        <input type="email" id="emailPaciente" aria-label="Email del paciente (opcional)" placeholder="Email (opcional)">
       </div>
       <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #ddd;border-radius:8px;cursor:pointer;" onclick="toggleOrden()">
         <div id="ordenCheck" style="width:20px;height:20px;border:1.5px solid #ddd;border-radius:5px;display:flex;align-items:center;justify-content:center;background:white;flex-shrink:0;"></div>
