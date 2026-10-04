@@ -1374,6 +1374,13 @@
     padding: 6px 4px; white-space: nowrap;
   }
   .barra-sel-limpiar:hover { color: #fff; text-decoration: underline; }
+  .barra-sel-reasignar {
+    padding: 8px 14px; border-radius: 999px; cursor: pointer;
+    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22);
+    color: #d8d8dd; font-size: 12.5px; font-weight: 500; white-space: nowrap;
+    transition: background .15s, color .15s;
+  }
+  .barra-sel-reasignar:hover { background: rgba(255,255,255,.2); color: #fff; }
   .barra-sel-enviar {
     display: flex; align-items: center; gap: 7px;
     padding: 9px 18px; border-radius: 999px; border: none; cursor: pointer;
@@ -1647,6 +1654,20 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
   border-radius: 999px;
 }
 .estudio-chip, .opcion-chip { border-radius: 999px; }
+
+/* Combos de estudios por cuadro clínico. */
+.combos-fila { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 9px; }
+.combo-btn {
+  padding: 5px 13px; border-radius: 999px; cursor: pointer;
+  border: 1px dashed #c9d6e8; background: #f7faff; color: #2a5a9f;
+  font-size: 12px; font-weight: 600; font-family: inherit;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.combo-btn:hover { background: #eaf2ff; border-color: #9bbbe6; }
+.combo-btn.active { background: #185fa5; border-style: solid; border-color: #185fa5; color: #fff; }
+[data-theme="dark"] .combo-btn { background: #14223a; border-color: #2a4365; color: #7db8ff; }
+[data-theme="dark"] .combo-btn:hover { background: #1a2d4d; }
+[data-theme="dark"] .combo-btn.active { background: #2a5a9f; border-color: #2a5a9f; color: #fff; }
 
 /* Los contenedores siguen con esquinas suaves, no ovaladas. */
 .res-card, .metric-card, .graf-panel, .graf-tarjeta,
@@ -1955,6 +1976,7 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
 
       <div class="form-group">
         <label class="form-label" style="margin-bottom:8px;">Estudios realizados</label>
+        <div class="combos-fila" id="combosEstudios"></div>
         <div class="estudios-grid" id="estudiosGrid"></div>
         <div style="margin-top:6px;">
           <input type="text" id="otrosEstudio" placeholder="Otros (especificar)">
@@ -2106,6 +2128,9 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
     <div class="barra-seleccion" id="barraSeleccion">
       <span class="barra-sel-texto" id="barraSeleccionTexto">0 pacientes seleccionados</span>
       <button class="barra-sel-limpiar" onclick="desmarcarResultados()">Quitar selección</button>
+      <button class="barra-sel-reasignar" onclick="abrirModalReasignar()" title="Pasar los seleccionados al otro médico">
+        ↔ Reasignar médico
+      </button>
       <button class="barra-sel-enviar" onclick="reenviarDesdeResultados()">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         Enviar estudios
@@ -2363,7 +2388,16 @@ async function mostrarEnIframe(iframe, ruta) {
 // Init obras sociales desde localStorage
 document.addEventListener('DOMContentLoaded', () => { addObrasSocialesToDatalist(); });
 
-const ESTUDIOS = ['Campimetría','OCT','Paquimetría','Biometría','Retinografía','UBM','Topografía'];
+// El orden importa: la grilla es de tres columnas y así quedan agrupados como
+// se piden en la consulta.
+const ESTUDIOS = ['OCT','Paquimetría','Biometría','Campimetría','Retinografía','UBM','Topografía'];
+
+// Combos: los pedidos habituales según el cuadro, para no marcar de a uno.
+const COMBOS_ESTUDIOS = [
+  { nombre: 'Catarata',    estudios: ['OCT','Paquimetría','Biometría','Retinografía'] },
+  { nombre: 'Glaucoma',    estudios: ['OCT','Paquimetría','Campimetría','Retinografía'] },
+  { nombre: 'Maculopatía', estudios: ['OCT','Retinografía'] },
+];
 let pacientesHoy = [];
 let estudiosSeleccionados = new Set();
 let seleccionados = new Set();
@@ -2387,10 +2421,24 @@ function init() {
   ESTUDIOS.forEach(e => {
     const chip = document.createElement('div');
     chip.className = 'estudio-chip';
+    chip.dataset.estudio = e;
     chip.innerHTML = `<span class="chip-dot"></span>${e}`;
     chip.onclick = () => toggleEstudio(e, chip);
     grid.appendChild(chip);
   });
+
+  const combos = document.getElementById('combosEstudios');
+  if (combos) {
+    COMBOS_ESTUDIOS.forEach(c => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'combo-btn';
+      b.textContent = c.nombre;
+      b.title = c.estudios.join(' · ');
+      b.onclick = () => aplicarCombo(c);
+      combos.appendChild(b);
+    });
+  }
 
   // La carga se hace después de seleccionar médico
 }
@@ -2604,6 +2652,37 @@ function actualizarPrefijo() {
 function toggleEstudio(e, chip) {
   if (estudiosSeleccionados.has(e)) { estudiosSeleccionados.delete(e); chip.classList.remove('active'); }
   else { estudiosSeleccionados.add(e); chip.classList.add('active'); }
+  marcarCombosActivos();
+}
+
+/**
+ * ¿Lo marcado es exactamente este combo, ni más ni menos?
+ * Se compara así y no por "están todos" porque Maculopatía está contenida en
+ * Catarata: con la otra forma, marcar Catarata encendía los dos botones.
+ */
+function esExactamenteElCombo(combo) {
+  return combo.estudios.length === estudiosSeleccionados.size
+      && combo.estudios.every(e => estudiosSeleccionados.has(e));
+}
+
+/** Marca de una vez los estudios del combo; si ya está puesto tal cual, lo saca. */
+function aplicarCombo(combo) {
+  const quitar = esExactamenteElCombo(combo);
+  combo.estudios.forEach(e => quitar ? estudiosSeleccionados.delete(e) : estudiosSeleccionados.add(e));
+
+  document.querySelectorAll('#estudiosGrid .estudio-chip').forEach(chip => {
+    chip.classList.toggle('active', estudiosSeleccionados.has(chip.dataset.estudio));
+  });
+  marcarCombosActivos();
+  showToast(quitar ? `${combo.nombre}: estudios quitados`
+                   : `${combo.nombre}: ${combo.estudios.length} estudios marcados`);
+}
+
+function marcarCombosActivos() {
+  document.querySelectorAll('#combosEstudios .combo-btn').forEach((b, i) => {
+    const c = COMBOS_ESTUDIOS[i];
+    b.classList.toggle('active', !!c && esExactamenteElCombo(c));
+  });
 }
 
 async function guardarPaciente() {
@@ -3451,9 +3530,21 @@ async function editarDesdeResultados(id) {
 }
 
 // Eliminar seleccionados en "Carga del día"
+/**
+ * Los pacientes marcados, vengan de donde vengan: en Carga del día es un
+ * conjunto en memoria, en Buscar pacientes son las casillas de la lista.
+ */
+function idsSeleccionadosParaReasignar() {
+  const enBusqueda = document.getElementById('view-buscar');
+  if (enBusqueda && enBusqueda.classList.contains('active')) {
+    return [...document.querySelectorAll('#resultsArea .check-resultado:checked')].map(c => c.value);
+  }
+  return [...seleccionados];
+}
+
 function abrirModalReasignar() {
-  if (seleccionados.size === 0) return;
-  const cantidad = seleccionados.size;
+  const cantidad = idsSeleccionadosParaReasignar().length;
+  if (cantidad === 0) { showToast('Seleccioná al menos un paciente'); return; }
   document.getElementById('modalReasignarSub').textContent = `${cantidad} paciente${cantidad > 1 ? 's' : ''} seleccionado${cantidad > 1 ? 's' : ''}`;
   // Preseleccionar el otro médico
   const sel = document.getElementById('selectMedicoReasignar');
@@ -3469,15 +3560,25 @@ async function confirmarReasignar() {
   const select = document.getElementById('selectMedicoReasignar');
   const nuevoMedico = select.value;
   const nuevoMedicoId = select.options[select.selectedIndex].dataset.uid;
-  const ids = [...seleccionados];
+  const ids = idsSeleccionadosParaReasignar();
   if (!ids.length) return;
+
+  const vistaBuscar = document.getElementById('view-buscar');
+  const desdeBusqueda = vistaBuscar && vistaBuscar.classList.contains('active');
+
   cerrarModalReasignar();
   const { error } = await sb.from('pacientes').update({ medico: nuevoMedico, medico_id: nuevoMedicoId }).in('id', ids);
   if (error) { showToast('Error al reasignar ✗'); console.error(error); return; }
   showToast(`✓ ${ids.length} paciente${ids.length > 1 ? 's' : ''} reasignado${ids.length > 1 ? 's' : ''} a ${nuevoMedico}`);
-  seleccionados.clear();
-  renderLista();
-  await cargarPacientesHoy();
+
+  // Cada vista se refresca a su manera.
+  if (desdeBusqueda) {
+    buscar();
+  } else {
+    seleccionados.clear();
+    renderLista();
+    await cargarPacientesHoy();
+  }
 }
 
 async function eliminarSeleccionados() {
