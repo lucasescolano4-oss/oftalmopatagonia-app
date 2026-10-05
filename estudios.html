@@ -173,13 +173,26 @@ async function entrar() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: TOKEN, dni })
     });
-    const data = await r.json();
+
+    // Si la respuesta no es JSON, el problema no es el DNI: el servidor
+    // devolvió otra cosa. Decirlo con el código ahorra adivinar.
+    let data;
+    try {
+      data = await r.json();
+    } catch {
+      console.error('[acceso] respuesta no interpretable, HTTP', r.status);
+      mostrarError(r.status === 404
+        ? 'El servicio no está disponible en esta dirección. Comuniquese con la clínica.'
+        : `El servidor respondió de forma inesperada (código ${r.status}). Intente más tarde o comuniquese con la clínica.`);
+      return;
+    }
 
     if (!data.ok) { mostrarError(data.error || 'No pudimos validar los datos.'); return; }
 
     DNI = dni;
     mostrarArchivos(data);
   } catch (e) {
+    console.error('[acceso]', e);
     mostrarError('No pudimos conectarnos. Verifique su conexión e intente de nuevo.');
   } finally {
     btn.disabled = false;
