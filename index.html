@@ -3965,6 +3965,15 @@ async function generarYSubirInforme() {
   const firmaUrl = await obtenerFirmaBase64();
   if (firmaUrl) payload.FIRMA_URL = firmaUrl;
 
+  // QR para que el paciente acceda a sus estudios desde el informe impreso.
+  // Si falla, el informe se genera igual: el QR es un extra, no un requisito.
+  try {
+    const qr = await generarQRDeAcceso(p);
+    if (qr) payload.QR_BASE64 = qr;
+  } catch (e) {
+    console.error('[QR] no se pudo generar:', e);
+  }
+
   const SHEET_URL = medicoActual.includes('Escolano')
     ? 'https://script.google.com/macros/s/AKfycbwlT8Pwx_wSecUvfJKL5MYv0v52072r1rm_lb6dG-sCEnuDkPjAJ8V5dVaBeaEuWv4g/exec'
     : 'https://script.google.com/macros/s/AKfycbwJAKKna3APwSQmrnHAkZrCQAjEgVD6l5DwNZMSZT0dl2X9ptvED7Q6D_LZPpe86Un1/exec';
@@ -4148,6 +4157,67 @@ async function eliminarFirma() {
 }
 
 // Obtiene la URL pública de la firma del médico actual (para el PDF)
+// ── QR de acceso a los estudios ─────────────────────────────────────────────
+
+/** Días que el enlace del QR sigue funcionando desde que se emite el informe. */
+const VIGENCIA_QR_DIAS = 90;
+
+/**
+ * Crea el acceso del paciente y devuelve el QR como imagen lista para el PDF.
+ * El código no lleva datos del paciente: solo un identificador al azar. Lo
+ * sensible queda del lado del servidor, que además exige el DNI para abrirlo.
+ */
+async function generarQRDeAcceso(paciente) {
+  if (!paciente || !paciente.dni) return null;
+
+  const vence = new Date();
+  vence.setDate(vence.getDate() + VIGENCIA_QR_DIAS);
+
+  const { data, error } = await sb.from('accesos_estudios').insert({
+    dni: String(paciente.dni).replace(/\D/g, ''),
+    nombre: paciente.nombre_completo || null,
+    paciente_id: paciente.id || null,
+    vence_en: vence.toISOString()
+  }).select('token').single();
+
+  if (error || !data) { console.error('[QR] no se pudo crear el acceso:', error); return null; }
+
+  const url = `${location.origin}/estudios.html?t=${data.token}`;
+  return await dibujarQR(url);
+}
+
+/** Dibuja el QR en un lienzo y lo devuelve como imagen embebible. */
+function dibujarQR(texto) {
+  return new Promise((resolve, reject) => {
+    const hacer = () => {
+      try {
+        const cont = document.createElement('div');
+        // Nivel de corrección alto: el informe se dobla, se fotocopia y se
+        // fotografía, y así sigue leyéndose con parte del código dañada.
+        new QRCode(cont, {
+          text: texto, width: 320, height: 320,
+          correctLevel: QRCode.CorrectLevel.H
+        });
+        // La librería tarda un instante en pintar el lienzo.
+        setTimeout(() => {
+          const canvas = cont.querySelector('canvas');
+          const img = cont.querySelector('img');
+          if (canvas) return resolve(canvas.toDataURL('image/png'));
+          if (img && img.src) return resolve(img.src);
+          reject(new Error('El generador no devolvió imagen'));
+        }, 120);
+      } catch (e) { reject(e); }
+    };
+
+    if (window.QRCode) return hacer();
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload = hacer;
+    s.onerror = () => reject(new Error('No se pudo cargar el generador de QR'));
+    document.head.appendChild(s);
+  });
+}
+
 async function obtenerFirmaBase64() {
   const { data } = await sb.from('firmas_medicos').select('firma_url, firma_base64').eq('medico', medicoActual).single();
   if (!data) return null;

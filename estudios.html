@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis estudios — OftalmoPatagonia</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<meta name="theme-color" content="#185fa5">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f1f5f9; color: #1e293b;
+    min-height: 100vh; padding: 20px 16px 40px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .caja { width: 100%; max-width: 560px; }
+
+  .marca { text-align: center; margin: 18px 0 22px; }
+  .marca h1 { font-size: 19px; font-weight: 700; letter-spacing: -.01em; }
+  .marca p  { font-size: 13px; color: #64748b; margin-top: 3px; }
+
+  .panel {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 18px;
+    padding: 24px 22px; box-shadow: 0 1px 3px rgba(15,23,42,.06);
+  }
+  .panel h2 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .ayuda { font-size: 13.5px; color: #64748b; line-height: 1.5; margin-bottom: 18px; }
+
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 7px; }
+  input[type=text] {
+    width: 100%; padding: 13px 16px; font-size: 16px;   /* 16px evita el zoom al tocar en iPhone */
+    border: 1px solid #cbd5e1; border-radius: 999px; outline: none;
+    font-family: inherit; letter-spacing: .02em;
+  }
+  input[type=text]:focus { border-color: #185fa5; box-shadow: 0 0 0 3px rgba(24,95,165,.12); }
+
+  button.principal {
+    width: 100%; margin-top: 14px; padding: 13px;
+    background: #185fa5; color: #fff; border: none; border-radius: 999px;
+    font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer;
+    transition: background .15s;
+  }
+  button.principal:hover:not(:disabled) { background: #12497f; }
+  button.principal:disabled { background: #94a3b8; cursor: default; }
+
+  .error {
+    display: none; margin-top: 14px; padding: 11px 14px;
+    background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px;
+    color: #b91c1c; font-size: 13.5px; line-height: 1.45;
+  }
+  .error.visible { display: block; }
+
+  .lista { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; }
+  .archivo {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 15px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff;
+  }
+  .archivo-ico { font-size: 21px; flex-shrink: 0; }
+  .archivo-datos { flex: 1; min-width: 0; }
+  .archivo-nombre {
+    font-size: 13.5px; font-weight: 600; word-break: break-word; line-height: 1.35;
+  }
+  .archivo-meta { font-size: 11.5px; color: #94a3b8; margin-top: 2px; }
+  .archivo-acciones { display: flex; gap: 7px; flex-shrink: 0; }
+  .archivo-acciones a {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px; border-radius: 11px; text-decoration: none;
+    border: 1px solid #cbd5e1; color: #475569; font-size: 15px;
+  }
+  .archivo-acciones a:hover { background: #f1f5f9; border-color: #94a3b8; }
+  .archivo-acciones a.ver { background: #185fa5; border-color: #185fa5; color: #fff; }
+
+  .grupo-tit {
+    font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: #94a3b8; margin: 18px 0 2px;
+  }
+  .nota {
+    margin-top: 20px; padding: 13px 15px; background: #f8fafc;
+    border: 1px solid #e2e8f0; border-radius: 12px;
+    font-size: 12.5px; color: #64748b; line-height: 1.5;
+  }
+  .pie { text-align: center; font-size: 11.5px; color: #94a3b8; margin-top: 22px; line-height: 1.6; }
+  .cargando { text-align: center; color: #94a3b8; font-size: 14px; padding: 26px 0; }
+</style>
+</head>
+<body>
+<div class="caja">
+
+  <div class="marca">
+    <h1>OftalmoPatagonia</h1>
+    <p>Clínica Esquel · Servicio de Oftalmología</p>
+  </div>
+
+  <!-- Paso 1: verificar identidad -->
+  <div class="panel" id="panelIngreso">
+    <h2>Acceso a sus estudios</h2>
+    <p class="ayuda">Para proteger su información, ingrese el número de DNI de la persona a quien pertenecen los estudios.</p>
+    <label for="dni">Número de DNI</label>
+    <input type="text" id="dni" inputmode="numeric" autocomplete="off"
+           placeholder="Sin puntos" maxlength="9" aria-describedby="errorMsg">
+    <button class="principal" id="btnEntrar">Ver mis estudios</button>
+    <div class="error" id="errorMsg" role="alert"></div>
+  </div>
+
+  <!-- Paso 2: los archivos -->
+  <div id="panelArchivos" hidden>
+    <div class="panel">
+      <h2 id="saludo">Sus estudios</h2>
+      <p class="ayuda" id="subtitulo">Toque un estudio para verlo, o la flecha para descargarlo.</p>
+      <div class="lista" id="lista"></div>
+    </div>
+    <div class="nota">
+      Guarde los archivos en su teléfono o computadora. Este enlace deja de funcionar
+      el <strong id="vencimiento">—</strong>.
+    </div>
+  </div>
+
+  <div class="pie">
+    Ante cualquier duda, comuníquese con la clínica.<br>
+    Este enlace es personal: no lo comparta.
+  </div>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const TOKEN = params.get('t') || '';
+let DNI = '';
+
+const $ = id => document.getElementById(id);
+
+function mostrarError(msg) {
+  const e = $('errorMsg');
+  e.textContent = msg;
+  e.classList.add('visible');
+}
+
+function limpiarError() { $('errorMsg').classList.remove('visible'); }
+
+function pesoLegible(bytes) {
+  if (!bytes) return '';
+  const mb = bytes / 1048576;
+  return mb >= 1 ? mb.toFixed(1) + ' MB' : Math.round(bytes / 1024) + ' KB';
+}
+
+function fechaLegible(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return isNaN(d) ? '' : d.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+function escapar(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function entrar() {
+  limpiarError();
+  const dni = $('dni').value.replace(/\D/g, '');
+  if (dni.length < 7) { mostrarError('Ingrese el DNI completo, sin puntos.'); return; }
+
+  const btn = $('btnEntrar');
+  btn.disabled = true;
+  btn.textContent = 'Verificando…';
+
+  try {
+    const r = await fetch('/api/acceso-estudios', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: TOKEN, dni })
+    });
+    const data = await r.json();
+
+    if (!data.ok) { mostrarError(data.error || 'No pudimos validar los datos.'); return; }
+
+    DNI = dni;
+    mostrarArchivos(data);
+  } catch (e) {
+    mostrarError('No pudimos conectarnos. Verifique su conexión e intente de nuevo.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Ver mis estudios';
+  }
+}
+
+function mostrarArchivos(data) {
+  $('panelIngreso').hidden = true;
+  $('panelArchivos').hidden = false;
+
+  if (data.nombre) $('saludo').textContent = 'Estudios de ' + data.nombre;
+  $('vencimiento').textContent = fechaLegible(data.vence);
+
+  const archivos = data.archivos || [];
+  if (!archivos.length) {
+    $('lista').innerHTML = '<p class="ayuda">Todavía no hay estudios disponibles. Comuníquese con la clínica.</p>';
+    $('subtitulo').textContent = '';
+    return;
+  }
+
+  const informes = archivos.filter(a => a.esInforme);
+  const estudios = archivos.filter(a => !a.esInforme);
+
+  const fila = a => {
+    const base = `/api/descargar-estudio?t=${encodeURIComponent(TOKEN)}&dni=${encodeURIComponent(DNI)}&id=${encodeURIComponent(a.id)}`;
+    const meta = [fechaLegible(a.fecha), pesoLegible(a.peso)].filter(Boolean).join(' · ');
+    return `<div class="archivo">
+      <span class="archivo-ico">${a.esInforme ? '📋' : '📄'}</span>
+      <div class="archivo-datos">
+        <div class="archivo-nombre">${escapar(a.nombre)}</div>
+        <div class="archivo-meta">${escapar(meta)}</div>
+      </div>
+      <div class="archivo-acciones">
+        <a class="ver" href="${base}" target="_blank" rel="noopener" title="Ver">👁</a>
+        <a href="${base}&descargar=1" title="Descargar">⬇</a>
+      </div>
+    </div>`;
+  };
+
+  let html = '';
+  if (informes.length) html += '<div class="grupo-tit">Informe médico</div>' + informes.map(fila).join('');
+  if (estudios.length) html += '<div class="grupo-tit">Estudios</div>' + estudios.map(fila).join('');
+  $('lista').innerHTML = html;
+}
+
+// El enlace tiene que traer su código; si no, no hay nada que mostrar.
+if (!TOKEN) {
+  $('panelIngreso').innerHTML =
+    '<h2>Enlace incompleto</h2>' +
+    '<p class="ayuda">Escanee nuevamente el código QR de su informe. ' +
+    'Si el problema continúa, comuníquese con la clínica.</p>';
+} else {
+  $('btnEntrar').addEventListener('click', entrar);
+  $('dni').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+  $('dni').focus();
+}
+</script>
+</body>
+</html>
