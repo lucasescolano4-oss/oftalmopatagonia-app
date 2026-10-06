@@ -42,12 +42,16 @@ async function tokenDrive(sa) {
 export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
 
-    const { token, dni, id } = req.query || {};
-    const dniLimpio = String(dni || '').replace(/\D/g, '');
+    // La página manda el código como "t", igual que en el enlace del QR.
+    // Se acepta "token" como alias por si quedó algún enlace armado a mano.
+    const q = req.query || {};
+    const token = String(q.t || q.token || '');
+    const dniLimpio = String(q.dni || '').replace(/\D/g, '');
+    const id = String(q.id || '');
 
-    if (!/^[0-9a-f-]{36}$/i.test(String(token || '')) ||
+    if (!/^[0-9a-f-]{36}$/i.test(token) ||
         !/^\d{7,9}$/.test(dniLimpio) ||
-        !/^[A-Za-z0-9_-]{10,}$/.test(String(id || ''))) {
+        !/^[A-Za-z0-9_-]{10,}$/.test(id)) {
         res.status(400).send('Solicitud inválida');
         return;
     }
@@ -81,8 +85,10 @@ export default async function handler(req, res) {
 
         const buffer = Buffer.from(await archivo.arrayBuffer());
         res.setHeader('Content-Type', meta.mimeType || 'application/octet-stream');
+        // filename* guarda el nombre tal cual, con acentos y espacios; sin esto
+        // el paciente baja un archivo llamado "INFORME%20ESCOLANO.pdf".
         res.setHeader('Content-Disposition',
-            `${req.query.descargar ? 'attachment' : 'inline'}; filename="${encodeURIComponent(meta.name)}"`);
+            `${q.descargar ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(meta.name)}`);
         res.send(buffer);
     } catch (e) {
         console.error('[descargar-estudio]', e.message);
