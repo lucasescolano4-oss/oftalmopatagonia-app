@@ -4163,6 +4163,16 @@ async function eliminarFirma() {
 const VIGENCIA_QR_DIAS = 90;
 
 /**
+ * Dirección a la que apunta el QR impreso.
+ *
+ * Va fija y no sale de location.origin a propósito: un informe generado desde
+ * una rama de prueba saldría con un QR hacia esa rama, que pide contraseña y
+ * que deja de existir cuando la rama se borra. El papel ya está impreso y no
+ * hay forma de corregirlo. Si algún día hay dominio propio, se cambia acá.
+ */
+const DOMINIO_PUBLICO = 'https://oftalmopatagonia-app.vercel.app';
+
+/**
  * Crea el acceso del paciente y devuelve el QR como imagen lista para el PDF.
  * El código no lleva datos del paciente: solo un identificador al azar. Lo
  * sensible queda del lado del servidor, que además exige el DNI para abrirlo.
@@ -4182,7 +4192,7 @@ async function generarQRDeAcceso(paciente) {
 
   if (error || !data) { console.error('[QR] no se pudo crear el acceso:', error); return null; }
 
-  const url = `${location.origin}/estudios.html?t=${data.token}`;
+  const url = `${DOMINIO_PUBLICO}/estudios.html?t=${data.token}`;
   return await dibujarQR(url);
 }
 
