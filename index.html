@@ -4159,8 +4159,12 @@ async function eliminarFirma() {
 // Obtiene la URL pública de la firma del médico actual (para el PDF)
 // ── QR de acceso a los estudios ─────────────────────────────────────────────
 
-/** Días que el enlace del QR sigue funcionando desde que se emite el informe. */
-const VIGENCIA_QR_DIAS = 90;
+/**
+ * Días que el enlace del QR sigue funcionando desde que se emite el informe.
+ * Seis meses: el informe lo consultan también los auditores de la obra social,
+ * que suelen revisarlo bastante después de la fecha del estudio.
+ */
+const VIGENCIA_QR_DIAS = 180;
 
 /**
  * Dirección a la que apunta el QR impreso.
