@@ -2203,7 +2203,7 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
                   placeholder="¿Qué querés revisar o consultar de este caso? (opcional)"></textarea>
       </div>
       <div style="display:flex;gap:10px;margin-top:16px;padding-bottom:24px;">
-        <button class="btn-pdf" id="itBtnGuardar" onclick="guardarYSubirInformeTab()" style="flex:1;">📄 Enviar informe</button>
+        <button class="btn-pdf" id="itBtnGuardar" onclick="guardarYSubirInformeTab()" style="flex:1;">📄 Generar informe</button>
       </div>
     </div>
     <!-- Derecha: visor a todo el ancho. Los estudios se eligen desde el
@@ -3834,7 +3834,7 @@ function abrirModalInforme(id, i) {
   const fecha = p.fecha ? new Date(p.fecha+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'}) : '';
   document.getElementById('modalInformeSub').textContent = `${p.nombre_completo} · DNI ${p.dni} · ${fecha}`;
   const btnPDF = document.getElementById('btnGenerarPDF');
-  btnPDF.textContent = p.informe_realizado ? '🔄 Reenviar informe' : '📄 Enviar informe';
+  btnPDF.textContent = p.informe_realizado ? '🔄 Regenerar informe' : '📄 Generar informe';
   btnPDF.disabled = false;
 
   const estudios = (p.estudios && p.estudios.length) ? p.estudios : [];
@@ -3969,7 +3969,12 @@ async function generarYSubirInforme() {
   // Si falla, el informe se genera igual: el QR es un extra, no un requisito.
   try {
     const qr = await generarQRDeAcceso(p);
-    if (qr) payload.QR_BASE64 = qr;
+    if (qr) {
+      payload.QR_BASE64 = qr;
+      console.log('[QR] imagen lista, ' + qr.length + ' caracteres');
+    } else {
+      console.warn('[QR] no se adjuntó: la generación devolvió vacío');
+    }
   } catch (e) {
     console.error('[QR] no se pudo generar:', e);
   }
@@ -4197,6 +4202,7 @@ async function generarQRDeAcceso(paciente) {
   if (error || !data) { console.error('[QR] no se pudo crear el acceso:', error); return null; }
 
   const url = `${DOMINIO_PUBLICO}/estudios.html?t=${data.token}`;
+  console.log('[QR] acceso creado, dibujando:', url);
   return await dibujarQR(url);
 }
 
@@ -4212,14 +4218,21 @@ function dibujarQR(texto) {
           text: texto, width: 320, height: 320,
           correctLevel: QRCode.CorrectLevel.H
         });
-        // La librería tarda un instante en pintar el lienzo.
-        setTimeout(() => {
+        // La librería pinta el lienzo por su cuenta y tarda distinto según el
+        // navegador, así que se espera a que aparezca en vez de apostar a un
+        // plazo fijo: con 120 ms el informe salía sin QR y sin avisar.
+        let intentos = 0;
+        const mirar = () => {
           const canvas = cont.querySelector('canvas');
-          const img = cont.querySelector('img');
           if (canvas) return resolve(canvas.toDataURL('image/png'));
-          if (img && img.src) return resolve(img.src);
-          reject(new Error('El generador no devolvió imagen'));
-        }, 120);
+          const img = cont.querySelector('img');
+          if (img && img.src && img.src.indexOf('data:') === 0) return resolve(img.src);
+          if (++intentos > 40) {
+            return reject(new Error('El generador no devolvió imagen tras 2 segundos'));
+          }
+          setTimeout(mirar, 50);
+        };
+        mirar();
       } catch (e) { reject(e); }
     };
 
@@ -5295,7 +5308,7 @@ async function abrirTabInforme(pacienteObj, fromTab) {
   _informeIdx = idx >= 0 ? idx : -1;
 
   const btnGuardar = document.getElementById('itBtnGuardar');
-  btnGuardar.textContent = pacienteObj.informe_realizado ? '🔄 Reenviar informe' : '📄 Enviar informe';
+  btnGuardar.textContent = pacienteObj.informe_realizado ? '🔄 Regenerar informe' : '📄 Generar informe';
   btnGuardar.disabled = false;
 
   const estudios = (pacienteObj.estudios && pacienteObj.estudios.length) ? pacienteObj.estudios : [];
@@ -5515,7 +5528,7 @@ async function guardarYSubirInformeTab() {
   btn.textContent = '⏳ Generando...';
   await generarYSubirInforme();
   btn.disabled = false;
-  btn.textContent = '🔄 Reenviar informe';
+  btn.textContent = '🔄 Regenerar informe';
 }
 
 // ── Resize handle para panel de archivos en pestaña informe ──
