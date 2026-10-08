@@ -4083,25 +4083,65 @@ function cerrarConfig() {
   document.getElementById('modalConfig').classList.remove('show');
 }
 
+/**
+ * Prepara la firma para el informe.
+ *
+ * Sale en PNG, no en JPEG: la firma es trazo sobre fondo, y el JPEG le deja
+ * manchas grises alrededor de cada línea. Y va a buena resolución porque en
+ * el papel se imprime a unos 4,5 cm.
+ */
 function comprimirFirma(dataURL) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      // Máximo 350x120px para que el base64 quede pequeño
-      const maxW = 350, maxH = 120;
-      let w = img.width, h = img.height;
-      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
-      if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, w, h);
-      ctx.drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', 0.75));
+      // El bucket admite 512 KB. Se empieza grande y solo se achica si una
+      // foto con mucho ruido no entra.
+      const anchos = [1200, 900, 700, 500];
+      for (const ancho of anchos) {
+        const salida = dibujarFirma(img, ancho);
+        if (salida.length <= 450000 || ancho === 500) return resolve(salida);
+      }
     };
     img.src = dataURL;
   });
+}
+
+function dibujarFirma(img, maxW) {
+  const maxH = Math.round(maxW * 0.35);
+  let w = img.width, h = img.height;
+  if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+  if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, w, h);
+  limpiarFondoFirma(ctx, w, h);
+  return canvas.toDataURL('image/png');
+}
+
+/**
+ * Deja el trazo y vuelve transparente el papel.
+ *
+ * La firma casi siempre llega fotografiada o escaneada, con el fondo gris o
+ * amarillento. Sin esto, en el informe queda un recuadro sucio alrededor.
+ * Se trabaja por luminosidad: lo claro se va, lo oscuro queda, y el medio se
+ * desvanece de a poco para que el borde del trazo no quede dentado.
+ */
+function limpiarFondoFirma(ctx, w, h) {
+  const datos = ctx.getImageData(0, 0, w, h);
+  const px = datos.data;
+  const PAPEL = 220;   // de acá para arriba se considera fondo
+  const TINTA = 110;   // de acá para abajo se considera trazo
+  for (let i = 0; i < px.length; i += 4) {
+    const lum = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+    if (lum >= PAPEL) {
+      px[i + 3] = 0;
+    } else if (lum > TINTA) {
+      px[i + 3] = Math.round(px[i + 3] * (PAPEL - lum) / (PAPEL - TINTA));
+    }
+  }
+  ctx.putImageData(datos, 0, 0);
 }
 
 function previewFirma(input) {
@@ -4135,17 +4175,20 @@ async function guardarFirma() {
     // Convertir base64 comprimido a Blob para subir a Storage
     const base64puro = _firmaBase64Nueva.split(',')[1];
     const byteArr = Uint8Array.from(atob(base64puro), c => c.charCodeAt(0));
-    const blob = new Blob([byteArr], { type: 'image/jpeg' });
+    const blob = new Blob([byteArr], { type: 'image/png' });
 
     // Nombre del archivo: medico normalizado
-    const nombreArchivo = medicoActual.toLowerCase().replace(/\s+/g, '_').replace(/\./g, '') + '.jpg';
-    const path = nombreArchivo;
+    const base = medicoActual.toLowerCase().replace(/\s+/g, '_').replace(/\./g, '');
+    const path = base + '.png';
 
     // Subir a Supabase Storage (upsert: sobreescribe si ya existe)
     const { error: uploadError } = await sb.storage.from('firmas').upload(path, blob, {
-      contentType: 'image/jpeg', upsert: true
+      contentType: 'image/png', upsert: true
     });
     if (uploadError) throw new Error('Storage: ' + uploadError.message);
+
+    // La versión vieja en JPEG ya no se usa y nadie la va a volver a pedir.
+    try { await sb.storage.from('firmas').remove([base + '.jpg']); } catch (_) {}
 
     // Obtener URL pública
     const { data: urlData } = sb.storage.from('firmas').getPublicUrl(path);
@@ -4177,9 +4220,9 @@ async function guardarFirma() {
 
 async function eliminarFirma() {
   if (!confirm('¿Eliminar la firma? El informe quedará en blanco para firmar a mano.')) return;
-  // Eliminar archivo de Storage
-  const nombreArchivo = medicoActual.toLowerCase().replace(/\s+/g, '_').replace(/\./g, '') + '.jpg';
-  await sb.storage.from('firmas').remove([nombreArchivo]);
+  // Eliminar archivo de Storage, en los dos formatos que se usaron
+  const base = medicoActual.toLowerCase().replace(/\s+/g, '_').replace(/\./g, '');
+  await sb.storage.from('firmas').remove([base + '.png', base + '.jpg']);
   // Eliminar registro de DB
   await sb.from('firmas_medicos').delete().eq('medico', medicoActual);
   document.getElementById('configFirmaPreview').style.display = 'none';
