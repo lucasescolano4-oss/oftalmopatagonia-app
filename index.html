@@ -4051,6 +4051,32 @@ let _firmaFileNuevo = null;
 function abrirConfig() {
   document.getElementById('configMedicoNombre').textContent = medicoActual;
   document.getElementById('modalConfig').classList.add('show');
+  mostrarFirmaGuardada();
+}
+
+/** Muestra la firma que el médico ya tiene cargada, o el cartel para subirla. */
+async function mostrarFirmaGuardada() {
+  const preview = document.getElementById('configFirmaPreview');
+  const vacia   = document.getElementById('configFirmaVacia');
+  const confirmacion = document.getElementById('configFirmaConfirm');
+  if (!preview || !vacia) return;
+
+  confirmacion.style.display = 'none';
+  preview.style.display = 'none';
+  vacia.style.display   = 'none';
+
+  let url = null;
+  try { url = await obtenerFirmaBase64(); } catch (e) { console.error('[firma]', e); }
+
+  if (url) {
+    // El parámetro de tiempo evita que el navegador muestre la imagen anterior
+    // después de cambiarla: la dirección es siempre la misma.
+    document.getElementById('configFirmaImg').src =
+      url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+    preview.style.display = '';
+  } else {
+    vacia.style.display = '';
+  }
 }
 
 function cerrarConfig() {
@@ -5622,9 +5648,41 @@ async function guardarYSubirInformeTab() {
     <!-- Firma -->
     <div style="margin-top:20px;padding:14px;background:#f9f9f7;border:1px solid #e8e8e5;border-radius:10px;">
       <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;">✍️ Firma digital</div>
-      <div style="font-size:12px;color:#999;line-height:1.5;">
-        Los informes PDF tienen un espacio reservado para firma.<br>
-        Por ahora se firma a mano sobre el impreso.
+      <div style="font-size:12px;color:#999;line-height:1.5;margin-bottom:10px;">
+        Se agrega al pie de cada página del informe, así ninguna hoja queda sin firmar.
+      </div>
+
+      <!-- Firma guardada -->
+      <div id="configFirmaPreview" style="display:none;">
+        <div style="background:white;border:1px solid #e8e8e5;border-radius:8px;padding:10px;text-align:center;">
+          <img id="configFirmaImg" alt="Firma guardada" style="max-width:100%;max-height:70px;">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <label for="inputFirma" style="flex:1;padding:9px;background:#f0f0ee;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-size:13px;color:#333;text-align:center;">Cambiar</label>
+          <button onclick="eliminarFirma()" style="padding:9px 14px;background:#fff5f5;border:1px solid #f3c9c9;border-radius:8px;cursor:pointer;font-size:13px;color:#b91c1c;">Eliminar</button>
+        </div>
+      </div>
+
+      <!-- Sin firma todavía -->
+      <div id="configFirmaVacia" style="display:none;">
+        <label for="inputFirma" style="display:block;padding:14px;background:white;border:1px dashed #cfcfca;border-radius:8px;cursor:pointer;font-size:13px;color:#777;text-align:center;">
+          Subir imagen de la firma<br>
+          <span style="font-size:11px;color:#aaa;">PNG o JPG, hasta 2 MB</span>
+        </label>
+      </div>
+
+      <input type="file" id="inputFirma" accept="image/png,image/jpeg,image/webp" onchange="previewFirma(this)" style="display:none;">
+
+      <!-- Confirmación de la imagen nueva -->
+      <div id="configFirmaConfirm" style="display:none;margin-top:10px;">
+        <div style="font-size:12px;color:#777;margin-bottom:6px;">Así va a quedar:</div>
+        <div style="background:white;border:1px solid #e8e8e5;border-radius:8px;padding:10px;text-align:center;">
+          <img id="configFirmaPreviewNew" alt="Vista previa" style="max-width:100%;max-height:70px;">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button onclick="cancelarFirma()" style="flex:1;padding:9px;background:#f0f0ee;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-size:13px;color:#333;">Cancelar</button>
+          <button onclick="guardarFirma()" style="flex:1;padding:9px;background:#185fa5;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">✓ Guardar firma</button>
+        </div>
       </div>
     </div>
 
