@@ -4235,10 +4235,12 @@ async function eliminarFirma() {
 
 /**
  * Días que el enlace del QR sigue funcionando desde que se emite el informe.
- * Seis meses: el informe lo consultan también los auditores de la obra social,
- * que suelen revisarlo bastante después de la fecha del estudio.
+ *
+ * Un año. No tiene que ver con cuánto hay que conservar la historia clínica
+ * —eso son diez años y los archivos siguen en Drive— sino con cuánto tiempo
+ * queda abierta una puerta de acceso impresa en un papel que circula.
  */
-const VIGENCIA_QR_DIAS = 180;
+const VIGENCIA_QR_DIAS = 365;
 
 /**
  * Dirección a la que apunta el QR impreso.
