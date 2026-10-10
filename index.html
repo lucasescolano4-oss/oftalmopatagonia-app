@@ -2007,6 +2007,11 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
         </div>
       </div>
 
+      <!-- La cuenta, dicha donde se comete el error: al lado del botón que
+           guarda, no solo arriba en la barra, que nadie mira. -->
+      <div id="avisoCuentaCarga" style="font-size:12px;color:#64748b;text-align:center;margin:10px 0 6px;">
+        Cargando en la cuenta de <strong id="avisoCuentaNombre" style="color:#185fa5;"></strong>
+      </div>
       <button class="btn-agregar" id="btnAgregar" onclick="guardarPaciente()">+ Agregar paciente</button>
       <button class="btn-agregar" id="btnCancelarEdicion" onclick="cancelarEdicion()" style="display:none;margin-top:6px;background:#888;">✕ Cancelar edición</button>
     </div>
@@ -2371,7 +2376,34 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
 <script>
 const SUPABASE_URL = 'https://jxhxitgyvssxhmfpzzlt.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_GR173HjCr2rpSxiQbOLzEA_KXKfFMnA';
+// La computadora del consultorio se comparte entre los médicos. Guardar la
+// sesión en sessionStorage en vez de localStorage hace que termine al cerrar
+// el navegador: antes sobrevivía a cerrar Chrome y hasta a apagar la máquina,
+// y el que la abría entraba como el médico anterior sin darse cuenta.
+const almacenSesion = (() => {
+  try {
+    window.sessionStorage.setItem('__prueba', '1');
+    window.sessionStorage.removeItem('__prueba');
+    return window.sessionStorage;
+  } catch (e) {
+    return undefined;   // navegación privada: la sesión queda solo en memoria
+  }
+})();
+
+// Las sesiones guardadas por la versión anterior siguen en localStorage. Son
+// credenciales válidas en una máquina compartida, así que se borran.
+try {
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('sb-'))
+    .forEach(k => localStorage.removeItem(k));
+} catch (e) { /* sin acceso al almacenamiento: no hay nada que limpiar */ }
+
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    storage: almacenSesion,
+    persistSession: true,
+    autoRefreshToken: true
+  },
   global: {
     // Sin esto el navegador puede responder desde su caché y la pantalla se
     // queda con datos viejos: era lo que hacía que el botón de actualizar la
@@ -2379,6 +2411,33 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     fetch: (url, opts = {}) => fetch(url, { ...opts, cache: 'no-store' })
   }
 });
+
+// ── Cierre por inactividad ───────────────────────────────────────────────────
+// Cerrar el navegador ya corta la sesión, pero en el consultorio Chrome queda
+// abierto todo el día. Sin esto, la cuenta sigue viva entre paciente y paciente.
+const MINUTOS_INACTIVIDAD = 45;
+let _relojInactividad = null;
+let _ultimaActividad = 0;
+
+function reiniciarInactividad() {
+  clearTimeout(_relojInactividad);
+  _relojInactividad = setTimeout(async () => {
+    await sb.auth.signOut();
+    alert('Se cerró la sesión por inactividad. Volvé a ingresar.');
+    location.reload();
+  }, MINUTOS_INACTIVIDAD * 60000);
+}
+
+function marcarActividad() {
+  const ahora = Date.now();
+  if (ahora - _ultimaActividad < 30000) return;   // no hace falta reiniciar a cada píxel
+  _ultimaActividad = ahora;
+  reiniciarInactividad();
+}
+
+['click', 'keydown', 'mousemove', 'touchstart', 'scroll'].forEach(ev =>
+  document.addEventListener(ev, marcarActividad, { passive: true, capture: true })
+);
 
 // Texto escrito por pacientes o cargado a mano: nunca va crudo al DOM.
 function escHtml(s) {
@@ -2475,6 +2534,8 @@ function seleccionarMedico(nombre, uid) {
   if (uid) medicoId = uid;
   document.getElementById('medicoScreen').classList.add('hidden');
   document.getElementById('medicoBadge').textContent = '👤 ' + nombre;
+  const avisoCuenta = document.getElementById('avisoCuentaNombre');
+  if (avisoCuenta) avisoCuenta.textContent = nombre;
 
   document.getElementById('btnConfig').style.display = '';
   cargarPacientesHoy();
@@ -3717,9 +3778,13 @@ async function doLogin() {
   const nombre = EMAIL_MEDICO[email];
   if (nombre) {
     seleccionarMedico(nombre, session?.user?.id);
+    // Decir en voz alta con qué cuenta se entró: cargar pacientes en la del
+    // colega es un error fácil de cometer y molesto de deshacer.
+    showToast('Ingresaste como ' + nombre);
   } else {
     document.getElementById('medicoScreen').classList.remove('hidden');
   }
+  reiniciarInactividad();
 }
 
 async function doLogout() {
