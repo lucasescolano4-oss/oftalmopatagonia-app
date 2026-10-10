@@ -2007,11 +2007,6 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
         </div>
       </div>
 
-      <!-- La cuenta, dicha donde se comete el error: al lado del botón que
-           guarda, no solo arriba en la barra, que nadie mira. -->
-      <div id="avisoCuentaCarga" style="font-size:12px;color:#64748b;text-align:center;margin:10px 0 6px;">
-        Cargando en la cuenta de <strong id="avisoCuentaNombre" style="color:#185fa5;"></strong>
-      </div>
       <button class="btn-agregar" id="btnAgregar" onclick="guardarPaciente()">+ Agregar paciente</button>
       <button class="btn-agregar" id="btnCancelarEdicion" onclick="cancelarEdicion()" style="display:none;margin-top:6px;background:#888;">✕ Cancelar edición</button>
     </div>
@@ -2529,13 +2524,29 @@ function init() {
   // La carga se hace después de seleccionar médico
 }
 
+/**
+ * Apellido solo, para que entre en un botón: "Dr. Escolano", "Dr. Polzonetti".
+ * Va escrito en los botones que guardan, así el médico ve en qué cuenta está
+ * en el momento exacto de apretar, que es cuando se comete el error.
+ */
+function medicoCorto() {
+  if (!medicoActual) return '';
+  return medicoActual.split(/\s+/).slice(0, 2).join(' ');
+}
+
+/** Agrega el médico al final del texto de un botón. */
+function conMedico(texto) {
+  const quien = medicoCorto();
+  return quien ? texto + ' · ' + quien : texto;
+}
+
 function seleccionarMedico(nombre, uid) {
   medicoActual = nombre;
   if (uid) medicoId = uid;
   document.getElementById('medicoScreen').classList.add('hidden');
   document.getElementById('medicoBadge').textContent = '👤 ' + nombre;
-  const avisoCuenta = document.getElementById('avisoCuentaNombre');
-  if (avisoCuenta) avisoCuenta.textContent = nombre;
+  const btnAgregar = document.getElementById('btnAgregar');
+  if (btnAgregar && !editandoId) btnAgregar.textContent = conMedico('+ Agregar paciente');
 
   document.getElementById('btnConfig').style.display = '';
   cargarPacientesHoy();
@@ -2811,7 +2822,7 @@ async function guardarPaciente() {
     .insert([{ nombre_completo: nombreCompleto, dni, celular: pais+telNumero, email: emailPaciente||null, fecha, estudios, enviado: false, obra_social: obraSocial, orden_autorizada: ordenAutorizada, medico: medicoActual, medico_id: medicoId, numero_orden: proximoNumero }])
     .select();
 
-  btn.disabled = false; btn.textContent = '+ Agregar paciente';
+  btn.disabled = false; btn.textContent = conMedico('+ Agregar paciente');
 
   if (error) { setSyncStatus('error'); showToast('⚠️ Error: ' + error.message); return; }
 
@@ -2926,7 +2937,7 @@ async function actualizarPaciente() {
 
 function cancelarEdicion() {
   editandoId = null;
-  document.getElementById('btnAgregar').textContent = '+ Agregar paciente';
+  document.getElementById('btnAgregar').textContent = conMedico('+ Agregar paciente');
   document.getElementById('btnCancelarEdicion').style.display = 'none';
   resetForm();
 }
@@ -3899,7 +3910,7 @@ function abrirModalInforme(id, i) {
   const fecha = p.fecha ? new Date(p.fecha+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'}) : '';
   document.getElementById('modalInformeSub').textContent = `${p.nombre_completo} · DNI ${p.dni} · ${fecha}`;
   const btnPDF = document.getElementById('btnGenerarPDF');
-  btnPDF.textContent = p.informe_realizado ? '🔄 Regenerar informe' : '📄 Generar informe';
+  btnPDF.textContent = conMedico(p.informe_realizado ? '🔄 Regenerar informe' : '📄 Generar informe');
   btnPDF.disabled = false;
 
   const estudios = (p.estudios && p.estudios.length) ? p.estudios : [];
@@ -5444,7 +5455,7 @@ async function abrirTabInforme(pacienteObj, fromTab) {
   _informeIdx = idx >= 0 ? idx : -1;
 
   const btnGuardar = document.getElementById('itBtnGuardar');
-  btnGuardar.textContent = pacienteObj.informe_realizado ? '🔄 Regenerar informe' : '📄 Generar informe';
+  btnGuardar.textContent = conMedico(pacienteObj.informe_realizado ? '🔄 Regenerar informe' : '📄 Generar informe');
   btnGuardar.disabled = false;
 
   const estudios = (pacienteObj.estudios && pacienteObj.estudios.length) ? pacienteObj.estudios : [];
@@ -5664,7 +5675,7 @@ async function guardarYSubirInformeTab() {
   btn.textContent = '⏳ Generando...';
   await generarYSubirInforme();
   btn.disabled = false;
-  btn.textContent = '🔄 Regenerar informe';
+  btn.textContent = conMedico('🔄 Regenerar informe');
 }
 
 // ── Resize handle para panel de archivos en pestaña informe ──
