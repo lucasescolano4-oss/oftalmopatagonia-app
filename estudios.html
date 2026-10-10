@@ -114,9 +114,8 @@
       <p class="ayuda" id="subtitulo">Toque un estudio para verlo, o la flecha para descargarlo.</p>
       <div class="lista" id="lista"></div>
     </div>
-    <div class="nota">
-      Guarde los archivos en su teléfono o computadora. Este enlace deja de funcionar
-      el <strong id="vencimiento">—</strong>.
+    <div class="nota" id="nota">
+      Guarde los archivos en su teléfono o computadora.
     </div>
   </div>
 
@@ -205,11 +204,24 @@ function mostrarArchivos(data) {
   $('panelArchivos').hidden = false;
 
   if (data.nombre) $('saludo').textContent = 'Estudios de ' + data.nombre;
-  $('vencimiento').textContent = fechaLegible(data.vence);
+
+  // Cada enlace corresponde a una consulta: decir de cuál evita que el
+  // paciente crea que le faltan estudios de otras fechas.
+  const fecha = fechaLegible(data.fechaVisita);
+  $('subtitulo').textContent = fecha
+    ? 'Consulta del ' + fecha + '. Toque un estudio para verlo, o la flecha para descargarlo.'
+    : 'Toque un estudio para verlo, o la flecha para descargarlo.';
+
+  const nota = $('nota');
+  if (nota) {
+    nota.innerHTML = 'Guarde los archivos en su teléfono o computadora.' +
+      (fecha ? '<br>Este enlace muestra los estudios de esa consulta. ' +
+               'Para otras fechas, comuníquese con la clínica.' : '');
+  }
 
   const archivos = data.archivos || [];
   if (!archivos.length) {
-    $('lista').innerHTML = '<p class="ayuda">Todavía no hay estudios disponibles. Comuníquese con la clínica.</p>';
+    $('lista').innerHTML = '<p class="ayuda">No encontramos estudios para esta consulta. Comuníquese con la clínica.</p>';
     $('subtitulo').textContent = '';
     return;
   }

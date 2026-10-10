@@ -4310,13 +4310,16 @@ async function eliminarFirma() {
 // ── QR de acceso a los estudios ─────────────────────────────────────────────
 
 /**
- * Días que el enlace del QR sigue funcionando desde que se emite el informe.
+ * El enlace del QR no vence.
  *
- * Un año. No tiene que ver con cuánto hay que conservar la historia clínica
- * —eso son diez años y los archivos siguen en Drive— sino con cuánto tiempo
- * queda abierta una puerta de acceso impresa en un papel que circula.
+ * Está impreso en un informe que el paciente guarda por años y que la obra
+ * social puede auditar mucho después. Que caducara obligaba a reimprimir.
+ *
+ * Lo que acota el riesgo no es el tiempo sino el alcance: cada enlace muestra
+ * únicamente los estudios de la visita que lo originó, no la historia entera.
+ * Y sigue haciendo falta el DNI, queda registrado cada acceso y se puede
+ * revocar uno en particular desde la tabla.
  */
-const VIGENCIA_QR_DIAS = 365;
 
 /**
  * Dirección a la que apunta el QR impreso.
@@ -4336,14 +4339,13 @@ const DOMINIO_PUBLICO = 'https://oftalmopatagonia-app.vercel.app';
 async function generarQRDeAcceso(paciente) {
   if (!paciente || !paciente.dni) return null;
 
-  const vence = new Date();
-  vence.setDate(vence.getDate() + VIGENCIA_QR_DIAS);
-
   const { data, error } = await sb.from('accesos_estudios').insert({
     dni: String(paciente.dni).replace(/\D/g, ''),
     nombre: paciente.nombre_completo || null,
     paciente_id: paciente.id || null,
-    vence_en: vence.toISOString()
+    vence_en: null,
+    // La fecha de la visita es lo que delimita qué muestra el enlace.
+    fecha_estudios: paciente.fecha || fechaLocalStr()
   }).select('token').single();
 
   if (error || !data) { console.error('[QR] no se pudo crear el acceso:', error); return null; }

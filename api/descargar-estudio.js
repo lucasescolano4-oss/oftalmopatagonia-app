@@ -59,7 +59,9 @@ export default async function handler(req, res) {
     try {
         const filas = await supa(`accesos_estudios?token=eq.${token}&select=dni,vence_en,revocado`);
         const acceso = filas && filas[0];
-        if (!acceso || acceso.revocado || acceso.dni !== dniLimpio || new Date(acceso.vence_en) < new Date()) {
+        // vence_en nulo = sin vencimiento; los enlaces viejos sí tienen fecha.
+        const vencido = acceso && acceso.vence_en && new Date(acceso.vence_en) < new Date();
+        if (!acceso || acceso.revocado || acceso.dni !== dniLimpio || vencido) {
             res.status(403).send('No autorizado');
             return;
         }

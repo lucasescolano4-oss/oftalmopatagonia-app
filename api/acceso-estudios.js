@@ -61,10 +61,38 @@ async function tokenDrive(sa) {
     return d.access_token;
 }
 
-async function archivosDelPaciente(dni) {
+// Días alrededor de la fecha de la visita en los que se aceptan archivos.
+// Los estudios se suben el mismo día o en los días siguientes; el informe
+// puede demorar algo más. Fuera de esta ventana ya es otra consulta.
+const DIAS_ANTES  = 5;
+const DIAS_DESPUES = 45;
+
+function ventanaDeLaVisita(fechaVisita) {
+    const base = new Date(fechaVisita + 'T12:00:00Z');
+    if (isNaN(base)) return null;
+    const desde = new Date(base); desde.setUTCDate(desde.getUTCDate() - DIAS_ANTES);
+    const hasta = new Date(base); hasta.setUTCDate(hasta.getUTCDate() + DIAS_DESPUES);
+    return { desde: desde.toISOString(), hasta: hasta.toISOString() };
+}
+
+/**
+ * Archivos que corresponden a UNA visita, no a toda la historia clínica.
+ *
+ * El enlace del QR no vence, así que lo que lo mantiene acotado es esto: el
+ * informe impreso da acceso a los estudios que ese informe comenta, y nada
+ * más. El historial completo se consulta desde el sistema, con sesión.
+ */
+async function archivosDelPaciente(dni, fechaVisita) {
     const saJson = process.env.GOOGLE_SERVICE_ACCOUNT;
     if (!saJson) throw new Error('GOOGLE_SERVICE_ACCOUNT no configurada');
     const token = await tokenDrive(JSON.parse(saJson));
+
+    // Los accesos creados antes de que existiera la fecha no la tienen: para
+    // esos se mantiene el comportamiento anterior y se devuelve todo.
+    const ventana = fechaVisita ? ventanaDeLaVisita(fechaVisita) : null;
+    const porFecha = ventana
+        ? ` and createdTime >= '${ventana.desde}' and createdTime <= '${ventana.hasta}'`
+        : '';
 
     const buscar = async (q) => {
         const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`
@@ -74,8 +102,8 @@ async function archivosDelPaciente(dni) {
         return (await r.json()).files || [];
     };
 
-    const informes = await buscar(`name contains '${dni}' and '${CARPETA_INFORMES}' in parents and trashed = false`);
-    const todos    = await buscar(`name contains '${dni}' and trashed = false`);
+    const informes = await buscar(`name contains '${dni}' and '${CARPETA_INFORMES}' in parents and trashed = false${porFecha}`);
+    const todos    = await buscar(`name contains '${dni}' and trashed = false${porFecha}`);
     const idsInf   = new Set(informes.map(f => f.id));
 
     return [
@@ -115,13 +143,19 @@ export default async function handler(req, res) {
         const filas = await supa(`accesos_estudios?token=eq.${token}&select=*`);
         const acceso = filas && filas[0];
 
-        if (!acceso)                                   { await registrar(token, dniLimpio, false, 'token inexistente', ip); res.status(404).json(rechazo); return; }
-        if (acceso.revocado)                           { await registrar(token, dniLimpio, false, 'revocado', ip);         res.status(403).json(rechazo); return; }
-        if (new Date(acceso.vence_en) < new Date())    { await registrar(token, dniLimpio, false, 'vencido', ip);
-            res.status(403).json({ ok: false, error: 'Este enlace venció. Comunicate con la clínica para que te envíen uno nuevo.' }); return; }
-        if (acceso.dni !== dniLimpio)                  { await registrar(token, dniLimpio, false, 'dni no coincide', ip);  res.status(403).json(rechazo); return; }
+        if (!acceso)         { await registrar(token, dniLimpio, false, 'token inexistente', ip); res.status(404).json(rechazo); return; }
+        if (acceso.revocado) { await registrar(token, dniLimpio, false, 'revocado', ip);          res.status(403).json(rechazo); return; }
 
-        const archivos = await archivosDelPaciente(acceso.dni);
+        // vence_en nulo = sin vencimiento. Los enlaces viejos siguen teniendo
+        // fecha y se respeta.
+        if (acceso.vence_en && new Date(acceso.vence_en) < new Date()) {
+            await registrar(token, dniLimpio, false, 'vencido', ip);
+            res.status(403).json({ ok: false, error: 'Este enlace venció. Comunicate con la clínica para que te envíen uno nuevo.' });
+            return;
+        }
+        if (acceso.dni !== dniLimpio) { await registrar(token, dniLimpio, false, 'dni no coincide', ip); res.status(403).json(rechazo); return; }
+
+        const archivos = await archivosDelPaciente(acceso.dni, acceso.fecha_estudios);
 
         await supa(`accesos_estudios?token=eq.${token}`, {
             method: 'PATCH',
@@ -134,6 +168,7 @@ export default async function handler(req, res) {
             ok: true,
             nombre: acceso.nombre || '',
             vence: acceso.vence_en,
+            fechaVisita: acceso.fecha_estudios || null,
             archivos,
         });
     } catch (e) {
