@@ -61,6 +61,45 @@ async function tokenDrive(sa) {
     return d.access_token;
 }
 
+/**
+ * Fecha del estudio leída del nombre del archivo.
+ *
+ * La que trae Drive es la de la subida, y no siempre coinciden: un estudio de
+ * septiembre de 2025 escaneado meses después figuraba como de marzo de 2026.
+ * El nombre, en cambio, lleva la fecha real.
+ *
+ * Se aceptan las dos formas que conviven en la carpeta: 20261008 y 08_10_2026
+ * (con guiones, barras, puntos o guiones bajos). Si no hay ninguna, se usa la
+ * de Drive.
+ */
+function fechaDelNombre(nombre, dni) {
+    if (!nombre) return null;
+    // El DNI va al principio del nombre y puede confundirse con una fecha.
+    const limpio = dni ? nombre.split(dni).join(' ') : nombre;
+
+    const candidatas = [];
+    for (const m of limpio.matchAll(/(20\d{2})(\d{2})(\d{2})/g)) {
+        candidatas.push(armarFecha(m[1], m[2], m[3]));
+    }
+    for (const m of limpio.matchAll(/(\d{1,2})[_\-/.](\d{1,2})[_\-/.](20\d{2})/g)) {
+        candidatas.push(armarFecha(m[3], m[2], m[1]));
+    }
+
+    // La última válida: la fecha suele ir al final, los números sueltos antes.
+    const validas = candidatas.filter(Boolean);
+    return validas.length ? validas[validas.length - 1] : null;
+}
+
+function armarFecha(anio, mes, dia) {
+    const a = Number(anio), me = Number(mes), d = Number(dia);
+    const f = new Date(Date.UTC(a, me - 1, d, 12));
+    if (isNaN(f)) return null;
+    // Date corrige solo los desbordes (32 de enero pasa a febrero); si los
+    // componentes no vuelven iguales, no era una fecha.
+    if (f.getUTCFullYear() !== a || f.getUTCMonth() !== me - 1 || f.getUTCDate() !== d) return null;
+    return f.toISOString();
+}
+
 // Días alrededor de la fecha de la visita en los que se aceptan archivos.
 // Los estudios se suben el mismo día o en los días siguientes; el informe
 // puede demorar algo más. Fuera de esta ventana ya es otra consulta.
@@ -111,7 +150,8 @@ async function archivosDelPaciente(dni, fechaVisita) {
         ...todos.filter(f => !idsInf.has(f.id)),
     ].map(f => ({
         id: f.id, nombre: f.name, tipo: f.mimeType,
-        fecha: f.createdTime, peso: f.size ? Number(f.size) : null,
+        fecha: fechaDelNombre(f.name, dni) || f.createdTime,
+        peso: f.size ? Number(f.size) : null,
         esInforme: !!f.esInforme,
     }));
 }
