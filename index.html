@@ -3405,6 +3405,9 @@ async function buscar(opts) {
       </div>
       <!-- Col 5: Acciones -->
       <div class="pcard-actions">
+        <button class="pcard-btn-ojo" onclick="event.stopPropagation();abrirEnlaceEstudios('${p.id}')" title="Enlace de estudios para el paciente">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M18 18h3v3h-3z"/></svg>
+        </button>
         <button class="pcard-btn-ojo" onclick="event.stopPropagation();abrirHistorial('${p.id}')" title="Ver historial">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
@@ -4363,6 +4366,93 @@ async function generarQRDeAcceso(paciente) {
   const url = `${DOMINIO_PUBLICO}/estudios.html?t=${data.token}`;
   console.log('[QR] acceso creado, dibujando:', url);
   return await dibujarQR(url);
+}
+
+// ── Enlace de estudios a pedido ──────────────────────────────────────────────
+// Para los pacientes cuyos informes son anteriores al QR, o para el que
+// perdió el papel. A diferencia del QR del informe, este no se limita a una
+// consulta: muestra todo el historial del paciente.
+
+let _enlaceEstudios = null;   // { url, imagen, dni, nombre }
+
+async function abrirEnlaceEstudios(idPaciente) {
+  const modal = document.getElementById('modalEnlaceEstudios');
+  document.getElementById('enlaceEstudiosCargando').style.display = '';
+  document.getElementById('enlaceEstudiosImg').style.display = 'none';
+  document.getElementById('enlaceEstudiosAcciones').style.display = 'none';
+  document.getElementById('enlaceEstudiosSub').textContent = '';
+  modal.classList.add('show');
+  _enlaceEstudios = null;
+
+  try {
+    const { data: p, error } = await sb.from('pacientes')
+      .select('id, nombre_completo, dni').eq('id', idPaciente).single();
+    if (error || !p) throw new Error('No se encontró el paciente');
+
+    const dni = String(p.dni || '').replace(/\D/g, '');
+    if (!dni) throw new Error('El paciente no tiene DNI cargado');
+
+    document.getElementById('enlaceEstudiosSub').textContent =
+      p.nombre_completo + ' · DNI ' + dni;
+
+    // Si ya se emitió uno para este paciente se reutiliza: un enlace vivo por
+    // persona es más fácil de revocar que una colección de enlaces sueltos.
+    const { data: previos } = await sb.from('accesos_estudios')
+      .select('token')
+      .eq('dni', dni).is('fecha_estudios', null).eq('revocado', false)
+      .limit(1);
+
+    let token = previos && previos[0] ? previos[0].token : null;
+
+    if (!token) {
+      const { data: nuevo, error: errIns } = await sb.from('accesos_estudios').insert({
+        dni,
+        nombre: p.nombre_completo || null,
+        paciente_id: p.id,
+        vence_en: null,
+        fecha_estudios: null   // sin fecha = todo el historial
+      }).select('token').single();
+      if (errIns || !nuevo) throw new Error(errIns ? errIns.message : 'No se pudo crear el acceso');
+      token = nuevo.token;
+    }
+
+    const url = `${DOMINIO_PUBLICO}/estudios.html?t=${token}`;
+    const imagen = await dibujarQR(url);
+
+    _enlaceEstudios = { url, imagen, dni, nombre: p.nombre_completo || '' };
+    const img = document.getElementById('enlaceEstudiosImg');
+    img.src = imagen;
+    img.style.display = '';
+    document.getElementById('enlaceEstudiosCargando').style.display = 'none';
+    document.getElementById('enlaceEstudiosAcciones').style.display = 'flex';
+  } catch (e) {
+    console.error('[enlace estudios]', e);
+    document.getElementById('enlaceEstudiosCargando').textContent =
+      'No se pudo generar: ' + e.message;
+  }
+}
+
+function cerrarEnlaceEstudios() {
+  document.getElementById('modalEnlaceEstudios').classList.remove('show');
+}
+
+function descargarQREstudios() {
+  if (!_enlaceEstudios) return;
+  const a = document.createElement('a');
+  a.href = _enlaceEstudios.imagen;
+  a.download = 'QR_estudios_' + _enlaceEstudios.dni + '.png';
+  a.click();
+}
+
+async function copiarEnlaceEstudios() {
+  if (!_enlaceEstudios) return;
+  try {
+    await navigator.clipboard.writeText(_enlaceEstudios.url);
+    showToast('✓ Enlace copiado');
+  } catch (e) {
+    // Sin permiso de portapapeles: al menos que lo pueda leer y copiar a mano.
+    prompt('Copiá el enlace:', _enlaceEstudios.url);
+  }
 }
 
 /** Dibuja el QR en un lienzo y lo devuelve como imagen embebible. */
@@ -5770,6 +5860,32 @@ async function guardarYSubirInformeTab() {
         </div>
         <iframe id="histIframe" style="flex:1;border:none;width:100%;height:100%;" allowfullscreen></iframe>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Enlace de estudios (QR para un paciente) -->
+<div class="modal-overlay" id="modalEnlaceEstudios">
+  <div class="modal-box" style="max-width:360px;width:100%;">
+    <button class="modal-close-btn" onclick="cerrarEnlaceEstudios()">×</button>
+    <div class="modal-header">
+      <div class="modal-title">Enlace de estudios</div>
+      <div class="modal-sub" id="enlaceEstudiosSub"></div>
+    </div>
+
+    <div style="text-align:center;padding:4px 0;">
+      <div id="enlaceEstudiosCargando" style="color:#999;font-size:13px;padding:46px 0;">Generando…</div>
+      <img id="enlaceEstudiosImg" alt="Código QR" style="display:none;width:210px;height:210px;border:1px solid #e8e8e5;border-radius:10px;padding:8px;background:#fff;">
+    </div>
+
+    <div id="enlaceEstudiosAcciones" style="display:none;gap:8px;margin-top:12px;">
+      <button onclick="descargarQREstudios()" style="flex:1;padding:10px;background:#185fa5;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">⬇ Descargar imagen</button>
+      <button onclick="copiarEnlaceEstudios()" style="flex:1;padding:10px;background:#f0f0ee;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-size:13px;color:#333;">Copiar enlace</button>
+    </div>
+
+    <div style="font-size:11.5px;color:#999;line-height:1.55;margin-top:14px;">
+      Para abrirlo hay que ingresar el DNI de este paciente: el código solo no alcanza.<br>
+      Muestra todos sus estudios y no vence.
     </div>
   </div>
 </div>
