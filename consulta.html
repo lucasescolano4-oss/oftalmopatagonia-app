@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consulta de estudios — OftalmoPatagonia</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<meta name="theme-color" content="#185fa5">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f1f5f9; color: #1e293b; min-height: 100vh;
+  }
+
+  /* ── Barra superior ── */
+  .barra {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 20px; background: #fff; border-bottom: 1px solid #e2e8f0;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .barra h1 { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+  .barra .sub { font-size: 12px; color: #94a3b8; }
+  .barra .espacio { flex: 1; }
+  .quien { font-size: 12.5px; color: #475569; }
+  .btn-salir {
+    padding: 7px 13px; font-size: 12.5px; font-family: inherit;
+    border: 1px solid #cbd5e1; border-radius: 999px; background: #fff;
+    color: #475569; cursor: pointer;
+  }
+  .btn-salir:hover { background: #f1f5f9; }
+
+  .caja { max-width: 820px; margin: 0 auto; padding: 22px 16px 60px; }
+
+  /* ── Ingreso ── */
+  .centrado { display: flex; justify-content: center; padding: 50px 16px; }
+  .panel {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 18px;
+    padding: 24px 22px; box-shadow: 0 1px 3px rgba(15,23,42,.06);
+    width: 100%; max-width: 400px;
+  }
+  .panel h2 { font-size: 16px; font-weight: 700; margin-bottom: 5px; }
+  .ayuda { font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 18px; }
+
+  label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 6px; }
+  input {
+    width: 100%; padding: 12px 16px; font-size: 16px;
+    border: 1px solid #cbd5e1; border-radius: 999px; outline: none;
+    font-family: inherit; margin-bottom: 11px; background: #fff; color: #1e293b;
+  }
+  input:focus { border-color: #185fa5; box-shadow: 0 0 0 3px rgba(24,95,165,.12); }
+
+  button.principal {
+    width: 100%; padding: 12px; background: #185fa5; color: #fff;
+    border: none; border-radius: 999px; font-size: 15px; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: background .15s;
+  }
+  button.principal:hover:not(:disabled) { background: #12497f; }
+  button.principal:disabled { background: #94a3b8; cursor: default; }
+
+  .error {
+    display: none; margin-top: 12px; padding: 10px 14px;
+    background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px;
+    color: #b91c1c; font-size: 13px; line-height: 1.45;
+  }
+  .error.visible { display: block; }
+
+  /* ── Buscador ── */
+  .buscador { display: flex; gap: 9px; align-items: flex-start; }
+  .buscador input { margin-bottom: 0; }
+  .buscador button { width: auto; padding: 12px 24px; white-space: nowrap; }
+
+  /* ── Resultados ── */
+  .grupo-tit {
+    font-size: 11.5px; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: #94a3b8; margin: 22px 0 8px;
+  }
+  .archivo {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 9px;
+    padding: 13px 15px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff;
+  }
+  .archivo-ico { font-size: 20px; flex-shrink: 0; }
+  .archivo-datos { flex: 1; min-width: 0; }
+  .archivo-nombre { font-size: 13.5px; font-weight: 600; word-break: break-word; line-height: 1.35; }
+  .archivo-meta { font-size: 11.5px; color: #94a3b8; margin-top: 2px; }
+  .archivo-acciones { display: flex; gap: 7px; flex-shrink: 0; }
+  .archivo-acciones button {
+    width: 38px; height: 38px; border-radius: 11px; cursor: pointer;
+    border: 1px solid #cbd5e1; background: #fff; color: #475569; font-size: 15px;
+  }
+  .archivo-acciones button:hover { background: #f1f5f9; }
+  .archivo-acciones button.ver { background: #185fa5; border-color: #185fa5; color: #fff; }
+
+  .estado { text-align: center; color: #94a3b8; font-size: 14px; padding: 36px 0; }
+
+  /* ── Visor ── */
+  .visor {
+    display: none; position: fixed; inset: 0; background: rgba(15,23,42,.72);
+    z-index: 50; padding: 22px;
+  }
+  .visor.abierto { display: flex; flex-direction: column; }
+  .visor-barra {
+    display: flex; align-items: center; gap: 12px; color: #fff;
+    font-size: 13px; padding-bottom: 12px;
+  }
+  .visor-barra .espacio { flex: 1; }
+  .visor-barra button {
+    padding: 7px 13px; font-size: 12.5px; font-family: inherit; cursor: pointer;
+    border: 1px solid rgba(255,255,255,.35); border-radius: 999px;
+    background: transparent; color: #fff;
+  }
+  .visor iframe { flex: 1; border: none; border-radius: 12px; background: #fff; width: 100%; }
+
+  .pie { text-align: center; font-size: 11.5px; color: #94a3b8; margin-top: 26px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<!-- ── Ingreso ───────────────────────────────────────────────────────────── -->
+<div id="pantallaIngreso" class="centrado">
+  <div class="panel">
+    <h2>Consulta de estudios</h2>
+    <p class="ayuda">OftalmoPatagonia · Clínica Esquel<br>Acceso para profesionales.</p>
+    <label for="email">Usuario</label>
+    <input type="email" id="email" autocomplete="username" placeholder="usuario@oftalmo.com">
+    <label for="clave">Contraseña</label>
+    <input type="password" id="clave" autocomplete="current-password" placeholder="Contraseña">
+    <button class="principal" id="btnEntrar">Ingresar</button>
+    <div class="error" id="errorIngreso" role="alert"></div>
+  </div>
+</div>
+
+<!-- ── Aplicación ────────────────────────────────────────────────────────── -->
+<div id="pantallaApp" hidden>
+  <div class="barra">
+    <div>
+      <h1>Consulta de estudios</h1>
+      <div class="sub">OftalmoPatagonia · Clínica Esquel</div>
+    </div>
+    <div class="espacio"></div>
+    <span class="quien" id="quien"></span>
+    <button class="btn-salir" onclick="salir()">Salir</button>
+  </div>
+
+  <div class="caja">
+    <div class="buscador">
+      <input type="text" id="dni" inputmode="numeric" maxlength="9"
+             placeholder="DNI del paciente, sin puntos" autocomplete="off">
+      <button class="principal" id="btnBuscar">Buscar</button>
+    </div>
+    <div class="error" id="errorBusqueda" role="alert"></div>
+
+    <div id="resultados"></div>
+
+    <div class="pie">
+      Cada consulta queda registrada.<br>
+      El acceso es para uso profesional vinculado a la atención del paciente.
+    </div>
+  </div>
+</div>
+
+<!-- ── Visor de archivos ─────────────────────────────────────────────────── -->
+<div class="visor" id="visor">
+  <div class="visor-barra">
+    <span id="visorNombre"></span>
+    <div class="espacio"></div>
+    <button onclick="descargarActual()">Descargar</button>
+    <button onclick="cerrarVisor()">Cerrar</button>
+  </div>
+  <iframe id="visorFrame"></iframe>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://jxhxitgyvssxhmfpzzlt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_GR173HjCr2rpSxiQbOLzEA_KXKfFMnA';
+
+// La computadora del hospital se comparte. La sesión vive en sessionStorage:
+// al cerrar el navegador se termina, no queda abierta para el siguiente.
+const almacen = (() => {
+  try {
+    sessionStorage.setItem('__p', '1'); sessionStorage.removeItem('__p');
+    return sessionStorage;
+  } catch (e) { return undefined; }
+})();
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { storage: almacen, persistSession: true, autoRefreshToken: true },
+  global: { fetch: (url, opts = {}) => fetch(url, { ...opts, cache: 'no-store' }) }
+});
+
+const $ = id => document.getElementById(id);
+let _email = '';
+let _archivoActual = null;
+
+// ── Cierre por inactividad ───────────────────────────────────────────────────
+// En un hospital la pantalla queda abierta entre paciente y paciente.
+const MINUTOS_INACTIVIDAD = 20;
+let _reloj = null, _ultima = 0;
+
+function reiniciarInactividad() {
+  clearTimeout(_reloj);
+  _reloj = setTimeout(async () => {
+    await sb.auth.signOut();
+    alert('Se cerró la sesión por inactividad.');
+    location.reload();
+  }, MINUTOS_INACTIVIDAD * 60000);
+}
+function marcarActividad() {
+  const ahora = Date.now();
+  if (ahora - _ultima < 30000) return;
+  _ultima = ahora;
+  reiniciarInactividad();
+}
+['click','keydown','mousemove','touchstart','scroll'].forEach(ev =>
+  document.addEventListener(ev, marcarActividad, { passive: true, capture: true }));
+
+// ── Utilidades ───────────────────────────────────────────────────────────────
+function escapar(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function pesoLegible(bytes) {
+  if (!bytes) return '';
+  const mb = bytes / 1048576;
+  return mb >= 1 ? mb.toFixed(1) + ' MB' : Math.round(bytes / 1024) + ' KB';
+}
+
+function fechaLegible(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return isNaN(d) ? '' : d.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+/**
+ * Fecha del estudio leída del nombre del archivo. La de Drive es la de la
+ * subida: un estudio viejo escaneado después figura con la fecha del escaneo.
+ */
+function fechaDelNombre(nombre, dni) {
+  if (!nombre) return null;
+  const limpio = dni ? nombre.split(dni).join(' ') : nombre;
+  const armar = (a, me, d) => {
+    const f = new Date(Date.UTC(+a, +me - 1, +d, 12));
+    if (isNaN(f) || f.getUTCFullYear() !== +a || f.getUTCMonth() !== +me - 1 || f.getUTCDate() !== +d) return null;
+    return f.toISOString();
+  };
+  const encontradas = [];
+  for (const m of limpio.matchAll(/(20\d{2})(\d{2})(\d{2})/g)) encontradas.push(armar(m[1], m[2], m[3]));
+  for (const m of limpio.matchAll(/(\d{1,2})[_\-/.](\d{1,2})[_\-/.](20\d{2})/g)) encontradas.push(armar(m[3], m[2], m[1]));
+  const validas = encontradas.filter(Boolean);
+  return validas.length ? validas[validas.length - 1] : null;
+}
+
+async function cabeceras() {
+  const { data } = await sb.auth.getSession();
+  return data && data.session
+    ? { 'Authorization': 'Bearer ' + data.session.access_token }
+    : {};
+}
+
+// ── Ingreso ──────────────────────────────────────────────────────────────────
+async function entrar() {
+  const email = $('email').value.trim().toLowerCase();
+  const clave = $('clave').value;
+  const err = $('errorIngreso');
+  const btn = $('btnEntrar');
+  err.classList.remove('visible');
+
+  if (!email || !clave) { err.textContent = 'Completá usuario y contraseña.'; err.classList.add('visible'); return; }
+
+  btn.disabled = true; btn.textContent = 'Ingresando…';
+  try {
+    const { error } = await sb.auth.signInWithPassword({ email, password: clave });
+    if (error) { err.textContent = 'Usuario o contraseña incorrectos.'; err.classList.add('visible'); return; }
+
+    const { data: permitido } = await sb.from('allowed_emails').select('email').eq('email', email).limit(1);
+    if (!permitido || !permitido.length) {
+      await sb.auth.signOut();
+      err.textContent = 'Esta cuenta no tiene autorización.';
+      err.classList.add('visible');
+      return;
+    }
+    mostrarApp(email);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Ingresar';
+  }
+}
+
+function mostrarApp(email) {
+  _email = email;
+  $('pantallaIngreso').style.display = 'none';
+  $('pantallaApp').hidden = false;
+  $('quien').textContent = email;
+  $('dni').focus();
+  reiniciarInactividad();
+}
+
+async function salir() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+// ── Búsqueda ─────────────────────────────────────────────────────────────────
+async function buscar() {
+  const dni = $('dni').value.replace(/\D/g, '');
+  const err = $('errorBusqueda');
+  const cont = $('resultados');
+  err.classList.remove('visible');
+
+  if (!/^\d{7,9}$/.test(dni)) {
+    err.textContent = 'Ingresá el DNI completo, sin puntos.';
+    err.classList.add('visible');
+    return;
+  }
+
+  cont.innerHTML = '<div class="estado">Buscando…</div>';
+
+  try {
+    const r = await fetch('/api/buscar-archivos?dni=' + encodeURIComponent(dni), {
+      headers: await cabeceras()
+    });
+    if (r.status === 401) { alert('La sesión expiró. Volvé a ingresar.'); location.reload(); return; }
+
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'No se pudo buscar');
+
+    const informes = data.informes || [];
+    const estudios = data.estudios || [];
+    pintar(dni, informes, estudios);
+
+    // Queda asentado quién consultó qué y cuándo.
+    sb.from('consultas_log').insert({
+      email: _email, dni, resultados: informes.length + estudios.length
+    }).then(({ error }) => { if (error) console.error('[registro]', error); });
+
+  } catch (e) {
+    console.error(e);
+    cont.innerHTML = '';
+    err.textContent = 'No se pudo completar la búsqueda. Intentá de nuevo.';
+    err.classList.add('visible');
+  }
+}
+
+function pintar(dni, informes, estudios) {
+  const cont = $('resultados');
+  if (!informes.length && !estudios.length) {
+    cont.innerHTML = '<div class="estado">No hay estudios cargados para ese DNI.</div>';
+    return;
+  }
+
+  const fila = (f, esInforme) => {
+    const fecha = fechaLegible(fechaDelNombre(f.name, dni) || f.createdTime);
+    const meta = [fecha, pesoLegible(f.size)].filter(Boolean).join(' · ');
+    return `<div class="archivo">
+      <span class="archivo-ico">${esInforme ? '📋' : '📄'}</span>
+      <div class="archivo-datos">
+        <div class="archivo-nombre">${escapar(f.name)}</div>
+        <div class="archivo-meta">${escapar(meta)}</div>
+      </div>
+      <div class="archivo-acciones">
+        <button class="ver" title="Ver"
+                onclick="abrirArchivo('${f.id}', '${escapar(f.name).replace(/'/g, "\\'")}')">👁</button>
+        <button title="Descargar"
+                onclick="bajarArchivo('${f.id}', '${escapar(f.name).replace(/'/g, "\\'")}')">⬇</button>
+      </div>
+    </div>`;
+  };
+
+  let html = '';
+  if (informes.length) html += '<div class="grupo-tit">Informes médicos</div>' + informes.map(f => fila(f, true)).join('');
+  if (estudios.length) html += '<div class="grupo-tit">Estudios</div>' + estudios.map(f => fila(f, false)).join('');
+  cont.innerHTML = html;
+}
+
+// ── Visor ────────────────────────────────────────────────────────────────────
+// El endpoint exige la cabecera de sesión y un iframe no puede mandarla, así
+// que el archivo se baja con fetch y se muestra desde un blob local.
+async function traerArchivo(id) {
+  const r = await fetch('/api/ver-archivo?id=' + encodeURIComponent(id), { headers: await cabeceras() });
+  if (r.status === 401) { alert('La sesión expiró. Volvé a ingresar.'); location.reload(); return null; }
+  if (!r.ok) throw new Error('No se pudo abrir el archivo');
+  return await r.blob();
+}
+
+async function abrirArchivo(id, nombre) {
+  try {
+    const blob = await traerArchivo(id);
+    if (!blob) return;
+    if (_archivoActual) URL.revokeObjectURL(_archivoActual.url);
+    _archivoActual = { url: URL.createObjectURL(blob), nombre };
+    $('visorNombre').textContent = nombre;
+    $('visorFrame').src = _archivoActual.url;
+    $('visor').classList.add('abierto');
+  } catch (e) {
+    alert('No se pudo abrir el archivo.');
+    console.error(e);
+  }
+}
+
+async function bajarArchivo(id, nombre) {
+  try {
+    const blob = await traerArchivo(id);
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = nombre;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  } catch (e) {
+    alert('No se pudo descargar el archivo.');
+    console.error(e);
+  }
+}
+
+function descargarActual() {
+  if (!_archivoActual) return;
+  const a = document.createElement('a');
+  a.href = _archivoActual.url;
+  a.download = _archivoActual.nombre;
+  a.click();
+}
+
+function cerrarVisor() {
+  $('visor').classList.remove('abierto');
+  $('visorFrame').src = '';
+  if (_archivoActual) { URL.revokeObjectURL(_archivoActual.url); _archivoActual = null; }
+}
+
+// ── Arranque ─────────────────────────────────────────────────────────────────
+$('btnEntrar').addEventListener('click', entrar);
+$('clave').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+$('email').addEventListener('keydown', e => { if (e.key === 'Enter') $('clave').focus(); });
+$('btnBuscar').addEventListener('click', buscar);
+$('dni').addEventListener('keydown', e => { if (e.key === 'Enter') buscar(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarVisor(); });
+
+(async () => {
+  const { data } = await sb.auth.getSession();
+  if (data && data.session) mostrarApp(data.session.user.email || '');
+})();
+</script>
+</body>
+</html>
