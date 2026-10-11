@@ -3989,8 +3989,15 @@ function setOpcionInforme(id, btn) {
 }
 
 function cerrarModalInforme() {
-  document.getElementById('modalInforme').classList.remove('show');
-  _informeId = null; _informeIdx = -1; _informeResultadoEl = null;
+  const modal = document.getElementById('modalInforme');
+  const estabaAbierto = modal.classList.contains('show');
+  modal.classList.remove('show');
+  // Cuando el informe se hace desde la pestaña no hay ventana que cerrar y la
+  // pantalla sigue ahí: borrar el paciente en curso dejaba el botón de
+  // regenerar sin efecto, porque la función sale en su primera línea.
+  if (estabaAbierto) {
+    _informeId = null; _informeIdx = -1; _informeResultadoEl = null;
+  }
 }
 
 async function generarYSubirInforme() {
@@ -4109,12 +4116,15 @@ async function generarYSubirInforme() {
       renderLista();
     }
     showToast('✅ Informe enviado correctamente');
+    // Solo se cierra si salió bien. Si falla, lo escrito queda en pantalla:
+    // volver a tipear un informe entero por un error de red no es opción.
+    cerrarModalInforme();
   } catch(err) {
-    showToast('Error al enviar el informe');
+    showToast('❌ No se pudo enviar. Lo que escribiste quedó: volvé a intentar.');
     console.error(err);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = conMedico('🔄 Regenerar informe'); }
   }
-
-  cerrarModalInforme();
 }
 
 init();
@@ -5675,9 +5685,14 @@ async function guardarYSubirInformeTab() {
   const btn = document.getElementById('itBtnGuardar');
   btn.disabled = true;
   btn.textContent = '⏳ Generando...';
-  await generarYSubirInforme();
-  btn.disabled = false;
-  btn.textContent = conMedico('🔄 Regenerar informe');
+  // El finally es lo que importa: sin él, un error dejaba el botón apagado y
+  // la única salida era recargar la página, perdiendo el informe escrito.
+  try {
+    await generarYSubirInforme();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = conMedico('🔄 Regenerar informe');
+  }
 }
 
 // ── Resize handle para panel de archivos en pestaña informe ──
