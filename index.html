@@ -3752,16 +3752,20 @@ const EMAIL_MEDICO = {
 
 async function checkAuth() {
   const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    document.getElementById('loginScreen').classList.add('hidden');
-    document.getElementById('btnLogout').style.display = 'inline-block';
-    const nombre = EMAIL_MEDICO[session.user.email];
-    if (nombre) {
-      seleccionarMedico(nombre, session.user.id);
-    } else {
-      document.getElementById('medicoScreen').classList.remove('hidden');
-    }
+  if (!session) return;
+
+  // Las cuentas de consulta (hospital, auditores) también figuran como
+  // autorizadas, pero solo para ver estudios en consulta.html. Acá se cargan
+  // y editan pacientes, así que entra únicamente quien tiene médico asociado.
+  const nombre = EMAIL_MEDICO[session.user.email];
+  if (!nombre) {
+    await sb.auth.signOut();
+    return;
   }
+
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('btnLogout').style.display = 'inline-block';
+  seleccionarMedico(nombre, session.user.id);
 }
 
 async function doLogin() {
@@ -3786,18 +3790,23 @@ async function doLogin() {
     return;
   }
 
+  // Sin médico asociado no se entra: las cuentas de consulta sirven para
+  // ver estudios en consulta.html, no para cargar pacientes acá.
+  const nombre = EMAIL_MEDICO[email];
+  if (!nombre) {
+    await sb.auth.signOut();
+    errorEl.textContent = 'Esta cuenta es de consulta. Ingresá en la página de consulta de estudios.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('btnLogout').style.display = 'inline-block';
   const { data: { session } } = await sb.auth.getSession();
-  const nombre = EMAIL_MEDICO[email];
-  if (nombre) {
-    seleccionarMedico(nombre, session?.user?.id);
-    // Decir en voz alta con qué cuenta se entró: cargar pacientes en la del
-    // colega es un error fácil de cometer y molesto de deshacer.
-    showToast('Ingresaste como ' + nombre);
-  } else {
-    document.getElementById('medicoScreen').classList.remove('hidden');
-  }
+  seleccionarMedico(nombre, session?.user?.id);
+  // Decir en voz alta con qué cuenta se entró: cargar pacientes en la del
+  // colega es un error fácil de cometer y molesto de deshacer.
+  showToast('Ingresaste como ' + nombre);
   reiniciarInactividad();
 }
 
