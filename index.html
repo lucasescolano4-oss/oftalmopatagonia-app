@@ -1166,6 +1166,11 @@
   [data-theme="dark"] .nav-pastilla.en-hover { background: #2c2c2e; }
   .nav-icon-svg { width: 17px; height: 17px; flex-shrink: 0; }
 
+  /* Separa el acceso a la consulta de estudios de las pestañas propiamente
+     dichas: las de la izquierda cambian de pantalla, esa abre otra página. */
+  .nav-sep { width: 1px; height: 18px; background: #e2e2e0; margin: 0 5px; flex-shrink: 0; }
+  [data-theme="dark"] .nav-sep { background: #3a3a3c; }
+
   /* La barra muestra solo iconos. El nombre de cada pestaña aparece al pasar
      el mouse, como globo: así no ocupa lugar y la barra queda compacta.
      Es el mismo texto de siempre, reposicionado, no un rótulo aparte. */
@@ -1880,6 +1885,12 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
   <button class="nav-item" id="nav-revision" onclick="switchTab('revision')">
     <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v1H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2V5a3 3 0 0 0-3-3z"/><path d="M9 13h6"/><path d="M9 17h4"/></svg>
     <span class="nav-label-text">Pacientes para revisión</span>
+  </button>
+  <!-- Separado del resto: no es otra pestaña, abre otra página. -->
+  <span class="nav-sep" aria-hidden="true"></span>
+  <button class="nav-item" id="nav-consulta" onclick="abrirConsultaEstudios()">
+    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+    <span class="nav-label-text">Consulta de estudios · los dos médicos</span>
   </button>
 </nav>
   <div style="display:flex;align-items:center;gap:14px;">
@@ -2695,6 +2706,19 @@ function moverPastillaA(destino, esHover) {
   pastilla.style.width = d.width + 'px';
   pastilla.style.opacity = '1';
   pastilla.classList.toggle('en-hover', !!esHover);
+}
+
+/**
+ * Abre la consulta de estudios, que busca por DNI sin distinguir de qué
+ * médico es el paciente. Útil para mirar un estudio del colega sin tener que
+ * cambiar de cuenta.
+ *
+ * Va en una pestaña con nombre fijo: si ya está abierta se reutiliza, en vez
+ * de acumular una por cada clic. Y sin 'noopener', para que el navegador le
+ * pase la sesión y no haya que ingresar de nuevo.
+ */
+function abrirConsultaEstudios() {
+  window.open('/consulta.html', 'consultaEstudios');
 }
 
 function pastillaAlActivo() {
