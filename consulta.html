@@ -80,6 +80,7 @@
     background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
     padding: 10px 12px; margin-top: 4px;
   }
+  .aviso p + p { margin-top: 8px; }
   .ficha .cerrar {
     width: 100%; margin-top: 16px; padding: 11px; border: none; border-radius: 999px;
     background: #185fa5; color: #fff; font-size: 14px; font-weight: 600;
@@ -243,9 +244,16 @@
     </div>
 
     <div class="aviso">
-      Los archivos deben llevar el <strong>DNI del paciente en el nombre</strong>.
-      Es lo que usa la búsqueda: sin eso, la carpeta queda compartida pero no se
-      encuentra nada.
+      <p>
+        Los archivos deben llevar el <strong>DNI del paciente en el nombre</strong>.
+        Es lo que usa la búsqueda: si no lo tienen, la carpeta queda compartida
+        pero no se muestra ningún archivo.
+      </p>
+      <p>
+        Comparta <strong>solo la carpeta de estudios</strong>. Todo lo que
+        comparta con este correo entra en la búsqueda, así que un archivo que no
+        sea un estudio pero tenga ese número en el nombre también va a aparecer.
+      </p>
     </div>
 
     <button class="cerrar" onclick="cerrarInstructivo()">Entendido</button>
