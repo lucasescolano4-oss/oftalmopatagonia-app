@@ -4006,6 +4006,9 @@ function abrirModalInforme(id, i) {
   document.getElementById('informeObservaciones').value = '';
   cargarEstadoRevision('informe', _informeIdx >= 0 ? pacientesHoy[_informeIdx] : _itPaciente);
   document.getElementById('modalInforme').classList.add('show');
+
+  vigilarCamposInforme(document.getElementById('modalInformeFields'));
+  if (_informeId) reponerInforme(_informeId);
 }
 
 // ── Marca de revisión ────────────────────────────────────────────────────────
@@ -4056,6 +4059,117 @@ function cerrarModalInforme() {
   if (estabaAbierto) {
     _informeId = null; _informeIdx = -1; _informeResultadoEl = null;
   }
+}
+
+// ── Borrador del informe ─────────────────────────────────────────────────────
+// Un informe patológico lleva varios párrafos. Perderlo por cerrar la pestaña,
+// por un corte de luz o por cambiar de paciente a mitad del envío significa
+// escribirlo de nuevo. Se guarda mientras se escribe, en dos lugares: en la
+// memoria del navegador, que es instantánea, y en la base, que sobrevive a que
+// la computadora se apague.
+
+/** Junta todo lo escrito en el formulario del informe. */
+function recolectarInforme(paciente) {
+  const datos = {
+    estudios: paciente.estudios || [],
+    campos: {},
+    diagnostico: (document.getElementById('informeDiagnostico')?.value || '').trim(),
+    observaciones: (document.getElementById('informeObservaciones')?.value || '').trim()
+  };
+  for (const est of (paciente.estudios || [])) {
+    const cfg = ESTUDIOS_CONFIG[est];
+    if (!cfg) continue;
+    const campos = cfg.grupos ? cfg.grupos.flatMap(g => g.campos) : cfg.campos;
+    for (const campo of campos) {
+      const el = document.getElementById('campo_' + campo.id);
+      if (el) datos.campos[campo.id] = el.value.trim();
+    }
+  }
+  return datos;
+}
+
+const claveBorrador = id => 'borrador_informe_' + id;
+
+function guardarBorradorLocal(id, datos) {
+  try { sessionStorage.setItem(claveBorrador(id), JSON.stringify(datos)); } catch (e) {}
+}
+function leerBorradorLocal(id) {
+  try {
+    const crudo = sessionStorage.getItem(claveBorrador(id));
+    return crudo ? JSON.parse(crudo) : null;
+  } catch (e) { return null; }
+}
+function olvidarBorradorLocal(id) {
+  try { sessionStorage.removeItem(claveBorrador(id)); } catch (e) {}
+}
+
+let _relojBorrador = null;
+
+/**
+ * Se llama con cada tecla. Guarda en el navegador al instante y en la base
+ * cuando el médico deja de escribir, para no hacer una consulta por letra.
+ */
+function anotarBorrador() {
+  const p = _informeIdx >= 0 ? pacientesHoy[_informeIdx] : (_itPaciente || null);
+  if (!_informeId || !p) return;
+  const id = _informeId;
+  const datos = recolectarInforme(p);
+  guardarBorradorLocal(id, datos);
+
+  clearTimeout(_relojBorrador);
+  _relojBorrador = setTimeout(() => {
+    sb.from('pacientes')
+      .update({ informe_borrador: datos, borrador_en: new Date().toISOString() })
+      .eq('id', id)
+      .then(({ error }) => { if (error) console.error('[borrador]', error.message); });
+  }, 1500);
+}
+
+/** Vuelca un borrador guardado sobre el formulario ya dibujado. */
+function restaurarInforme(datos) {
+  if (!datos) return false;
+  let algo = false;
+  for (const [id, valor] of Object.entries(datos.campos || {})) {
+    const el = document.getElementById('campo_' + id);
+    if (el && valor) { el.value = valor; algo = true; }
+  }
+  const diag = document.getElementById('informeDiagnostico');
+  const obs  = document.getElementById('informeObservaciones');
+  if (diag && datos.diagnostico)   { diag.value = datos.diagnostico; algo = true; }
+  if (obs  && datos.observaciones) { obs.value  = datos.observaciones; algo = true; }
+  return algo;
+}
+
+/**
+ * Busca lo último que se escribió para ese paciente y lo repone.
+ * Prioridad: lo de esta sesión, después el borrador de la base, y por último
+ * el informe ya enviado, para poder corregirlo sin tipear todo de nuevo.
+ */
+async function reponerInforme(idPaciente) {
+  if (restaurarInforme(leerBorradorLocal(idPaciente))) {
+    showToast('Se recuperó lo que habías escrito');
+    return;
+  }
+  const { data } = await sb.from('pacientes')
+    .select('informe_borrador, informe_data')
+    .eq('id', idPaciente).single();
+  if (!data) return;
+  if (restaurarInforme(data.informe_borrador)) {
+    showToast('Se recuperó un borrador sin enviar');
+  } else {
+    restaurarInforme(data.informe_data);
+  }
+}
+
+/** Engancha el autoguardado a todos los campos del informe. */
+function vigilarCamposInforme(contenedor) {
+  if (!contenedor) return;
+  contenedor.querySelectorAll('textarea, input').forEach(el => {
+    el.addEventListener('input', anotarBorrador);
+  });
+  ['informeDiagnostico', 'informeObservaciones'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', anotarBorrador);
+  });
 }
 
 async function generarYSubirInforme() {
@@ -4124,52 +4238,45 @@ async function generarYSubirInforme() {
     ? 'https://script.google.com/macros/s/AKfycbwlT8Pwx_wSecUvfJKL5MYv0v52072r1rm_lb6dG-sCEnuDkPjAJ8V5dVaBeaEuWv4g/exec'
     : 'https://script.google.com/macros/s/AKfycbwJAKKna3APwSQmrnHAkZrCQAjEgVD6l5DwNZMSZT0dl2X9ptvED7Q6D_LZPpe86Un1/exec';
 
+  // Todo lo que depende de la pantalla se toma ANTES de esperar a Google.
+  // El envío tarda unos quince segundos, y si en ese rato se abre otro
+  // paciente estas variables ya apuntan a él: el informe de uno terminaba
+  // guardándose encima del otro.
+  const informeDataToSave = recolectarInforme(p);
+  const idDestino = _informeId;
+  const idxDestino = _informeIdx;
+  const elResultado = _informeResultadoEl;
+  const chkRev = document.getElementById('informeParaRevision');
+  const notaRev = document.getElementById('informeNotaRevision');
+  const paraRevision = chkRev ? chkRev.checked : false;
+  const textoRevision = paraRevision && notaRev ? (notaRev.value.trim() || null) : null;
+
   try {
     await fetch(SHEET_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(payload) });
-
-    // Guardar datos del informe para mostrar en la sidebar
-    const informeDataToSave = {
-      estudios: p.estudios || [],
-      campos: {},
-      diagnostico: document.getElementById('informeDiagnostico').value.trim(),
-      observaciones: document.getElementById('informeObservaciones').value.trim()
-    };
-    const todosLosCampos = [];
-    for (const est of (p.estudios || [])) {
-      const cfg = ESTUDIOS_CONFIG[est];
-      if (!cfg) continue;
-      if (cfg.grupos) cfg.grupos.forEach(g => todosLosCampos.push(...g.campos));
-      else todosLosCampos.push(...cfg.campos);
-    }
-    todosLosCampos.forEach(campo => {
-      const el = document.getElementById('campo_' + campo.id);
-      if (el) informeDataToSave.campos[campo.id] = el.value.trim();
-    });
-
-    // La marca de revision es interna: se guarda en el paciente, no en el PDF.
-    const chkRev = document.getElementById('informeParaRevision');
-    const notaRev = document.getElementById('informeNotaRevision');
-    const paraRevision = chkRev ? chkRev.checked : false;
 
     const { error } = await sb.from('pacientes').update({
       informe_realizado: true,
       informe_data: informeDataToSave,
       para_revision: paraRevision,
-      nota_revision: paraRevision && notaRev ? (notaRev.value.trim() || null) : null
-    }).eq('id', _informeId);
+      nota_revision: textoRevision,
+      // El informe quedó guardado de verdad: el borrador ya no hace falta.
+      informe_borrador: null,
+      borrador_en: null
+    }).eq('id', idDestino);
     if (!error) {
-      if (_informeIdx >= 0) {
-        pacientesHoy[_informeIdx].para_revision = paraRevision;
-        pacientesHoy[_informeIdx].nota_revision = paraRevision && notaRev ? notaRev.value.trim() : null;
+      olvidarBorradorLocal(idDestino);
+      if (idxDestino >= 0) {
+        pacientesHoy[idxDestino].para_revision = paraRevision;
+        pacientesHoy[idxDestino].nota_revision = textoRevision;
+        pacientesHoy[idxDestino].informe_realizado = true;
       }
-      if (_informeIdx >= 0) pacientesHoy[_informeIdx].informe_realizado = true;
-      if (_informeResultadoEl) {
-        const val = _informeResultadoEl.querySelector('.res-card-informe-val');
+      if (elResultado) {
+        const val = elResultado.querySelector('.res-card-informe-val');
         if (val) { val.textContent = '✓ Hecho'; val.className = 'res-card-informe-val hecho'; }
-        const card = _informeResultadoEl.closest('.res-card');
+        const card = elResultado.closest('.res-card');
         if (card) card.dataset.informe = '1';
         // Update pcard-circle if it was the trigger element
-        if (_informeResultadoEl.classList.contains('pcard-circle')) { _informeResultadoEl.classList.add('done'); }
+        if (elResultado.classList.contains('pcard-circle')) { elResultado.classList.add('done'); }
       }
       renderLista();
     }
@@ -5652,6 +5759,11 @@ async function abrirTabInforme(pacienteObj, fromTab) {
   document.getElementById('itDiagnostico').value = diagEl ? diagEl.value : '';
   document.getElementById('itObservaciones').value = obsEl ? obsEl.value : '';
   cargarEstadoRevision('it', pacienteObj);
+
+  vigilarCamposInforme(document.getElementById('itFields'));
+  ['itDiagnostico', 'itObservaciones'].forEach(id =>
+    document.getElementById(id)?.addEventListener('input', anotarBorrador));
+  await reponerInforme(pacienteObj.id);
 
   await _itCargarArchivos(pacienteObj.dni);
 }
