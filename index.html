@@ -4194,8 +4194,10 @@ async function reponerInforme(idPaciente) {
   if (!data) return;
   if (restaurarInforme(data.informe_borrador)) {
     showToast('Se recuperó un borrador sin enviar');
-  } else {
-    restaurarInforme(data.informe_data);
+  } else if (restaurarInforme(data.informe_data)) {
+    // Sin este aviso no hay forma de saberlo: un informe escrito con los
+    // chips de Normal queda idéntico al texto que el formulario pone solo.
+    showToast('📄 Se cargó el informe ya enviado — podés corregirlo');
   }
 }
 
