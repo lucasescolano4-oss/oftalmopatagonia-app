@@ -1166,6 +1166,23 @@
   [data-theme="dark"] .nav-pastilla.en-hover { background: #2c2c2e; }
   .nav-icon-svg { width: 17px; height: 17px; flex-shrink: 0; }
 
+  /* Acción secundaria: guarda y tilda sin generar PDF. Queda apagada a
+     propósito, para que no compita con el botón principal. */
+  .btn-solo-marcar {
+    width: 100%; padding: 10px; font-family: inherit; font-size: 13px;
+    background: none; border: 1px solid var(--gris-borde-fuerte);
+    border-radius: 999px; color: var(--gris-texto); cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-solo-marcar:hover:not(:disabled) {
+    border-color: var(--verde); color: var(--verde); background: var(--verde-light);
+  }
+  .btn-solo-marcar:disabled { opacity: .55; cursor: default; }
+  [data-theme="dark"] .btn-solo-marcar { border-color: #3a3a3c; color: #9a9a9e; }
+  [data-theme="dark"] .btn-solo-marcar:hover:not(:disabled) {
+    border-color: #2f6b4f; color: #4dd88a; background: #0d3320;
+  }
+
   /* ── Informe anterior, colgado debajo de cada campo ──
      Deliberadamente apagado: es material de consulta, no el texto que se va a
      firmar. Si compitiera visualmente con el campo, se leería por encima de lo
@@ -2266,8 +2283,13 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
         <textarea class="informe-textarea revision-nota" id="itNotaRevision" style="display:none;"
                   placeholder="¿Qué querés revisar o consultar de este caso? (opcional)"></textarea>
       </div>
-      <div style="display:flex;gap:10px;margin-top:16px;padding-bottom:24px;">
-        <button class="btn-pdf" id="itBtnGuardar" onclick="guardarYSubirInformeTab()" style="flex:1;">📄 Generar informe</button>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px;padding-bottom:24px;">
+        <button class="btn-pdf" id="itBtnGuardar" onclick="guardarYSubirInformeTab()">📄 Generar informe</button>
+        <!-- Guarda y tilda sin pasar por Google. Para corregir un informe ya
+             emitido, o para dejar constancia sin reimprimir un PDF. -->
+        <button class="btn-solo-marcar" id="itBtnMarcar" onclick="marcarInformeEscrito()">
+          ✓ Marcar como escrito, sin generar PDF
+        </button>
       </div>
     </div>
     <!-- Derecha: visor a todo el ancho. Los estudios se eligen desde el
@@ -2426,6 +2448,9 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;">
       <button onclick="cerrarModalInforme()" style="padding:11px 18px;font-size:13px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;color:#888;">Cancelar</button>
       <button class="btn-pdf" id="btnGenerarPDF" onclick="generarYSubirInforme()">📄 Generar y subir PDF</button>
+      <button class="btn-solo-marcar" id="btnMarcarEscrito" onclick="marcarInformeEscrito()">
+        ✓ Marcar como escrito, sin generar PDF
+      </button>
     </div>
   </div>
 </div>
@@ -4267,6 +4292,70 @@ function vigilarCamposInforme(contenedor) {
   ['informeDiagnostico', 'informeObservaciones'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', anotarBorrador);
   });
+}
+
+/**
+ * Guarda el informe y lo da por hecho, sin pasar por Google.
+ *
+ * Sirve para dos cosas: corregir el texto de un informe ya emitido sin
+ * reimprimir un PDF que nadie pidió, y dejar constancia de que el informe
+ * está escrito cuando el PDF no hace falta.
+ */
+async function marcarInformeEscrito() {
+  if (!_informeId) return;
+  const p = _informeIdx >= 0 ? pacientesHoy[_informeIdx] : (_itPaciente || null);
+  if (!p) return;
+
+  // En la pestaña Informe el diagnóstico y las observaciones viven en otros
+  // campos. Se copian igual que al generar, para guardar lo que está en
+  // pantalla y no lo que quedó en la ventana emergente de otro paciente.
+  if (document.getElementById('view-informe')?.classList.contains('active')) {
+    const diag = document.getElementById('informeDiagnostico');
+    const obs  = document.getElementById('informeObservaciones');
+    if (diag) diag.value = document.getElementById('itDiagnostico')?.value || '';
+    if (obs)  obs.value  = document.getElementById('itObservaciones')?.value || '';
+    copiarRevision('it', 'informe');
+  }
+
+  const botones = ['itBtnMarcar', 'btnMarcarEscrito']
+    .map(id => document.getElementById(id)).filter(Boolean);
+  const textoOriginal = botones.length ? botones[0].textContent : '';
+  botones.forEach(b => { b.disabled = true; b.textContent = 'Guardando…'; });
+
+  // Igual que al enviar: se toma todo antes de esperar a la base.
+  const datos = recolectarInforme(p);
+  const idDestino = _informeId;
+  const idxDestino = _informeIdx;
+  const chkRev = document.getElementById('informeParaRevision');
+  const notaRev = document.getElementById('informeNotaRevision');
+  const paraRevision = chkRev ? chkRev.checked : false;
+  const textoRevision = paraRevision && notaRev ? (notaRev.value.trim() || null) : null;
+
+  try {
+    const { error } = await sb.from('pacientes').update({
+      informe_realizado: true,
+      informe_data: datos,
+      para_revision: paraRevision,
+      nota_revision: textoRevision,
+      informe_borrador: null,
+      borrador_en: null
+    }).eq('id', idDestino);
+    if (error) throw error;
+
+    olvidarBorradorLocal(idDestino);
+    if (idxDestino >= 0) {
+      pacientesHoy[idxDestino].informe_realizado = true;
+      pacientesHoy[idxDestino].para_revision = paraRevision;
+      pacientesHoy[idxDestino].nota_revision = textoRevision;
+    }
+    renderLista();
+    showToast('✓ Informe marcado como escrito');
+  } catch (e) {
+    console.error('[marcar informe]', e);
+    showToast('No se pudo marcar. Lo que escribiste quedó: volvé a intentar.');
+  } finally {
+    botones.forEach(b => { b.disabled = false; b.textContent = textoOriginal; });
+  }
 }
 
 async function generarYSubirInforme() {
