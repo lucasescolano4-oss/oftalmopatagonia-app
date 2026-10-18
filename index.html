@@ -1166,6 +1166,37 @@
   [data-theme="dark"] .nav-pastilla.en-hover { background: #2c2c2e; }
   .nav-icon-svg { width: 17px; height: 17px; flex-shrink: 0; }
 
+  /* ── Informe anterior, colgado debajo de cada campo ──
+     Deliberadamente apagado: es material de consulta, no el texto que se va a
+     firmar. Si compitiera visualmente con el campo, se leería por encima de lo
+     que uno está escribiendo. */
+  .informe-anterior {
+    margin: 5px 0 2px; padding: 8px 10px;
+    background: #fbfaf7; border: 1px dashed #ddd9cf; border-radius: 8px;
+    border-left: 3px solid #c9bfa8;
+  }
+  .ia-cab {
+    font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+    color: #a09781; font-weight: 600; margin-bottom: 3px;
+  }
+  .ia-txt {
+    font-size: 12.5px; line-height: 1.45; color: #6b6355;
+    max-height: 72px; overflow-y: auto;
+  }
+  .ia-btn {
+    margin-top: 6px; padding: 3px 9px; font-family: inherit; font-size: 11px;
+    background: white; border: 1px solid #ddd9cf; border-radius: 999px;
+    color: #8a8070; cursor: pointer; transition: all .15s;
+  }
+  .ia-btn:hover { border-color: #a09781; color: #5c5649; }
+  .ia-btn.copiado { background: var(--verde-light); border-color: var(--verde); color: var(--verde); }
+
+  [data-theme="dark"] .informe-anterior { background: #1e1c18; border-color: #3a362c; border-left-color: #5c5444; }
+  [data-theme="dark"] .ia-cab { color: #8a8070; }
+  [data-theme="dark"] .ia-txt { color: #a39a86; }
+  [data-theme="dark"] .ia-btn { background: #26241e; border-color: #3a362c; color: #a39a86; }
+  [data-theme="dark"] .ia-btn:hover { border-color: #5c5444; color: #d4cbb8; }
+
   /* Separa el acceso a la consulta de estudios de las pestañas propiamente
      dichas: las de la izquierda cambian de pantalla, esa abre otra página. */
   .nav-sep { width: 1px; height: 18px; background: #e2e2e0; margin: 0 5px; flex-shrink: 0; }
@@ -4008,7 +4039,14 @@ function abrirModalInforme(id, i) {
   document.getElementById('modalInforme').classList.add('show');
 
   vigilarCamposInforme(document.getElementById('modalInformeFields'));
-  if (_informeId) reponerInforme(_informeId);
+  if (_informeId) {
+    reponerInforme(_informeId);
+    const pac = _informeIdx >= 0 ? pacientesHoy[_informeIdx] : _itPaciente;
+    buscarInformeAnterior(pac && pac.dni, _informeId).then(anterior =>
+      mostrarInformeAnterior(document.getElementById('modalInformeFields'), anterior, {
+        diagnostico: 'informeDiagnostico', observaciones: 'informeObservaciones'
+      }));
+  }
 }
 
 // ── Marca de revisión ────────────────────────────────────────────────────────
@@ -4158,6 +4196,63 @@ async function reponerInforme(idPaciente) {
     showToast('Se recuperó un borrador sin enviar');
   } else {
     restaurarInforme(data.informe_data);
+  }
+}
+
+// ── Informe anterior del mismo paciente ──────────────────────────────────────
+// Cada visita crea un registro nuevo, así que al año siguiente los campos
+// arrancan en blanco. Para un seguimiento hace falta ver qué decía la vez
+// pasada. Se muestra al lado, nunca precargado: un hallazgo viejo escrito solo
+// en el campo se puede firmar sin releerlo, y eso queda en la historia clínica.
+
+async function buscarInformeAnterior(dni, idActual) {
+  if (!dni) return null;
+  const { data, error } = await sb.from('pacientes')
+    .select('id, fecha, informe_data')
+    .eq('dni', String(dni))
+    .neq('id', idActual)
+    .not('informe_data', 'is', null)
+    .order('fecha', { ascending: false })
+    .limit(1);
+  if (error) { console.error('[anterior]', error.message); return null; }
+  return data && data[0] ? data[0] : null;
+}
+
+/** Cuelga debajo de cada campo lo que decía ese mismo campo la vez pasada. */
+function mostrarInformeAnterior(contenedor, anterior, idsExtra = {}) {
+  if (!anterior || !anterior.informe_data) return;
+  const campos = anterior.informe_data.campos || {};
+  const fecha = anterior.fecha ? anterior.fecha.split('-').reverse().join('/') : '';
+
+  const colgar = (ta, previo) => {
+    if (!ta || !previo) return;
+    const caja = document.createElement('div');
+    caja.className = 'informe-anterior';
+    caja.innerHTML =
+      `<div class="ia-cab">Informe del ${escHtml(fecha)}</div>` +
+      `<div class="ia-txt">${escHtml(previo)}</div>` +
+      `<button type="button" class="ia-btn">Traer este texto</button>`;
+    const boton = caja.querySelector('.ia-btn');
+    boton.addEventListener('click', () => {
+      ta.value = previo;
+      anotarBorrador();
+      boton.textContent = '✓ Copiado';
+      boton.classList.add('copiado');
+      setTimeout(() => { boton.textContent = 'Traer este texto'; boton.classList.remove('copiado'); }, 1700);
+    });
+    ta.insertAdjacentElement('afterend', caja);
+  };
+
+  if (contenedor) {
+    contenedor.querySelectorAll('textarea[id^="campo_"]').forEach(ta => {
+      colgar(ta, (campos[ta.id.slice(6)] || '').trim());
+    });
+  }
+  if (idsExtra.diagnostico) {
+    colgar(document.getElementById(idsExtra.diagnostico), (anterior.informe_data.diagnostico || '').trim());
+  }
+  if (idsExtra.observaciones) {
+    colgar(document.getElementById(idsExtra.observaciones), (anterior.informe_data.observaciones || '').trim());
   }
 }
 
@@ -5764,6 +5859,11 @@ async function abrirTabInforme(pacienteObj, fromTab) {
   ['itDiagnostico', 'itObservaciones'].forEach(id =>
     document.getElementById(id)?.addEventListener('input', anotarBorrador));
   await reponerInforme(pacienteObj.id);
+
+  const anterior = await buscarInformeAnterior(pacienteObj.dni, pacienteObj.id);
+  mostrarInformeAnterior(document.getElementById('itFields'), anterior, {
+    diagnostico: 'itDiagnostico', observaciones: 'itObservaciones'
+  });
 
   await _itCargarArchivos(pacienteObj.dni);
 }
