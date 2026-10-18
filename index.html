@@ -209,7 +209,11 @@
   .modal-close-btn:hover { color:#e24b4a; }
   .informe-section { margin-bottom:16px; }
   .informe-section-label { font-size:11px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; color:#888; margin-bottom:6px; display:block; }
-  .informe-textarea { width:100%; padding:9px 11px; border:1px solid #ddd; border-radius:8px; font-size:13px; min-height:72px; resize:vertical; font-family:inherit; line-height:1.5; transition:border-color 0.15s; }
+  /* El alto lo pone el contenido, desde JavaScript. Sin barra interna: la idea
+     es que no quede texto escondido, porque un hallazgo a medio ver es un
+     hallazgo que no se lee. Los campos normales quedan chicos y los
+     patológicos altos, así el alto mismo señala dónde hay algo escrito. */
+  .informe-textarea { width:100%; padding:9px 11px; border:1px solid #ddd; border-radius:8px; font-size:13px; min-height:46px; overflow-y:hidden; resize:vertical; font-family:inherit; line-height:1.5; transition:border-color 0.15s, height 0.09s ease-out; }
   .informe-textarea:focus { outline:none; border-color:#378add; }
   .informe-divider { border:none; border-top:1px solid #e5e5e3; margin:20px 0; }
   .btn-pdf { padding:11px 22px; background:#185fa5; color:white; border:none; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; transition:opacity 0.15s; }
@@ -4109,7 +4113,10 @@ function copiarRevision(desde, hacia) {
 function setOpcionInforme(id, btn) {
   btn.closest('.opciones-chips').querySelectorAll('.opcion-chip').forEach(c => c.classList.remove('selected'));
   btn.classList.add('selected');
-  document.getElementById('campo_' + id).value = btn.dataset.texto;
+  const campo = document.getElementById('campo_' + id);
+  campo.value = btn.dataset.texto;
+  ajustarAlto(campo);
+  anotarBorrador();
 }
 
 function cerrarModalInforme() {
@@ -4194,12 +4201,12 @@ function restaurarInforme(datos) {
   let algo = false;
   for (const [id, valor] of Object.entries(datos.campos || {})) {
     const el = document.getElementById('campo_' + id);
-    if (el && valor) { el.value = valor; algo = true; }
+    if (el && valor) { el.value = valor; ajustarAlto(el); algo = true; }
   }
   const diag = document.getElementById('informeDiagnostico');
   const obs  = document.getElementById('informeObservaciones');
-  if (diag && datos.diagnostico)   { diag.value = datos.diagnostico; algo = true; }
-  if (obs  && datos.observaciones) { obs.value  = datos.observaciones; algo = true; }
+  if (diag && datos.diagnostico)   { diag.value = datos.diagnostico; ajustarAlto(diag); algo = true; }
+  if (obs  && datos.observaciones) { obs.value  = datos.observaciones; ajustarAlto(obs); algo = true; }
   return algo;
 }
 
@@ -4262,6 +4269,7 @@ function mostrarInformeAnterior(contenedor, anterior, idsExtra = {}) {
     const boton = caja.querySelector('.ia-btn');
     boton.addEventListener('click', () => {
       ta.value = previo;
+      ajustarAlto(ta);
       anotarBorrador();
       boton.textContent = '✓ Copiado';
       boton.classList.add('copiado');
@@ -4283,15 +4291,35 @@ function mostrarInformeAnterior(contenedor, anterior, idsExtra = {}) {
   }
 }
 
-/** Engancha el autoguardado a todos los campos del informe. */
+/**
+ * Deja el campo del alto justo de lo que tiene escrito, más un renglón.
+ * Se llama al dibujar, al escribir y cada vez que algo cambia el texto.
+ */
+function ajustarAlto(ta) {
+  if (!ta) return;
+  ta.style.height = 'auto';
+  ta.style.height = (ta.scrollHeight + 2) + 'px';
+}
+
+function ajustarAltos(contenedor) {
+  (contenedor || document).querySelectorAll('.informe-textarea').forEach(ajustarAlto);
+}
+
+/** Engancha el autoguardado y el alto automático a los campos del informe. */
 function vigilarCamposInforme(contenedor) {
   if (!contenedor) return;
   contenedor.querySelectorAll('textarea, input').forEach(el => {
     el.addEventListener('input', anotarBorrador);
+    if (el.classList.contains('informe-textarea')) {
+      el.addEventListener('input', () => ajustarAlto(el));
+    }
   });
-  ['informeDiagnostico', 'informeObservaciones'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input', anotarBorrador);
+  ['informeDiagnostico', 'informeObservaciones', 'itDiagnostico', 'itObservaciones'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => ajustarAlto(el));
   });
+  ajustarAltos(contenedor);
 }
 
 /**
