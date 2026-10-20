@@ -1,30 +1,5 @@
-import crypto from 'crypto';
 import { rechazarSinSesion } from './_auth.js';
-
-async function getAccessToken(sa) {
-  const now = Math.floor(Date.now() / 1000);
-  const header  = Buffer.from(JSON.stringify({ alg:'RS256', typ:'JWT' })).toString('base64url');
-  const payload = Buffer.from(JSON.stringify({
-    iss: sa.client_email,
-    scope: 'https://www.googleapis.com/auth/drive.readonly',
-    aud:  'https://oauth2.googleapis.com/token',
-    exp:  now + 3600,
-    iat:  now,
-  })).toString('base64url');
-
-  const sign = crypto.createSign('RSA-SHA256');
-  sign.update(`${header}.${payload}`);
-  const sig = sign.sign(sa.private_key, 'base64url');
-
-  const resp = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${header}.${payload}.${sig}`,
-  });
-  const data = await resp.json();
-  if (!data.access_token) throw new Error('Token error: ' + JSON.stringify(data));
-  return data.access_token;
-}
+import { tokenDrive, cuentaDeServicio } from './_drive.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', 'https://oftalmopatagonia-app.vercel.app');
@@ -38,25 +13,18 @@ export default async function handler(req, res) {
   if (!id) return res.status(400).send('id requerido');
   if (!/^[A-Za-z0-9_-]{10,}$/.test(String(id))) return res.status(400).send('id invalido');
 
-  const saJson = process.env.GOOGLE_SERVICE_ACCOUNT;
-  if (!saJson) return res.status(500).send('GOOGLE_SERVICE_ACCOUNT no configurado');
-
   try {
-    const sa    = JSON.parse(saJson);
-    const token = await getAccessToken(sa);
+    const token = await tokenDrive(cuentaDeServicio());
 
-    // Obtener metadata del archivo (nombre y tipo)
-    const metaResp = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${id}?fields=name,mimeType`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    // El nombre y el contenido se piden al mismo tiempo: son dos pedidos
+    // independientes y encadenarlos duplicaba la espera al abrir un estudio.
+    const [metaResp, fileResp] = await Promise.all([
+      fetch(`https://www.googleapis.com/drive/v3/files/${id}?fields=name,mimeType`,
+            { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`,
+            { headers: { Authorization: `Bearer ${token}` } }),
+    ]);
     const meta = await metaResp.json();
-
-    // Descargar el contenido del archivo
-    const fileResp = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${id}?alt=media`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
 
     if (!fileResp.ok) {
       const errBody = await fileResp.text();
