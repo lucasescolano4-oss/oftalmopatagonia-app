@@ -3341,7 +3341,7 @@ async function enviarSeleccionados() {
 
   try {
     const payload = lista.map(p => ({ dni: p.dni, celular: p.celular, nombre: p.nombre_completo }));
-    const resp = await fetch('/api/enviar-estudios', {
+    const resp = await fetch('/api/bot?accion=enviar-estudios', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify(payload)
@@ -3690,7 +3690,7 @@ async function reenviarDesdeResultados() {
   if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
 
   try {
-    const resp = await fetch('/api/enviar-estudios', {
+    const resp = await fetch('/api/bot?accion=enviar-estudios', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify(lista)
@@ -4921,7 +4921,7 @@ async function testearBotConfig() {
   btn.textContent = '⏳ Enviando...';
   btn.disabled = true;
   try {
-    const resp = await fetch('/api/enviar-libre', {
+    const resp = await fetch('/api/bot?accion=enviar-libre', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify([{
@@ -4958,7 +4958,7 @@ async function testearBot() {
   btn.textContent = '⏳ Enviando...';
   btn.disabled = true;
   try {
-    const resp = await fetch('/api/enviar-libre', {
+    const resp = await fetch('/api/bot?accion=enviar-libre', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify([{
@@ -5289,7 +5289,7 @@ async function enviarCirugias() {
       return { nombre: c.nombre_completo, celular: c.celular, mensaje: mensajeLibre };
     });
     try {
-      const resp = await fetch('/api/enviar-libre', {
+      const resp = await fetch('/api/bot?accion=enviar-libre', {
         method: 'POST', headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify(lista)
       });
@@ -5312,7 +5312,7 @@ async function enviarCirugias() {
   });
 
   try {
-    const resp = await fetch('/api/enviar-cirugia', {
+    const resp = await fetch('/api/bot?accion=enviar-cirugia', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify(lista)
@@ -5465,7 +5465,7 @@ async function detalleEnviarInforme() {
   try {
     const celular  = card.dataset.celular  || '';
     const dni      = card.dataset.dni      || '';
-    const resp = await fetch('/api/enviar-informe', {
+    const resp = await fetch('/api/bot?accion=enviar-informe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify([{ nombre, celular, dni }])
@@ -5495,7 +5495,7 @@ async function detalleEnviarEmail() {
   const btn = document.getElementById('detalleBtnEmail');
   btn.disabled = true; btn.textContent = 'Enviando...';
   try {
-    const resp = await fetch('/api/enviar-email', {
+    const resp = await fetch('/api/bot?accion=enviar-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify([{ nombre: card.dataset.nombre, email: card.dataset.email, dni: card.dataset.dni }])
@@ -5559,7 +5559,7 @@ async function detalleEnviarWA() {
   const btn = document.getElementById('detalleBtnWA');
   btn.disabled = true; btn.textContent = 'Enviando...';
   try {
-    const resp = await fetch('/api/enviar-estudios', {
+    const resp = await fetch('/api/bot?accion=enviar-estudios', {
       method:'POST', headers: { 'Content-Type':'application/json', ...(await authHeaders()) },
       body: JSON.stringify([{ nombre: card.dataset.nombre, dni: card.dataset.dni, celular: card.dataset.celular }])
     });
@@ -5589,7 +5589,7 @@ async function detalleEnviarWA() {
       // Fallback automático por email si tiene email
       if (card.dataset.email) {
         showToast('⚠️ WhatsApp falló — intentando por email...');
-        const respEmail = await fetch('/api/enviar-email', {
+        const respEmail = await fetch('/api/bot?accion=enviar-email', {
           method: 'POST', headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
           body: JSON.stringify([{ nombre: card.dataset.nombre, email: card.dataset.email, dni: card.dataset.dni }])
         });
@@ -5602,7 +5602,7 @@ async function detalleEnviarWA() {
   } catch(e) {
     if (card.dataset.email) {
       showToast('⚠️ Bot caído — enviando por email...');
-      fetch('/api/enviar-email', { method:'POST', headers: { 'Content-Type':'application/json', ...(await authHeaders()) }, body: JSON.stringify([{ nombre: card.dataset.nombre, email: card.dataset.email, dni: card.dataset.dni }]) });
+      fetch('/api/bot?accion=enviar-email', { method:'POST', headers: { 'Content-Type':'application/json', ...(await authHeaders()) }, body: JSON.stringify([{ nombre: card.dataset.nombre, email: card.dataset.email, dni: card.dataset.dni }]) });
     } else {
       showToast('❌ Bot desconectado y sin email configurado');
     }
@@ -5868,7 +5868,7 @@ async function histEnviarEstudios() {
   const confirmar = confirm(`¿Enviar estudios de ${_histNombreStr} por WhatsApp?`);
   if (!confirmar) return;
   try {
-    const resp = await fetch('/api/enviar-estudios', {
+    const resp = await fetch('/api/bot?accion=enviar-estudios', {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify([{ nombre: _histNombreStr, dni: _histDni, celular: _histCelular }])
     });
@@ -5882,7 +5882,7 @@ async function histEnviarInforme() {
   const confirmar = confirm(`¿Enviar informe de ${_histNombreStr} por WhatsApp?`);
   if (!confirmar) return;
   try {
-    const resp = await fetch('/api/enviar-informe', {
+    const resp = await fetch('/api/bot?accion=enviar-informe', {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify([{ nombre: _histNombreStr, dni: _histDni, celular: _histCelular }])
     });
@@ -6541,7 +6541,7 @@ async function enviarMensajeManual() {
   const btn = document.querySelector('.msj-send-btn');
   if (btn) btn.disabled = true;
   try {
-    const r = await fetch('/api/enviar-manual', {
+    const r = await fetch('/api/bot?accion=enviar-manual', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify({ numero: numeroSeleccionado, mensaje })
@@ -6628,7 +6628,7 @@ async function enviarDesdeDrive(fileId, btn) {
   btn.disabled = true;
   btn.textContent = 'Enviando...';
   try {
-    const r = await fetch('/api/enviar-desde-drive', {
+    const r = await fetch('/api/bot?accion=enviar-desde-drive', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify({ numero: destino, fileId, nombrePaciente: _destinoArchivos.nombre })
@@ -6690,7 +6690,7 @@ async function enviarAdjunto(input) {
   showToast(`Enviando ${file.name}...`);
   try {
     const archivoBase64 = await leerBase64(file);
-    const r = await fetch('/api/enviar-documento', {
+    const r = await fetch('/api/bot?accion=enviar-documento', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify({
