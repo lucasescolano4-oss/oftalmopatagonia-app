@@ -128,9 +128,22 @@
   .buscador button { width: auto; padding: 12px 24px; white-space: nowrap; }
 
   /* ── Resultados ── */
+  /* Cada consulta, con su informe y sus estudios juntos. La fecha manda: es
+     lo que el profesional busca cuando compara dos controles. */
+  .consulta-cab {
+    display: flex; align-items: baseline; gap: 10px;
+    margin: 26px 0 2px; padding-bottom: 7px;
+    border-bottom: 2px solid #cbd5e1;
+  }
+  .consulta-cab:first-child { margin-top: 10px; }
+  .consulta-fecha {
+    font-size: 15px; font-weight: 700; color: #1e293b; letter-spacing: -.01em;
+  }
+  .consulta-cuenta { font-size: 11.5px; color: #94a3b8; }
+
   .grupo-tit {
     font-size: 11.5px; font-weight: 700; letter-spacing: .06em;
-    text-transform: uppercase; color: #94a3b8; margin: 22px 0 8px;
+    text-transform: uppercase; color: #94a3b8; margin: 14px 0 7px;
   }
   .archivo {
     display: flex; align-items: center; gap: 12px; margin-bottom: 9px;
@@ -487,9 +500,57 @@ function pintar(dni, informes, estudios) {
   };
 
   let html = '';
-  if (informes.length) html += '<div class="grupo-tit">Informes médicos</div>' + informes.map(f => fila(f, true)).join('');
-  if (estudios.length) html += '<div class="grupo-tit">Estudios</div>' + estudios.map(f => fila(f, false)).join('');
+  for (const consulta of agruparPorConsulta(informes, estudios, dni)) {
+    const inf = consulta.archivos.filter(f => f._esInforme);
+    const est = consulta.archivos.filter(f => !f._esInforme);
+    html += `<div class="consulta-cab">
+      <span class="consulta-fecha">${escapar(consulta.fecha ? fechaLegible(consulta.fecha) : 'Sin fecha')}</span>
+      <span class="consulta-cuenta">${consulta.archivos.length} archivo${consulta.archivos.length === 1 ? '' : 's'}</span>
+    </div>`;
+    if (inf.length) html += '<div class="grupo-tit">Informe médico</div>' + inf.map(f => fila(f, true)).join('');
+    if (est.length) html += '<div class="grupo-tit">Estudios</div>' + est.map(f => fila(f, false)).join('');
+  }
   cont.innerHTML = html;
+}
+
+/**
+ * Junta los archivos por consulta, para que el informe quede con los estudios
+ * que comenta en vez de estar en otra parte de la pantalla.
+ *
+ * No agrupa por fecha exacta: un estudio subido al día siguiente, o un informe
+ * fechado con un día de diferencia, pertenecen a la misma consulta. Se abre un
+ * grupo nuevo recién cuando hay más de una semana de separación, que es mucho
+ * más que la demora de una carga y mucho menos que el intervalo entre
+ * controles.
+ */
+const DIAS_MISMA_CONSULTA = 7;
+
+function agruparPorConsulta(informes, estudios, dni) {
+  const conFecha = [
+    ...informes.map(f => ({ ...f, _esInforme: true })),
+    ...estudios.map(f => ({ ...f, _esInforme: false }))
+  ].map(f => ({ ...f, _fecha: fechaDelNombre(f.name, dni) || f.createdTime }))
+   .filter(f => f._fecha)
+   .sort((a, b) => new Date(b._fecha) - new Date(a._fecha));
+
+  // Los que no tienen fecha legible van al final, en su propio grupo.
+  const sinFecha = [
+    ...informes.map(f => ({ ...f, _esInforme: true })),
+    ...estudios.map(f => ({ ...f, _esInforme: false }))
+  ].filter(f => !(fechaDelNombre(f.name, dni) || f.createdTime));
+
+  const grupos = [];
+  const margen = DIAS_MISMA_CONSULTA * 86400000;
+  for (const f of conFecha) {
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && Math.abs(new Date(ultimo.fecha) - new Date(f._fecha)) <= margen) {
+      ultimo.archivos.push(f);
+    } else {
+      grupos.push({ fecha: f._fecha, archivos: [f] });
+    }
+  }
+  if (sinFecha.length) grupos.push({ fecha: null, archivos: sinFecha });
+  return grupos;
 }
 
 // ── Visor ────────────────────────────────────────────────────────────────────
