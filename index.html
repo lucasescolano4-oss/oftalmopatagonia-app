@@ -1218,6 +1218,18 @@
   [data-theme="dark"] .ia-btn { background: #26241e; border-color: #3a362c; color: #a39a86; }
   [data-theme="dark"] .ia-btn:hover { border-color: #5c5444; color: #d4cbb8; }
 
+  /* Globito con la cantidad de estudios sin retirar. Va pegado al ícono para
+     que se vea sin abrir la pestaña: si no, nadie entra a mirar. */
+  .nav-chip {
+    position: absolute; top: 2px; right: 2px;
+    min-width: 15px; height: 15px; padding: 0 4px;
+    display: grid; place-items: center;
+    background: #c9a227; color: #fff;
+    font-size: 9.5px; font-weight: 700; line-height: 1;
+    border-radius: 999px; pointer-events: none;
+  }
+  [data-theme="dark"] .nav-chip { background: #a8841f; }
+
   /* Separa el acceso a la consulta de estudios de las pestañas propiamente
      dichas: las de la izquierda cambian de pantalla, esa abre otra página. */
   .nav-sep { width: 1px; height: 18px; background: #e2e2e0; margin: 0 5px; flex-shrink: 0; }
@@ -1938,6 +1950,11 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
     <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v1H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2V5a3 3 0 0 0-3-3z"/><path d="M9 13h6"/><path d="M9 17h4"/></svg>
     <span class="nav-label-text">Pacientes para revisión</span>
   </button>
+  <button class="nav-item" id="nav-noretirados" onclick="switchTab('noretirados')">
+    <svg class="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    <span class="nav-label-text">Estudios no retirados</span>
+    <span class="nav-chip" id="chipNoRetirados" style="display:none;"></span>
+  </button>
   <!-- Separado del resto: no es otra pestaña, abre otra página. -->
   <span class="nav-sep" aria-hidden="true"></span>
   <button class="nav-item" id="nav-consulta" onclick="abrirConsultaEstudios()">
@@ -2335,6 +2352,22 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
   </div>
 </div>
 
+<!-- PESTAÑA ESTUDIOS NO RETIRADOS
+     Pacientes a los que se les aviso por WhatsApp y nunca confirmaron. La
+     idea es llamarlos por telefono: resuelve mas que insistir por el mismo
+     medio que ya ignoraron, y ademas revela si el numero esta mal cargado. -->
+<div class="view" id="view-noretirados">
+  <div class="search-view">
+    <div class="search-bar">
+      <span style="font-size:13px;color:var(--gris-texto);">Se les avisó y nunca retiraron sus estudios</span>
+      <button class="btn-buscar" onclick="cargarNoRetirados()" style="margin-left:auto;">Actualizar</button>
+    </div>
+    <div class="results-area" id="noRetiradosResults">
+      <div class="empty-state"><div class="empty-icon">⏱️</div>Cargando...</div>
+    </div>
+  </div>
+</div>
+
 <!-- PESTAÑA MENSAJES -->
 <div class="view" id="view-mensajes">
   <div class="msj-layout">
@@ -2648,6 +2681,7 @@ function seleccionarMedico(nombre, uid) {
   if (btnAgregar && !editandoId) btnAgregar.textContent = conMedico('+ Agregar paciente');
 
   document.getElementById('btnConfig').style.display = '';
+  contarNoRetirados();
   cargarPacientesHoy();
   cargarProximoNumero();
 }
@@ -2809,12 +2843,14 @@ function pastillaAlActivo() {
   requestAnimationFrame(pastillaAlActivo);
 })();
 
+const PESTAÑAS = ['carga','cirugia','buscar','informe','mensajes','revision','noretirados'];
+
 function switchTab(tab) {
-  ['carga','cirugia','buscar','informe','mensajes','revision'].forEach(t => {
+  PESTAÑAS.forEach(t => {
     const el = document.getElementById('nav-'+t);
     if (el) el.classList.toggle('active', t === tab);
   });
-  ['carga','cirugia','buscar','informe','mensajes','revision'].forEach(v => {
+  PESTAÑAS.forEach(v => {
     const el = document.getElementById('view-' + v);
     if (el) el.classList.toggle('active', v === tab);
   });
@@ -2826,6 +2862,105 @@ function switchTab(tab) {
   if (tab==='cirugia') cargarCirugias();
   if (tab==='mensajes') cargarConversaciones();
   if (tab==='revision') buscar({ revision: true });
+  if (tab==='noretirados') cargarNoRetirados();
+}
+
+// ── Estudios no retirados ────────────────────────────────────────────────────
+// Pacientes a los que se les mandó el aviso por WhatsApp y nunca contestaron.
+// Se listan para llamarlos por teléfono: insistir por el mismo medio que ya
+// ignoraron cuesta una plantilla y suele no servir, y buena parte de estos
+// casos son números mal cargados o que cambiaron de dueño.
+
+const DIAS_VIGENCIA_PENDIENTE = 15;
+
+async function cargarNoRetirados() {
+  const cont = document.getElementById('noRetiradosResults');
+  cont.innerHTML = '<div class="empty-state"><div class="empty-icon">⏱️</div>Cargando...</div>';
+
+  const corte = new Date(Date.now() - DIAS_VIGENCIA_PENDIENTE * 86400000).toISOString();
+  const { data, error } = await sb.from('envios_pendientes')
+    .select('id, numero, nombre, modo, created_at, vencido_en')
+    .or(`vencido_en.not.is.null,created_at.lt.${corte}`)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    cont.innerHTML = `<div class="empty-state">No se pudo cargar: ${escHtml(error.message)}</div>`;
+    return;
+  }
+  if (!data || !data.length) {
+    cont.innerHTML = '<div class="empty-state"><div class="empty-icon">✓</div>No hay estudios sin retirar.</div>';
+    actualizarChipNoRetirados(0);
+    return;
+  }
+
+  // Un paciente puede tener varios pedidos esperando; se muestra una fila por
+  // persona, que es a quien hay que llamar.
+  const porNumero = new Map();
+  for (const p of data) {
+    const previo = porNumero.get(p.numero);
+    if (previo) { previo.pedidos.push(p); }
+    else { porNumero.set(p.numero, { numero: p.numero, nombre: p.nombre, pedidos: [p] }); }
+  }
+
+  const QUE = { todo: 'estudios e informe', informe: 'informe', archivo: 'archivo suelto' };
+  cont.innerHTML = [...porNumero.values()].map(g => {
+    const masViejo = g.pedidos[0];
+    const dias = Math.floor((Date.now() - new Date(masViejo.created_at)) / 86400000);
+    const nombre = g.nombre && g.nombre !== 'paciente' ? g.nombre : '(sin nombre en la ficha)';
+    const que = [...new Set(g.pedidos.map(p => QUE[p.modo] || p.modo))].join(' + ');
+    const ids = g.pedidos.map(p => p.id).join(',');
+    return `
+    <div class="res-card" style="display:flex;flex-direction:row;align-items:center;text-align:left;gap:14px;padding:13px 15px;cursor:default;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;">${escHtml(nombre)}</div>
+        <div style="font-size:12px;color:var(--gris-texto);margin-top:2px;">
+          ${escHtml(que)} · esperando hace <strong>${dias} días</strong>
+        </div>
+      </div>
+      <a href="https://wa.me/${escHtml(g.numero)}" target="_blank" rel="noopener"
+         style="font-size:12.5px;color:#185fa5;text-decoration:none;white-space:nowrap;">+${escHtml(g.numero)}</a>
+      <button onclick="resolverNoRetirado('${ids}', this)"
+              style="padding:7px 13px;font-size:12.5px;font-family:inherit;background:none;border:1px solid var(--gris-borde-fuerte);border-radius:999px;color:var(--gris-texto);cursor:pointer;white-space:nowrap;">
+        Ya lo resolví
+      </button>
+    </div>`;
+  }).join('');
+  actualizarChipNoRetirados(porNumero.size);
+}
+
+/** Saca al paciente de la lista. Se usa después de llamarlo. */
+async function resolverNoRetirado(idsTexto, btn) {
+  const ids = idsTexto.split(',');
+  btn.disabled = true; btn.textContent = 'Quitando…';
+  const { error } = await sb.from('envios_pendientes').delete().in('id', ids);
+  if (error) {
+    showToast('No se pudo quitar ✗');
+    btn.disabled = false; btn.textContent = 'Ya lo resolví';
+    return;
+  }
+  btn.closest('.res-card').remove();
+  const quedan = document.querySelectorAll('#noRetiradosResults .res-card').length;
+  actualizarChipNoRetirados(quedan);
+  if (!quedan) {
+    document.getElementById('noRetiradosResults').innerHTML =
+      '<div class="empty-state"><div class="empty-icon">✓</div>No hay estudios sin retirar.</div>';
+  }
+}
+
+function actualizarChipNoRetirados(n) {
+  const chip = document.getElementById('chipNoRetirados');
+  if (!chip) return;
+  chip.textContent = n;
+  chip.style.display = n ? '' : 'none';
+}
+
+/** Cuenta los no retirados sin abrir la pestaña, para el globito de la barra. */
+async function contarNoRetirados() {
+  const corte = new Date(Date.now() - DIAS_VIGENCIA_PENDIENTE * 86400000).toISOString();
+  const { count } = await sb.from('envios_pendientes')
+    .select('numero', { count: 'exact', head: true })
+    .or(`vencido_en.not.is.null,created_at.lt.${corte}`);
+  actualizarChipNoRetirados(count || 0);
 }
 
 function setSyncStatus(state) {
