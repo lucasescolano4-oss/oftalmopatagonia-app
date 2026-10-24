@@ -626,8 +626,6 @@
   .hist-loading { display:flex; align-items:center; justify-content:center; padding:20px; gap:8px; color:#aaa; font-size:13px; }
   .hist-btn { padding:8px 16px; border-radius:8px; border:none; font-size:13px; font-weight:600; cursor:pointer; transition:opacity 0.15s; }
   .hist-btn:hover { opacity:0.85; }
-  .hist-btn-wa  { background:#25D366; color:white; }
-  .hist-btn-inf { background:#378add; color:white; }
   .hist-btn-link { background:#f0f0ee; color:#333; text-decoration:none; display:inline-flex; align-items:center; gap:4px; }
   .hist-btn-link:hover { background:#e5e5e3; }
   @media(max-width:700px){
@@ -6004,50 +6002,6 @@ function cerrarHistorial() {
   _histCelular = '';
 }
 
-async function histEnviarEstudios() {
-  if (!_histDni) return;
-  const confirmar = confirm(`¿Enviar estudios de ${_histNombreStr} por WhatsApp?`);
-  if (!confirmar) return;
-  try {
-    const resp = await fetch('/api/bot?accion=enviar-estudios', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-      body: JSON.stringify([{ nombre: _histNombreStr, dni: _histDni, celular: _histCelular }])
-    });
-    const data = await resp.json();
-    showToast(data.ok ? '📤 Estudios enviados por WhatsApp' : '❌ ' + (data.error || 'Error'));
-  } catch(e) { showToast('❌ Error de conexión'); }
-}
-
-async function histEnviarInforme() {
-  if (!_histDni) return;
-  const confirmar = confirm(`¿Enviar informe de ${_histNombreStr} por WhatsApp?`);
-  if (!confirmar) return;
-  try {
-    const resp = await fetch('/api/bot?accion=enviar-informe', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-      body: JSON.stringify([{ nombre: _histNombreStr, dni: _histDni, celular: _histCelular }])
-    });
-    const data = await resp.json();
-    showToast(data.ok ? '📋 Informe enviado por WhatsApp' : '❌ ' + (data.error || 'Error'));
-  } catch(e) { showToast('❌ Error de conexión'); }
-}
-
-function histHacerInforme() {
-  if (!_histDni) return;
-  // Buscar al paciente en pacientesHoy o construir objeto mínimo
-  const p = pacientesHoy.find(x => x.dni === _histDni) || {
-    id: null,
-    nombre_completo: _histNombreStr,
-    dni: _histDni,
-    celular: _histCelular,
-    estudios: [],
-    informe_realizado: false,
-    fecha: null
-  };
-  cerrarHistorial();
-  abrirTabInforme(p, 'buscar');
-}
-
 // ── PESTAÑA INFORME ──────────────────────────────────────────────────────────
 
 let _itPaciente = null;
@@ -6351,11 +6305,12 @@ async function guardarYSubirInformeTab() {
       <div class="hist-topbar-nombre" id="histNombre">—</div>
       <div class="hist-topbar-dni" id="histDni">DNI —</div>
     </div>
-    <div class="hist-topbar-actions">
-      <button class="hist-btn hist-btn-wa" onclick="histEnviarEstudios()">📤 Enviar estudios</button>
-      <button class="hist-btn" onclick="histHacerInforme()" style="background:#4a6cf7;color:white;border:none;">✏️ Hacer informe</button>
-      <button class="hist-btn hist-btn-inf" onclick="histEnviarInforme()">📋 Enviar informe</button>
-    </div>
+    <!-- Sin botones de acción: esta pantalla es solo para mirar estudios.
+         Los envíos salen de la ficha del paciente y el informe de su pestaña,
+         que son los lugares donde el sistema tiene el registro de la visita.
+         Acá "Hacer informe" abría un formulario vacío, porque el paciente no
+         siempre está en la carga del día y no había estudios que dibujar. -->
+    <div class="hist-topbar-actions"></div>
   </div>
   <!-- Cuerpo -->
   <div class="hist-body">
