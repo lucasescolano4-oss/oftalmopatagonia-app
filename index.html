@@ -2399,6 +2399,12 @@ textarea, .informe-textarea, .revision-nota { border-radius: 16px; padding: 10px
       <div class="modal-sub" id="archivosDriveSub"></div>
     </div>
     <div id="archivosDriveLista" style="max-height:340px;overflow-y:auto;margin-top:14px;"></div>
+    <div id="archivosDrivePie" style="display:none;align-items:center;gap:10px;margin-top:14px;padding-top:13px;border-top:1px solid var(--gris-borde);">
+      <span id="archivosDriveCuenta" style="font-size:13px;color:var(--gris-texto);"></span>
+      <div style="flex:1;"></div>
+      <button onclick="limpiarSeleccionArchivos()" style="padding:8px 13px;font-size:12.5px;font-family:inherit;background:none;border:1px solid var(--gris-borde-fuerte);border-radius:999px;color:var(--gris-texto);cursor:pointer;">Quitar selección</button>
+      <button id="archivosDriveBtn" onclick="enviarArchivosSeleccionados()" style="padding:9px 20px;font-size:13px;font-weight:600;font-family:inherit;background:#25D366;color:white;border:none;border-radius:999px;cursor:pointer;">Enviar</button>
+    </div>
   </div>
 </div>
 
@@ -6558,6 +6564,122 @@ async function enviarMensajeManual() {
 // Destinatario del modal de archivos. Se setea al abrirlo porque el modal se
 // usa desde dos lados: la bandeja de mensajes y la ficha del paciente.
 let _destinoArchivos = null;
+let _archivosDrive = [];
+
+/**
+ * Fecha del estudio leída del nombre del archivo.
+ * La de Drive es la de la subida: un estudio viejo escaneado después figura
+ * con la fecha del escaneo, no con la del día en que se hizo.
+ */
+function fechaDelNombre(nombre, dni) {
+  if (!nombre) return null;
+  const limpio = dni ? nombre.split(String(dni)).join(' ') : nombre;
+  const armar = (a, me, d) => {
+    const f = new Date(Date.UTC(+a, +me - 1, +d, 12));
+    if (isNaN(f) || f.getUTCFullYear() !== +a || f.getUTCMonth() !== +me - 1 || f.getUTCDate() !== +d) return null;
+    return f.toISOString();
+  };
+  const hallazgos = [];
+  for (const m of limpio.matchAll(/(20\d{2})(\d{2})(\d{2})/g)) hallazgos.push(armar(m[1], m[2], m[3]));
+  for (const m of limpio.matchAll(/(\d{1,2})[_\-/.](\d{1,2})[_\-/.](20\d{2})/g)) hallazgos.push(armar(m[3], m[2], m[1]));
+  const validas = hallazgos.filter(Boolean);
+  return validas.length ? validas[validas.length - 1] : null;
+}
+
+/**
+ * Junta los archivos por consulta, para que el informe quede con los estudios
+ * que comenta. Siete días de tolerancia: un estudio subido al día siguiente,
+ * o un informe fechado con unos días de diferencia, son la misma consulta.
+ */
+function agruparPorConsulta(archivos, informeIds, dni) {
+  const conFecha = archivos
+    .map(f => ({ ...f, _fecha: fechaDelNombre(f.name, dni) || f.createdTime, _esInforme: informeIds.has(f.id) }))
+    .filter(f => f._fecha)
+    .sort((a, b) => new Date(b._fecha) - new Date(a._fecha));
+
+  const grupos = [];
+  const margen = 7 * 86400000;
+  for (const f of conFecha) {
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && Math.abs(new Date(ultimo.fecha) - new Date(f._fecha)) <= margen) {
+      ultimo.archivos.push(f);
+    } else {
+      grupos.push({ fecha: f._fecha, archivos: [f] });
+    }
+  }
+  // Dentro de cada consulta, primero el informe.
+  grupos.forEach(g => g.archivos.sort((a, b) => (b._esInforme ? 1 : 0) - (a._esInforme ? 1 : 0)));
+
+  const sinFecha = archivos.filter(f => !(fechaDelNombre(f.name, dni) || f.createdTime));
+  if (sinFecha.length) grupos.push({ fecha: null, archivos: sinFecha });
+  return grupos;
+}
+
+function archivosMarcados() {
+  return [...document.querySelectorAll('.check-archivo-drive:checked')].map(c => c.value);
+}
+
+function actualizarSeleccionArchivos() {
+  const n = archivosMarcados().length;
+  const pie = document.getElementById('archivosDrivePie');
+  pie.style.display = n ? 'flex' : 'none';
+  document.getElementById('archivosDriveCuenta').textContent =
+    n + (n === 1 ? ' archivo seleccionado' : ' archivos seleccionados');
+}
+
+function limpiarSeleccionArchivos() {
+  document.querySelectorAll('.check-archivo-drive').forEach(c => { c.checked = false; });
+  actualizarSeleccionArchivos();
+}
+
+/**
+ * Manda todos los marcados de una vez.
+ *
+ * Se piden uno por uno y en orden, no todos juntos: el bot manda la plantilla
+ * solo si el teléfono no tenía nada esperando, y si salieran en paralelo
+ * los pedidos se cruzarían y cada uno creería ser el primero. Así el paciente
+ * recibe un solo aviso y después todos los archivos juntos.
+ */
+async function enviarArchivosSeleccionados() {
+  if (!_destinoArchivos) return;
+  const ids = archivosMarcados();
+  if (!ids.length) return;
+
+  const btn = document.getElementById('archivosDriveBtn');
+  btn.disabled = true;
+  let enviados = 0, fallados = 0, enEspera = false;
+
+  for (const fileId of ids) {
+    btn.textContent = `Enviando ${enviados + fallados + 1} de ${ids.length}…`;
+    try {
+      const r = await fetch('/api/bot?accion=enviar-desde-drive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+        body: JSON.stringify({ numero: _destinoArchivos.numero, fileId, nombrePaciente: _destinoArchivos.nombre })
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.ok) { enviados++; if (data.enEspera) enEspera = true; }
+      else { fallados++; console.error('[drive→wa]', data); }
+    } catch (e) {
+      fallados++;
+      console.error('[drive→wa]', e);
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Enviar';
+
+  if (fallados && !enviados)      showToast('No se pudo enviar ningún archivo ✗');
+  else if (fallados)              showToast(`${enviados} enviados, ${fallados} con error`);
+  else if (enEspera)              showToast('Le pedimos que confirme: los archivos salen apenas responda');
+  else                            showToast(`✓ ${enviados} archivo${enviados === 1 ? '' : 's'} enviado${enviados === 1 ? '' : 's'}`);
+
+  if (!fallados) {
+    limpiarSeleccionArchivos();
+    cerrarArchivosDrive();
+  }
+  if (numeroSeleccionado === _destinoArchivos.numero) await seleccionarConversacion(_destinoArchivos.numero);
+}
 
 /**
  * Abre el selector de archivos del paciente.
@@ -6594,23 +6716,32 @@ async function abrirArchivosDrive(opts) {
       return;
     }
 
+    // Agrupado por consulta: el informe con los estudios que comenta, no los
+    // informes por un lado y los estudios por otro.
     const informeIds = new Set((data.informes || []).map(f => f.id));
-    document.getElementById('archivosDriveLista').innerHTML = archivos.map(f => {
-      const mb = f.size ? (Number(f.size) / 1048576).toFixed(1) + ' MB' : '';
-      const fecha = f.createdTime ? new Date(f.createdTime).toLocaleDateString('es-AR') : '';
-      return `
-      <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-bottom:1px solid #f0f0ee;">
-        <span style="font-size:20px;">${informeIds.has(f.id) ? '📋' : '📄'}</span>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:500;color:#1a1a1a;word-break:break-all;">${escHtml(f.name)}</div>
-          <div style="font-size:11px;color:#aaa;">${[fecha, mb].filter(Boolean).join(' · ')}</div>
-        </div>
-        <button onclick="enviarDesdeDrive('${f.id}', this)"
-                style="padding:6px 14px;font-size:12px;font-weight:600;background:#25D366;color:white;border:none;border-radius:7px;cursor:pointer;flex-shrink:0;">
-          Enviar
-        </button>
-      </div>`;
-    }).join('');
+    _archivosDrive = archivos;
+    document.getElementById('archivosDriveLista').innerHTML =
+      agruparPorConsulta(archivos, informeIds, dni).map(grupo => {
+        const titulo = grupo.fecha
+          ? new Date(grupo.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
+          : 'Sin fecha';
+        const filas = grupo.archivos.map(f => {
+          const mb = f.size ? (Number(f.size) / 1048576).toFixed(1) + ' MB' : '';
+          return `
+          <label style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid #f0f0ee;cursor:pointer;">
+            <input type="checkbox" class="check-archivo-drive" value="${f.id}"
+                   onchange="actualizarSeleccionArchivos()"
+                   style="width:15px;height:15px;accent-color:#25D366;flex-shrink:0;cursor:pointer;">
+            <span style="font-size:18px;flex-shrink:0;">${informeIds.has(f.id) ? '📋' : '📄'}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12.5px;font-weight:500;color:#1a1a1a;word-break:break-all;">${escHtml(f.name)}</div>
+              <div style="font-size:11px;color:#aaa;">${escHtml(mb)}</div>
+            </div>
+          </label>`;
+        }).join('');
+        return `<div style="font-size:12px;font-weight:700;color:#185fa5;padding:11px 10px 5px;border-bottom:2px solid #dde8f5;">${escHtml(titulo)}</div>${filas}`;
+      }).join('');
+    limpiarSeleccionArchivos();
   } catch(e) {
     document.getElementById('archivosDriveLista').innerHTML =
       `<div style="padding:20px;color:#e24b4a;font-size:13px;">No se pudieron cargar los archivos: ${escHtml(e.message)}</div>`;
@@ -6621,45 +6752,6 @@ function cerrarArchivosDrive() {
   document.getElementById('modalArchivosDrive').classList.remove('show');
 }
 
-async function enviarDesdeDrive(fileId, btn) {
-  if (!_destinoArchivos) return;
-  const destino = _destinoArchivos.numero;
-  const textoOriginal = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = 'Enviando...';
-  try {
-    const r = await fetch('/api/bot?accion=enviar-desde-drive', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-      body: JSON.stringify({ numero: destino, fileId, nombrePaciente: _destinoArchivos.nombre })
-    });
-    const data = await r.json().catch(() => ({}));
-    if (r.ok && data.ok) {
-      if (data.enEspera) {
-        // El paciente no escribió en las últimas 24 h: WhatsApp no deja mandarle
-        // el archivo hasta que conteste. Ya se le pidió por plantilla.
-        btn.textContent = '⏳ En espera';
-        btn.style.background = '#c9a227';
-        showToast('Le pedimos que confirme: el archivo sale apenas responda');
-      } else {
-        btn.textContent = '✓ Enviado';
-        btn.style.background = '#999';
-      }
-      // Si el modal se abrió desde esta misma conversación, refrescar el chat.
-      if (numeroSeleccionado === destino) await seleccionarConversacion(destino);
-    } else {
-      showToast('No se pudo enviar ✗');
-      console.error('[drive→wa]', data);
-      btn.disabled = false;
-      btn.textContent = textoOriginal;
-    }
-  } catch(e) {
-    showToast('Error al enviar ✗');
-    console.error('[drive→wa]', e);
-    btn.disabled = false;
-    btn.textContent = textoOriginal;
-  }
-}
 
 // Vercel corta los pedidos por encima de ~4,5 MB y base64 infla el archivo un
 // tercio, así que el original tiene que quedar por debajo de este tope.
