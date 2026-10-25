@@ -4525,10 +4525,11 @@ async function marcarInformeEscrito() {
   }
 }
 
+/** Devuelve true solo si el informe llegó a Google y quedó guardado. */
 async function generarYSubirInforme() {
-  if (!_informeId) return;
+  if (!_informeId) return false;
   const p = _informeIdx >= 0 ? pacientesHoy[_informeIdx] : (_itPaciente || null);
-  if (!p) return;
+  if (!p) return false;
   const btn = document.getElementById('btnGenerarPDF');
   if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
 
@@ -4637,9 +4638,11 @@ async function generarYSubirInforme() {
     // Solo se cierra si salió bien. Si falla, lo escrito queda en pantalla:
     // volver a tipear un informe entero por un error de red no es opción.
     cerrarModalInforme();
+    return true;
   } catch(err) {
     showToast('❌ No se pudo enviar. Lo que escribiste quedó: volvé a intentar.');
     console.error(err);
+    return false;
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = conMedico('🔄 Regenerar informe'); }
   }
@@ -6268,7 +6271,20 @@ async function guardarYSubirInformeTab() {
   // El finally es lo que importa: sin él, un error dejaba el botón apagado y
   // la única salida era recargar la página, perdiendo el informe escrito.
   try {
-    await generarYSubirInforme();
+    // Informe enviado: se cierra la pantalla y se vuelve de donde se entró,
+    // que al informar de corrido es la búsqueda, lista para el que sigue. Si
+    // falló, la pantalla no se toca: lo escrito tiene que quedar a la vista.
+    if (await generarYSubirInforme()) {
+      document.getElementById('itDiagnostico').value = '';
+      document.getElementById('itObservaciones').value = '';
+      cerrarTabInforme();
+      // El resultado sigue en pantalla con el visto puesto, y el DNI queda
+      // seleccionado: tipear el del siguiente paciente lo reemplaza.
+      if (_itPrevTab === 'buscar') {
+        const q = document.getElementById('searchQuery');
+        if (q) { q.focus(); q.select(); }
+      }
+    }
   } finally {
     btn.disabled = false;
     btn.textContent = conMedico('🔄 Regenerar informe');
