@@ -5915,11 +5915,15 @@ function _renderArchivosAgrupados(informes, estudios) {
     return d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
   }
 
-  // Unir todos los archivos con flag de tipo, ordenar por fecha desc
+  // La fecha sale del nombre del archivo, no de la de subida a Drive: un
+  // informe del 15 subido el 18 aparecia en un grupo aparte de sus propios
+  // estudios. Y se agrupa por consulta, con la misma tolerancia de siete días
+  // que el buscador, porque informe y estudios rara vez se suben el mismo día.
   const todos = [
     ...(informes||[]).map(f => ({ ...f, esInforme: true })),
     ...(estudios||[]).map(f => ({ ...f, esInforme: false })),
-  ].sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
+  ].map(f => ({ ...f, _fecha: fechaDelNombre(f.name, _histDni) || f.createdTime }))
+   .sort((a, b) => new Date(b._fecha) - new Date(a._fecha));
 
   if (todos.length === 0) {
     document.getElementById('histInformesLista').innerHTML = '<div style="font-size:12px;color:#bbb;padding:4px 0;">Sin archivos encontrados en Drive</div>';
@@ -5927,17 +5931,22 @@ function _renderArchivosAgrupados(informes, estudios) {
     return;
   }
 
-  // Agrupar por fecha (día)
-  const grupos = {};
-  todos.forEach(f => {
-    const key = fmtDate(f.createdTime) || 'Sin fecha';
-    if (!grupos[key]) grupos[key] = [];
-    grupos[key].push(f);
-  });
+  const grupos = [];
+  const margen = 7 * 86400000;
+  for (const f of todos) {
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && Math.abs(new Date(ultimo.fecha) - new Date(f._fecha)) <= margen) {
+      ultimo.archivos.push(f);
+    } else {
+      grupos.push({ fecha: f._fecha, archivos: [f] });
+    }
+  }
+  // Dentro de cada consulta, el informe arriba de los estudios que comenta.
+  grupos.forEach(g => g.archivos.sort((a, b) => (b.esInforme ? 1 : 0) - (a.esInforme ? 1 : 0)));
 
-  document.getElementById('histInformesLista').innerHTML = Object.entries(grupos).map(([fecha, items]) => `
-    <div style="font-size:10px;font-weight:700;color:#bbb;letter-spacing:0.05em;margin:10px 0 5px;">${fecha}</div>
-    ${items.map(f => {
+  document.getElementById('histInformesLista').innerHTML = grupos.map(({ fecha, archivos }) => `
+    <div style="font-size:10px;font-weight:700;color:#bbb;letter-spacing:0.05em;margin:10px 0 5px;">${fmtDate(fecha) || 'Sin fecha'}</div>
+    ${archivos.map(f => {
       const fileId = (f.id || '').split('/')[0];
       const previewUrl = (f.mimeType && (f.mimeType.includes('pdf') || f.mimeType.includes('image')))
         ? `/api/ver-archivo?id=${fileId}` : null;
