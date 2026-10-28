@@ -615,7 +615,7 @@
   .hist-archivo-icon { font-size:22px; flex-shrink:0; }
   .hist-archivo-info { flex:1; min-width:0; }
   .hist-archivo-nombre { font-size:12px; font-weight:600; color:#1a1a1a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .hist-archivo-meta { font-size:10px; color:#aaa; margin-top:2px; }
+  .hist-archivo-meta { font-size:10px; color:#aaa; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .hist-archivo-abrir { font-size:11px; color:#378add; font-weight:600; text-decoration:none; padding:4px 9px; border-radius:6px; border:1px solid #c5d9f0; white-space:nowrap; flex-shrink:0; }
   .hist-archivo-abrir:hover { background:#378add; color:white; }
   .hist-viewer-empty { flex:1; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; color:#ccc; }
@@ -5957,10 +5957,15 @@ function _renderArchivosAgrupados(informes, estudios) {
       const onclick = previewUrl
         ? `_abrirArchivoVisorById('${fileId}')`
         : `window.open('${f.webViewLink}','_blank')`;
+      // De donde sale el archivo: la carpeta y la cuenta que lo subio. El
+      // panel es angosto, asi que va recortado y el dato completo queda en el
+      // globito del mouse.
+      const origen = [f.carpeta, f.cuenta].filter(Boolean).join(' · ');
       return `<div class="hist-archivo" id="hf-${f.id}" onclick="${onclick}">
         <div class="hist-archivo-icon">${fileIcon(f.mimeType, f.esInforme)}</div>
         <div class="hist-archivo-info">
           <div class="hist-archivo-nombre">${f.name}</div>
+          ${origen ? `<div class="hist-archivo-meta" title="${escHtml(origen)}">📁 ${escHtml(origen)}</div>` : ''}
         </div>
         <a href="${f.webViewLink}" target="_blank" class="hist-archivo-abrir" onclick="event.stopPropagation()">↗</a>
       </div>`;

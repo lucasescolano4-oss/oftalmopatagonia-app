@@ -48,6 +48,38 @@ export async function tokenDrive(sa) {
   return data.access_token;
 }
 
+// Nombres de carpeta, guardados en memoria. La busqueda devuelve el id de la
+// carpeta de cada archivo, no su nombre, y pedirlo es una llamada mas por
+// carpeta. Como el nombre casi nunca cambia, alcanza con preguntarlo una vez:
+// una busqueda toca dos o tres carpetas distintas y suelen ser siempre las
+// mismas, asi que a partir del segundo paciente ya no se pregunta nada.
+const nombresCarpeta = new Map();   // id -> nombre
+
+/**
+ * Devuelve { id: nombre } para los ids pedidos. Una carpeta que no se pueda
+ * leer queda afuera del resultado en vez de cortar la busqueda entera: saber
+ * de donde sale un archivo es un dato de mas, no un requisito.
+ */
+export async function nombresDeCarpetas(token, ids) {
+  const faltantes = [...new Set(ids)].filter(id => id && !nombresCarpeta.has(id));
+
+  await Promise.all(faltantes.map(async id => {
+    try {
+      const resp = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${id}?fields=name&supportsAllDrives=true`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data.name) nombresCarpeta.set(id, data.name);
+    } catch { /* sin nombre, el archivo se lista igual */ }
+  }));
+
+  const salida = {};
+  for (const id of ids) if (nombresCarpeta.has(id)) salida[id] = nombresCarpeta.get(id);
+  return salida;
+}
+
 /**
  * Cuenta de servicio leida de la variable de entorno de Vercel.
  */

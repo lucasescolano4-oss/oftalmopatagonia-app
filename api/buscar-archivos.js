@@ -1,14 +1,40 @@
 import { rechazarSinSesion } from './_auth.js';
-import { tokenDrive, cuentaDeServicio } from './_drive.js';
+import { tokenDrive, cuentaDeServicio, nombresDeCarpetas } from './_drive.js';
 
 const CARPETA_INFORMES = '1aVuHtL48zQi1QdQj0jONyjBrn8fTqIT3';
 
+// `parents` trae el id de la carpeta y `owners` la cuenta de Google que subio
+// el archivo: es lo que permite distinguir un estudio propio de uno que llego
+// compartido por otro consultorio.
+const CAMPOS = 'files(id,name,mimeType,webViewLink,createdTime,size,parents,owners(displayName,emailAddress))';
+
 async function buscarEnDrive(token, query, extra = '') {
   const q = encodeURIComponent(query);
-  const url = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType,webViewLink,createdTime,size)&corpora=allDrives&includeItemsFromAllDrives=true&supportsAllDrives=true&orderBy=createdTime+desc&pageSize=100${extra}`;
+  const url = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=${CAMPOS}&corpora=allDrives&includeItemsFromAllDrives=true&supportsAllDrives=true&orderBy=createdTime+desc&pageSize=100${extra}`;
   const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   const data = await resp.json();
   return data.files || [];
+}
+
+/**
+ * Reemplaza los ids internos de Drive por el nombre de la carpeta y la cuenta
+ * duena, que es lo unico que sirve mirar en pantalla.
+ */
+async function conOrigen(token, archivos) {
+  const ids = archivos.flatMap(f => f.parents || []);
+  const carpetas = ids.length ? await nombresDeCarpetas(token, ids) : {};
+
+  return archivos.map(f => {
+    const dueno = (f.owners && f.owners[0]) || null;
+    const { parents, owners, ...resto } = f;
+    return {
+      ...resto,
+      carpeta: carpetas[(parents || [])[0]] || null,
+      // En una unidad compartida Drive no informa dueno; queda en null y la
+      // pantalla simplemente no muestra la cuenta.
+      cuenta: dueno ? (dueno.emailAddress || dueno.displayName || null) : null,
+    };
+  });
 }
 
 export default async function handler(req, res) {
@@ -47,7 +73,12 @@ export default async function handler(req, res) {
     const informeIds = new Set(informes.map(f => f.id));
     const soloEstudios = estudios.filter(f => !informeIds.has(f.id));
 
-    res.json({ ok: true, estudios: soloEstudios, informes });
+    const [estudiosConOrigen, informesConOrigen] = await Promise.all([
+      conOrigen(token, soloEstudios),
+      conOrigen(token, informes),
+    ]);
+
+    res.json({ ok: true, estudios: estudiosConOrigen, informes: informesConOrigen });
   } catch (err) {
     console.error('[buscar-archivos]', err.message);
     res.status(500).json({ ok: false, error: err.message });

@@ -153,6 +153,15 @@
   .archivo-datos { flex: 1; min-width: 0; }
   .archivo-nombre { font-size: 13.5px; font-weight: 600; word-break: break-word; line-height: 1.35; }
   .archivo-meta { font-size: 11.5px; color: #94a3b8; margin-top: 2px; }
+  /* De donde salio el archivo: la carpeta dice que estudio es y la cuenta,
+     quien lo hizo. Con dos consultorios compartiendo, es la unica forma de
+     distinguir un estudio propio de uno ajeno. */
+  .archivo-origen { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 5px; }
+  .archivo-carpeta {
+    font-size: 11px; font-weight: 600; color: #475569; background: #f1f5f9;
+    border: 1px solid #e2e8f0; border-radius: 6px; padding: 2px 7px;
+  }
+  .archivo-cuenta { font-size: 11px; color: #94a3b8; word-break: break-all; }
   .archivo-acciones { display: flex; gap: 7px; flex-shrink: 0; }
   .archivo-acciones button {
     width: 38px; height: 38px; border-radius: 11px; cursor: pointer;
@@ -484,11 +493,18 @@ function pintar(dni, informes, estudios) {
   const fila = (f, esInforme) => {
     const fecha = fechaLegible(fechaDelNombre(f.name, dni) || f.createdTime);
     const meta = [fecha, pesoLegible(f.size)].filter(Boolean).join(' · ');
+    const origen = (f.carpeta || f.cuenta)
+      ? `<div class="archivo-origen">
+           ${f.carpeta ? `<span class="archivo-carpeta">📁 ${escapar(f.carpeta)}</span>` : ''}
+           ${f.cuenta ? `<span class="archivo-cuenta">${escapar(f.cuenta)}</span>` : ''}
+         </div>`
+      : '';
     return `<div class="archivo">
       <span class="archivo-ico">${esInforme ? '📋' : '📄'}</span>
       <div class="archivo-datos">
         <div class="archivo-nombre">${escapar(f.name)}</div>
         <div class="archivo-meta">${escapar(meta)}</div>
+        ${origen}
       </div>
       <div class="archivo-acciones">
         <button class="ver" title="Ver"
