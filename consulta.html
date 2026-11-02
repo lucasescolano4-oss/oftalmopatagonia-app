@@ -39,6 +39,10 @@
     border: 1px solid #cbd5e1; border-radius: 50%; background: #fff;
     color: #475569; cursor: pointer; flex-shrink: 0; padding: 0;
   }
+  /* El display de arriba le gana al atributo `hidden`, que oculta via la hoja
+     del navegador: sin esto el boton seguia a la vista aunque estuviera
+     marcado como oculto. */
+  .btn-rueda[hidden] { display: none; }
   .btn-rueda svg { width: 16px; height: 16px; }
   .btn-rueda:hover { background: #f1f5f9; color: #185fa5; }
 
@@ -217,7 +221,7 @@
       <div class="sub">Consulta entre profesionales · Patagonia Argentina</div>
     </div>
     <div class="espacio"></div>
-    <button class="btn-rueda" onclick="abrirInstructivo()" title="Cómo compartir mi carpeta" aria-label="Cómo compartir mi carpeta">
+    <button class="btn-rueda" id="btnInstructivo" hidden onclick="abrirInstructivo()" title="Cómo compartir mi carpeta" aria-label="Cómo compartir mi carpeta">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6h.09A1.65 1.65 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
     <span class="quien" id="quien"></span>
@@ -315,6 +319,9 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 const $ = id => document.getElementById(id);
 let _email = '';
 let _archivoActual = null;
+// Si esta cuenta aporta estudios propios. Lo decide la columna `rol` de
+// allowed_emails: 'medico' aporta, 'consulta' solo mira.
+let _aportaEstudios = false;
 
 // ── Cierre por inactividad ───────────────────────────────────────────────────
 // En un hospital la pantalla queda abierta entre paciente y paciente.
@@ -404,19 +411,43 @@ async function entrar() {
       err.classList.add('visible');
       return;
     }
-    mostrarApp(email);
+    await mostrarApp(email);
   } finally {
     btn.disabled = false; btn.textContent = 'Ingresar';
   }
 }
 
-function mostrarApp(email) {
+async function mostrarApp(email) {
   _email = email;
   $('pantallaIngreso').style.display = 'none';
   $('pantallaApp').hidden = false;
   $('quien').textContent = email;
   $('dni').focus();
   reiniciarInactividad();
+  await acomodarSegunRol(email);
+}
+
+/**
+ * El instructivo para compartir una carpeta solo le sirve a quien aporta
+ * estudios. Una cuenta de auditoría de obra social nunca va a subir nada:
+ * mostrarle cómo hacerlo la confunde y reparte sin motivo la dirección de la
+ * cuenta de servicio.
+ *
+ * Ante la duda se esconde. Si la consulta falla, un médico se pierde un
+ * instructivo que ya leyó una vez; al revés, una cuenta de consulta ve algo
+ * que no le corresponde.
+ */
+async function acomodarSegunRol(email) {
+  let rol = null;
+  try {
+    const { data } = await sb.from('allowed_emails')
+      .select('rol').eq('email', email).limit(1).maybeSingle();
+    rol = data ? data.rol : null;
+  } catch (e) {
+    console.error('[rol]', e);
+  }
+  _aportaEstudios = rol === 'medico';
+  $('btnInstructivo').hidden = !_aportaEstudios;
 }
 
 async function salir() {
@@ -425,7 +456,10 @@ async function salir() {
 }
 
 // ── Instructivo ──────────────────────────────────────────────────────────────
-function abrirInstructivo()  { $('instructivo').classList.add('abierta'); }
+function abrirInstructivo()  {
+  if (!_aportaEstudios) return;
+  $('instructivo').classList.add('abierta');
+}
 function cerrarInstructivo() { $('instructivo').classList.remove('abierta'); }
 
 async function copiarCorreo() {
@@ -637,7 +671,7 @@ document.addEventListener('keydown', e => {
 
 (async () => {
   const { data } = await sb.auth.getSession();
-  if (data && data.session) mostrarApp(data.session.user.email || '');
+  if (data && data.session) await mostrarApp(data.session.user.email || '');
 })();
 </script>
 </body>
